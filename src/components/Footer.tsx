@@ -9,7 +9,7 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Africantechjobs</h4>
             <p className="text-gray-600">
-              Your gateway to the best tech job opportunities across Africa.
+              Your gateway to the best Africa-focused job opportunities across the world.
             </p>
           </div>
           <div>

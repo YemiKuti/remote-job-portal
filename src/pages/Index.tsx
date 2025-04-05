@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -6,6 +7,7 @@ import AdvancedFilters from "@/components/AdvancedFilters";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FeaturedCompanies from "@/components/FeaturedCompanies";
+import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { SearchFilters, Job } from "@/types";
 import { toast } from "sonner";
@@ -204,6 +206,9 @@ const Index = () => {
             </div>
           </div>
         </div>
+        
+        {/* Add the Testimonials component */}
+        <Testimonials />
       </main>
       
       <Footer />

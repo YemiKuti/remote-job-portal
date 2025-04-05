@@ -18,6 +18,12 @@ export interface ScraperSettings {
   includeRemote: boolean;
   includeVisaSponsorship: boolean;
   exportFormat: string;
+  // New fields
+  useProxy: boolean;
+  rotateUserAgent: boolean;
+  captchaDetection: boolean;
+  delayBetweenRequests: boolean;
+  cleanData: boolean;
 }
 
 export interface ScraperResultData {
@@ -30,4 +36,13 @@ export interface ScraperResultData {
     byLocation: {name: string; value: number}[];
     bySalary: {name: string; value: number}[];
   };
+}
+
+export interface JobScrapingSource {
+  id: string;
+  name: string;
+  url: string;
+  logo: string;
+  features: string[];
+  supported: boolean;
 }

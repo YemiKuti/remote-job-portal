@@ -15,6 +15,7 @@ import { TabsContent, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScraperSettings, ScraperResultData } from "@/types/scraper";
 import { mockScrapedJobs } from "@/utils/scraper-utils";
+import { ScraperSources } from "@/components/ScraperSources";
 
 const JobScraper = () => {
   const [scrapedJobs, setScrapedJobs] = useState<Job[]>([]);
@@ -29,13 +30,18 @@ const JobScraper = () => {
     schedule: "daily",
     startDate: undefined,
     endDate: undefined,
-    sources: ["LinkedIn", "Indeed", "Glassdoor"],
+    sources: ["LinkedIn", "Indeed", "Glassdoor", "StackOverflow"],
     jobTypes: ["Full-time"],
     experienceLevels: ["Entry-level", "Mid-level"],
     salaryRange: { min: 0, max: 200000 },
     includeRemote: true,
     includeVisaSponsorship: true,
-    exportFormat: "xml"
+    exportFormat: "xml",
+    useProxy: false,
+    rotateUserAgent: false,
+    captchaDetection: false,
+    delayBetweenRequests: true,
+    cleanData: true
   });
 
   const handleScrape = () => {
@@ -53,6 +59,16 @@ const JobScraper = () => {
       toast.info(`Filtering for companies: ${scraperSettings.companyNames}...`);
     }
     
+    // New: Add proxy notification
+    if (scraperSettings.useProxy) {
+      toast.info("Using proxy to avoid rate limiting and IP blocks");
+    }
+    
+    // New: CAPTCHA detection notification
+    if (scraperSettings.captchaDetection) {
+      toast.info("CAPTCHA detection enabled - you'll be notified if CAPTCHAs are detected");
+    }
+    
     // Simulate scraping process with more advanced parameters
     setTimeout(() => {
       try {
@@ -64,6 +80,11 @@ const JobScraper = () => {
           setScrapedJobs([]);
           setResultsData(null);
         } else {
+          // New: Add data cleaning simulation notification
+          if (scraperSettings.cleanData) {
+            toast.success("Data cleaning applied: removed duplicates and standardized job titles");
+          }
+          
           setScrapedJobs(mockJobs);
           setResultsData({
             totalResults: mockJobs.length,
@@ -111,8 +132,9 @@ const JobScraper = () => {
         <div className="grid md:grid-cols-5 gap-8">
           <div className="md:col-span-2 space-y-6">
             <Tabs defaultValue="filters">
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="filters">Scraper Settings</TabsTrigger>
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="filters">Settings</TabsTrigger>
+                <TabsTrigger value="sources">Sources</TabsTrigger>
                 <TabsTrigger value="automation">Automation</TabsTrigger>
               </TabsList>
               
@@ -124,6 +146,17 @@ const JobScraper = () => {
                       setSettings={setScraperSettings}
                       onScrape={handleScrape}
                       loading={loading}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="sources" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <ScraperSources 
+                      settings={scraperSettings}
+                      setSettings={setScraperSettings}
                     />
                   </CardContent>
                 </Card>

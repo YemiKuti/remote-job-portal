@@ -1,3 +1,4 @@
+
 import { Job } from "@/types";
 import { jobs } from "@/data/jobs";
 import { ScraperSettings } from "@/types/scraper";
@@ -148,6 +149,12 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     }
   }
   
+  // New: Clean data if the option is enabled
+  if (settings.cleanData) {
+    filteredJobs = cleanJobData(filteredJobs);
+    console.log(`After data cleaning: ${filteredJobs.length} jobs`);
+  }
+  
   // Fallback: If filtering was applied but no results, try to give relevant results
   if (filteringApplied && filteredJobs.length === 0) {
     console.log("No jobs match all filters, providing most relevant matches instead");
@@ -219,6 +226,56 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     mockJobs: filteredJobs,
     stats
   };
+};
+
+/**
+ * Clean job data - new function to handle data cleaning
+ * - Standardize job titles
+ * - Remove duplicates
+ * - Format inconsistencies
+ */
+const cleanJobData = (jobs: Job[]): Job[] => {
+  // Map of standardized titles
+  const titleStandardizations: {[key: string]: string} = {
+    "Sr": "Senior",
+    "Jr": "Junior",
+    "Dev": "Developer",
+    "Eng": "Engineer",
+    "SWE": "Software Engineer",
+    "UI/UX": "UI/UX Designer",
+    "FE": "Frontend",
+    "BE": "Backend"
+  };
+  
+  // Step 1: Standardize job titles
+  const standardizedJobs = jobs.map(job => {
+    let standardizedTitle = job.title;
+    
+    // Apply each standardization
+    Object.entries(titleStandardizations).forEach(([shortForm, fullForm]) => {
+      // Use word boundary regex to only replace whole words
+      const regex = new RegExp(`\\b${shortForm}\\b`, 'g');
+      standardizedTitle = standardizedTitle.replace(regex, fullForm);
+    });
+    
+    return {
+      ...job,
+      title: standardizedTitle
+    };
+  });
+  
+  // Step 2: Remove duplicate jobs (based on title and company)
+  const uniqueJobsMap = new Map();
+  standardizedJobs.forEach(job => {
+    const key = `${job.title}-${job.company}`;
+    if (!uniqueJobsMap.has(key) || 
+        parseISO(job.postedDate) > parseISO(uniqueJobsMap.get(key).postedDate)) {
+      uniqueJobsMap.set(key, job);
+    }
+  });
+  
+  // Convert map back to array
+  return Array.from(uniqueJobsMap.values());
 };
 
 /**

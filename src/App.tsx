@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import JobScraper from "./pages/JobScraper";
 import Blog from "./pages/Blog";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import memberfulService from "./services/memberful";
 
@@ -32,6 +33,7 @@ const App = () => {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/job-scraper" element={<JobScraper />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

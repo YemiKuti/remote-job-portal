@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -71,7 +70,7 @@ const Pricing = () => {
               title="Quarterly Plan"
               price={25}
               currency="GBP"
-              description="£25 per quarter - Save with our 3-month plan"
+              description="Save with our 3-month plan"
               features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
             />
@@ -80,7 +79,7 @@ const Pricing = () => {
               title="Annual Plan"
               price={90}
               currency="GBP"
-              description="£90 per year - Best value for long-term job seekers"
+              description="Best value for long-term job seekers"
               features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
             />

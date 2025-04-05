@@ -43,6 +43,17 @@ const PricingCard = ({
     setLocalPrice(Math.round(convertedPrice));
   }, [currency, price, defaultCurrency]);
 
+  // Determine the billing period text based on the plan title
+  const getBillingPeriod = () => {
+    if (title.includes("Quarterly")) {
+      return "per quarter";
+    } else if (title.includes("Annual")) {
+      return "per year";
+    } else {
+      return "per month";
+    }
+  };
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
@@ -56,7 +67,7 @@ const PricingCard = ({
               {currencies[currency]?.symbol || currency}
               {localPrice}
             </div>
-            <div className="text-sm text-gray-500">per month</div>
+            <div className="text-sm text-gray-500">{getBillingPeriod()}</div>
           </div>
           <Select value={currency} onValueChange={setCurrency}>
             <SelectTrigger className="w-[100px]">

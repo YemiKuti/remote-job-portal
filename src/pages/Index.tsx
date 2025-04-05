@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -6,6 +5,7 @@ import JobCard from "@/components/JobCard";
 import AdvancedFilters from "@/components/AdvancedFilters";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import HeroSection from "@/components/HeroSection";
 import FeaturedCompanies from "@/components/FeaturedCompanies";
 import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
@@ -123,14 +123,10 @@ const Index = () => {
       <Header />
       
       <main className="flex-grow">
-        <div className="bg-gradient-to-br from-job-green to-job-lightGreen py-16">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Find Africa-focused Job Opportunities Worldwide
-            </h1>
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Sponsored and Remote Jobs in the UK, US, Canada and more
-            </p>
+        <HeroSection />
+        
+        <div className="bg-white py-8 shadow-md">
+          <div className="container mx-auto px-4">
             <div className="flex justify-center">
               <SearchBar 
                 onSearch={handleSearch} 
@@ -207,7 +203,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Add the Testimonials component */}
         <Testimonials />
       </main>
       

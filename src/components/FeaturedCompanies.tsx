@@ -37,6 +37,11 @@ const companyLogos = [
     id: 7,
     name: "Flutterwave",
     logo: "/lovable-uploads/7f1966e7-b0e9-4a35-a0e2-147d15722478.png"
+  },
+  {
+    id: 8,
+    name: "Taptap Send",
+    logo: "/lovable-uploads/a0f33c69-548a-4b53-8e10-3f3e0ec0df07.png"
   }
 ];
 

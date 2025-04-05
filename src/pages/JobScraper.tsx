@@ -3,160 +3,61 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Job } from "@/types";
 import { jobs } from "@/data/jobs";
-import { Calendar } from "@/components/ui/calendar";
-import { format, isAfter, isBefore, isWithinInterval, parseISO } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { JobScraperFilters } from "@/components/JobScraperFilters";
+import { JobScraperResults } from "@/components/JobScraperResults";
+import { JobScraperAutomation } from "@/components/JobScraperAutomation";
+import { TabsContent, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScraperSettings, ScraperResultData } from "@/types/scraper";
+import { mockScrapedJobs } from "@/utils/scraper-utils";
 
 const JobScraper = () => {
   const [scrapedJobs, setScrapedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [countries, setCountries] = useState<string[]>(["USA", "UK", "Canada"]);
-  const [keywords, setKeywords] = useState("tech, developer, engineer, Africa, African");
-  const [companyNames, setCompanyNames] = useState("");
-  const [jobLimit, setJobLimit] = useState(20);
-  const [autoExport, setAutoExport] = useState(false);
-  const [schedule, setSchedule] = useState("daily");
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [resultsData, setResultsData] = useState<ScraperResultData | null>(null);
+  const [scraperSettings, setScraperSettings] = useState<ScraperSettings>({
+    countries: ["USA", "UK", "Canada"],
+    keywords: "tech, developer, engineer, Africa, African",
+    companyNames: "",
+    jobLimit: 20,
+    autoExport: false,
+    schedule: "daily",
+    startDate: undefined,
+    endDate: undefined,
+    sources: ["LinkedIn", "Indeed", "Glassdoor"],
+    jobTypes: ["Full-time"],
+    experienceLevels: ["Entry-level", "Mid-level"],
+    salaryRange: { min: 0, max: 200000 },
+    includeRemote: true,
+    includeVisaSponsorship: true,
+    exportFormat: "xml"
+  });
 
   const handleScrape = () => {
     setLoading(true);
-    toast.info("Starting job scraping process...");
+    toast.info("Starting advanced job scraping process...");
     
-    // Simulate scraping process
+    // Simulate scraping process with more advanced parameters
     setTimeout(() => {
-      // For demo purposes, we'll use the existing jobs data and modify it
-      let mockScrapedJobs = [...jobs].map(job => ({
-        ...job,
-        id: `scraped-${Math.random().toString(36).substring(2, 9)}`,
-        postedDate: new Date().toISOString(),
-        title: job.title + " (Africa Focus)",
-        description: "This is a position specifically targeting African tech talent. " + job.description,
-      }));
+      // Use our utility function to get mock data
+      const { mockJobs, stats } = mockScrapedJobs(scraperSettings);
       
-      // Filter by company names if provided
-      if (companyNames.trim()) {
-        const companyNameList = companyNames.split(',').map(name => name.trim().toLowerCase());
-        mockScrapedJobs = mockScrapedJobs.filter(job => 
-          companyNameList.some(name => job.company.toLowerCase().includes(name))
-        );
-      }
+      setScrapedJobs(mockJobs);
+      setResultsData({
+        totalResults: mockJobs.length,
+        sources: scraperSettings.sources,
+        dateScraped: new Date().toISOString(),
+        stats: stats
+      });
       
-      // Filter by date range if provided
-      if (startDate || endDate) {
-        mockScrapedJobs = mockScrapedJobs.filter(job => {
-          const jobDate = parseISO(job.postedDate);
-          
-          if (startDate && endDate) {
-            return isWithinInterval(jobDate, { start: startDate, end: endDate });
-          } else if (startDate) {
-            return isAfter(jobDate, startDate) || jobDate.getTime() === startDate.getTime();
-          } else if (endDate) {
-            return isBefore(jobDate, endDate) || jobDate.getTime() === endDate.getTime();
-          }
-          
-          return true;
-        });
-      }
-      
-      setScrapedJobs(mockScrapedJobs);
       setLoading(false);
-      toast.success(`Successfully scraped ${mockScrapedJobs.length} jobs`);
+      toast.success(`Successfully scraped ${mockJobs.length} jobs from ${scraperSettings.sources.length} sources`);
     }, 2000);
-  };
-
-  const handleExportXML = () => {
-    if (scrapedJobs.length === 0) {
-      toast.error("No jobs to export. Please scrape jobs first.");
-      return;
-    }
-
-    const xmlContent = generateJobsXML(scrapedJobs);
-    downloadXML(xmlContent);
-    toast.success("XML file exported successfully");
-  };
-
-  const handleAutomateSetup = () => {
-    if (!webhookUrl) {
-      toast.error("Please enter a webhook URL for automation");
-      return;
-    }
-
-    toast.success(`Automation setup complete. Jobs will be scraped ${schedule} and sent to your webhook.`);
-  };
-
-  const generateJobsXML = (jobsData: Job[]): string => {
-    let xml = '<?xml version="1.0" encoding="UTF-8" ?>\n';
-    xml += '<jobs>\n';
-    
-    jobsData.forEach(job => {
-      xml += '  <job>\n';
-      xml += `    <id>${job.id}</id>\n`;
-      xml += `    <title>${job.title}</title>\n`;
-      xml += `    <company>${job.company}</company>\n`;
-      xml += `    <logo>${job.logo}</logo>\n`;
-      xml += `    <location>${job.location}</location>\n`;
-      xml += `    <salary>\n`;
-      xml += `      <min>${job.salary.min}</min>\n`;
-      xml += `      <max>${job.salary.max}</max>\n`;
-      xml += `      <currency>${job.salary.currency}</currency>\n`;
-      xml += `    </salary>\n`;
-      xml += `    <description><![CDATA[${job.description}]]></description>\n`;
-      xml += '    <requirements>\n';
-      job.requirements.forEach(req => {
-        xml += `      <requirement>${req}</requirement>\n`;
-      });
-      xml += '    </requirements>\n';
-      xml += `    <postedDate>${job.postedDate}</postedDate>\n`;
-      xml += `    <employmentType>${job.employmentType}</employmentType>\n`;
-      xml += `    <experienceLevel>${job.experienceLevel}</experienceLevel>\n`;
-      xml += `    <visaSponsorship>${job.visaSponsorship}</visaSponsorship>\n`;
-      xml += `    <companySize>${job.companySize}</companySize>\n`;
-      xml += '    <techStack>\n';
-      job.techStack.forEach(tech => {
-        xml += `      <technology>${tech}</technology>\n`;
-      });
-      xml += '    </techStack>\n';
-      xml += `    <remote>${job.remote}</remote>\n`;
-      xml += '  </job>\n';
-    });
-    
-    xml += '</jobs>';
-    return xml;
-  };
-
-  const downloadXML = (xmlContent: string) => {
-    const blob = new Blob([xmlContent], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `africantechjobs-${new Date().toISOString().slice(0, 10)}.xml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -165,274 +66,51 @@ const JobScraper = () => {
       
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-job-green mb-2">Job Scraper Tool</h1>
-          <p className="text-gray-600">Scrape Africa-focused tech job listings from USA, UK, and Canada</p>
+          <h1 className="text-3xl font-bold text-job-green mb-2">Enhanced Job Scraper Tool</h1>
+          <p className="text-gray-600">Advanced scraping with multiple data sources and intelligent filtering</p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="p-6 border rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Scraper Configuration</h2>
+        <div className="grid md:grid-cols-5 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            <Tabs defaultValue="filters">
+              <TabsList className="grid grid-cols-2 mb-4">
+                <TabsTrigger value="filters">Scraper Settings</TabsTrigger>
+                <TabsTrigger value="automation">Automation</TabsTrigger>
+              </TabsList>
               
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="countries">Target Countries</Label>
-                  <div className="flex flex-wrap gap-4 mt-2">
-                    {["USA", "UK", "Canada", "Germany", "Australia"].map((country) => (
-                      <div key={country} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={country} 
-                          checked={countries.includes(country)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setCountries([...countries, country]);
-                            } else {
-                              setCountries(countries.filter(c => c !== country));
-                            }
-                          }}
-                        />
-                        <Label htmlFor={country}>{country}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="keywords">Search Keywords</Label>
-                  <Textarea 
-                    id="keywords"
-                    value={keywords}
-                    onChange={(e) => setKeywords(e.target.value)}
-                    placeholder="Enter keywords separated by commas"
-                  />
-                  <p className="text-sm text-gray-500">These keywords will be used to filter for Africa-focused jobs</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="companyNames">Company Names</Label>
-                  <Textarea 
-                    id="companyNames"
-                    value={companyNames}
-                    onChange={(e) => setCompanyNames(e.target.value)}
-                    placeholder="Enter company names separated by commas (e.g., Google, Meta, Microsoft)"
-                  />
-                  <p className="text-sm text-gray-500">Filter jobs by specific companies</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Time Period</Label>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor="startDate">From</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="startDate"
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !startDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {startDate ? format(startDate, "PPP") : <span>Select start date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={startDate}
-                            onSelect={setStartDate}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {startDate && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-xs"
-                          onClick={() => setStartDate(undefined)}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor="endDate">To</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="endDate"
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !endDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {endDate ? format(endDate, "PPP") : <span>Select end date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={endDate}
-                            onSelect={setEndDate}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                            disabled={startDate ? (date) => isBefore(date, startDate) : undefined}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {endDate && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-xs"
-                          onClick={() => setEndDate(undefined)}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500">Filter jobs by posting date range</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="jobLimit">Job Limit</Label>
-                  <Input
-                    id="jobLimit"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={jobLimit}
-                    onChange={(e) => setJobLimit(parseInt(e.target.value))}
-                  />
-                </div>
-                
-                <Button 
-                  onClick={handleScrape} 
-                  disabled={loading}
-                  className="w-full bg-job-green hover:bg-job-darkGreen"
-                >
-                  {loading ? "Scraping..." : "Scrape Jobs Now"}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="p-6 border rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Automation Setup</h2>
+              <TabsContent value="filters" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <JobScraperFilters 
+                      settings={scraperSettings}
+                      setSettings={setScraperSettings}
+                      onScrape={handleScrape}
+                      loading={loading}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
               
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="webhook">Webhook URL</Label>
-                  <Input
-                    id="webhook"
-                    type="text"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://your-server.com/webhook"
-                  />
-                  <p className="text-sm text-gray-500">Your server endpoint that will receive the XML data</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="schedule">Schedule</Label>
-                  <Select value={schedule} onValueChange={setSchedule}>
-                    <SelectTrigger id="schedule">
-                      <SelectValue placeholder="Select schedule" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hourly">Hourly</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="autoExport" 
-                    checked={autoExport}
-                    onCheckedChange={(checked) => setAutoExport(checked as boolean)}
-                  />
-                  <Label htmlFor="autoExport">Auto-export to XML after scraping</Label>
-                </div>
-                
-                <Button 
-                  onClick={handleAutomateSetup} 
-                  variant="outline"
-                  className="w-full border-job-green text-job-green hover:bg-job-hover"
-                >
-                  Setup Automation
-                </Button>
-              </div>
-            </div>
+              <TabsContent value="automation" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <JobScraperAutomation
+                      settings={scraperSettings}
+                      setSettings={setScraperSettings}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
           
-          <div className="space-y-6">
-            <div className="p-6 border rounded-lg shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Scraped Jobs</h2>
-                <Button 
-                  onClick={handleExportXML}
-                  disabled={scrapedJobs.length === 0}
-                  variant="outline"
-                  className="border-job-green text-job-green hover:bg-job-hover"
-                >
-                  Export to XML
-                </Button>
-              </div>
-              
-              {scrapedJobs.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  No jobs scraped yet. Configure and start the scraper.
-                </div>
-              ) : (
-                <div className="overflow-auto max-h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Posted</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {scrapedJobs.map((job) => (
-                        <TableRow key={job.id}>
-                          <TableCell className="font-medium">{job.title}</TableCell>
-                          <TableCell>{job.company}</TableCell>
-                          <TableCell>{job.location}</TableCell>
-                          <TableCell>{new Date(job.postedDate).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-6 border rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">XML Preview</h2>
-              {scrapedJobs.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  No XML generated yet. Scrape jobs first.
-                </div>
-              ) : (
-                <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-[200px] text-xs">
-                  {generateJobsXML(scrapedJobs.slice(0, 1)).split("\n").map((line, i) => (
-                    <div key={i} className="whitespace-pre">{line}</div>
-                  ))}
-                  <div className="text-gray-500 mt-2">... and {scrapedJobs.length - 1} more jobs</div>
-                </pre>
-              )}
-            </div>
+          <div className="md:col-span-3 space-y-6">
+            <JobScraperResults 
+              jobs={scrapedJobs} 
+              resultsData={resultsData}
+              settings={scraperSettings}
+              setSettings={setScraperSettings}
+            />
           </div>
         </div>
       </main>

@@ -9,9 +9,19 @@ import memberfulService from "@/services/memberful";
 // Map of plan names to Memberful plan IDs - replace with your actual plan IDs
 const MEMBERFUL_PLAN_IDS: Record<string, string> = {
   "Monthly": "monthly-plan-id", // Replace with your Memberful plan ID
-  "3-Month": "quarterly-plan-id", // Replace with your Memberful plan ID
+  "Quarterly": "quarterly-plan-id", // Replace with your Memberful plan ID
   "Annual": "annual-plan-id" // Replace with your Memberful plan ID
 };
+
+// Common features shared across all plans
+const COMMON_FEATURES = [
+  "Access to all job listings",
+  "Advanced search filters",
+  "Job alerts via email",
+  "Save favorite jobs",
+  "CV/Resume review",
+  "Apply to premium jobs"
+];
 
 const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -42,7 +52,7 @@ const Pricing = () => {
               Choose Your Plan
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Get access to more jobs and advanced features with our premium plans
+              Get access to more jobs and advanced features with our subscription plans
             </p>
           </div>
         </div>
@@ -51,46 +61,28 @@ const Pricing = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
             <PricingCard
               title="Monthly Plan"
-              price={19.99}
-              currency="USD"
+              price={10}
+              currency="GBP"
               description="Perfect for job seekers"
-              features={[
-                "Access to all job listings",
-                "Advanced search filters",
-                "Job alerts via email",
-                "Save favorite jobs",
-                "30-day access"
-              ]}
+              features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Monthly")}
             />
             
             <PricingCard
-              title="3-Month Plan"
-              price={49.99}
-              currency="USD"
-              description="Our most popular plan"
-              features={[
-                "Everything in Monthly plan",
-                "Priority job alerts",
-                "CV/Resume review",
-                "Apply to premium jobs",
-                "90-day access"
-              ]}
-              onSubscribe={(price, currency) => handleSubscribe(price, currency, "3-Month")}
+              title="Quarterly Plan"
+              price={25}
+              currency="GBP"
+              description="Save with our 3-month plan"
+              features={COMMON_FEATURES}
+              onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
             />
             
             <PricingCard
               title="Annual Plan"
-              price={149.99}
-              currency="USD"
+              price={90}
+              currency="GBP"
               description="Best value for long-term job seekers"
-              features={[
-                "Everything in 3-Month plan",
-                "1-on-1 career coaching session",
-                "Personalized job recommendations",
-                "Featured applicant status",
-                "365-day access"
-              ]}
+              features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
             />
           </div>
@@ -104,7 +96,7 @@ const Pricing = () => {
               </div>
               <div>
                 <h4 className="font-medium text-job-blue">How does the currency conversion work?</h4>
-                <p className="text-gray-600">While you can view prices in different currencies, all payments are processed by Memberful in the default currency.</p>
+                <p className="text-gray-600">All payments are processed in British Pounds (GBP) through our Memberful integration.</p>
               </div>
               <div>
                 <h4 className="font-medium text-job-blue">What payment methods do you accept?</h4>

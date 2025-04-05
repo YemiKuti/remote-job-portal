@@ -19,7 +19,6 @@ const COMMON_FEATURES = [
   "Advanced search filters",
   "Job alerts via email",
   "Save favorite jobs",
-  "CV/Resume review",
   "Apply to premium jobs"
 ];
 
@@ -72,7 +71,7 @@ const Pricing = () => {
               title="Quarterly Plan"
               price={25}
               currency="GBP"
-              description="Save with our 3-month plan"
+              description="£25 per quarter - Save with our 3-month plan"
               features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
             />
@@ -81,7 +80,7 @@ const Pricing = () => {
               title="Annual Plan"
               price={90}
               currency="GBP"
-              description="Best value for long-term job seekers"
+              description="£90 per year - Best value for long-term job seekers"
               features={COMMON_FEATURES}
               onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
             />

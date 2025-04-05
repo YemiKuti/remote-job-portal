@@ -21,9 +21,6 @@ const Header = () => {
             <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
               <Link to="/job-scraper">Scraper Tool</Link>
             </Button>
-            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
-              <Link to="/post-job">Post a Job</Link>
-            </Button>
             <Button size="sm" className="bg-job-green hover:bg-job-darkGreen">
               <Link to="/pricing">Subscribe</Link>
             </Button>

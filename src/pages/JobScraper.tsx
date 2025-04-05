@@ -37,11 +37,23 @@ const JobScraper = () => {
     includeRemote: true,
     includeVisaSponsorship: true,
     exportFormat: "xml",
+    // Advanced scraping settings
     useProxy: false,
     rotateUserAgent: false,
     captchaDetection: false,
     delayBetweenRequests: true,
-    cleanData: true
+    cleanData: true,
+    // Source-specific settings
+    depthCrawling: true,
+    respectRobotsTxt: true,
+    extractCompanyData: true,
+    // Hirebase inspired settings
+    useAI: false,
+    aiEnhancement: false,
+    similarJobDetection: false,
+    companyInfoEnrichment: false,
+    structuredDataExtraction: true,
+    semanticSearch: false
   });
 
   const handleScrape = () => {
@@ -69,6 +81,16 @@ const JobScraper = () => {
       toast.info("CAPTCHA detection enabled - you'll be notified if CAPTCHAs are detected");
     }
     
+    // New: Hirebase-inspired structured data extraction
+    if (scraperSettings.structuredDataExtraction) {
+      toast.info("Using structured data extraction to parse job listings more efficiently");
+    }
+
+    // New: AI enhancement notification
+    if (scraperSettings.useAI) {
+      toast.info("Using AI to enhance job search results and improve matching");
+    }
+    
     // Simulate scraping process with more advanced parameters
     setTimeout(() => {
       try {
@@ -83,6 +105,16 @@ const JobScraper = () => {
           // New: Add data cleaning simulation notification
           if (scraperSettings.cleanData) {
             toast.success("Data cleaning applied: removed duplicates and standardized job titles");
+          }
+          
+          // New: Add structured data extraction notification
+          if (scraperSettings.structuredDataExtraction) {
+            toast.success("Successfully extracted structured job data from HTML sources");
+          }
+          
+          // New: AI enhancement result notification
+          if (scraperSettings.useAI && scraperSettings.aiEnhancement) {
+            toast.success("AI enhancement applied: improved job descriptions and matched skills");
           }
           
           setScrapedJobs(mockJobs);

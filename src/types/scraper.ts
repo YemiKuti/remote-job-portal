@@ -18,12 +18,23 @@ export interface ScraperSettings {
   includeRemote: boolean;
   includeVisaSponsorship: boolean;
   exportFormat: string;
-  // New fields
+  // Advanced scraping settings
   useProxy: boolean;
   rotateUserAgent: boolean;
   captchaDetection: boolean;
   delayBetweenRequests: boolean;
   cleanData: boolean;
+  // Source-specific settings
+  depthCrawling: boolean;
+  respectRobotsTxt: boolean;
+  extractCompanyData: boolean;
+  // Hirebase inspired settings
+  useAI: boolean;
+  aiEnhancement: boolean;
+  similarJobDetection: boolean;
+  companyInfoEnrichment: boolean;
+  structuredDataExtraction: boolean;
+  semanticSearch: boolean;
 }
 
 export interface ScraperResultData {

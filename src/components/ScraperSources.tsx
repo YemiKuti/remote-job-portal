@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { JobScrapingSource, ScraperSettings } from "@/types/scraper";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface ScraperSourcesProps {
   settings: ScraperSettings;
@@ -76,6 +77,23 @@ const AVAILABLE_SOURCES: JobScrapingSource[] = [
     url: "https://wellfound.com",
     logo: "/placeholder.svg",
     features: ["Startup focus", "Equity details", "Funding info"],
+    supported: true
+  },
+  // New Hirebase-inspired sources
+  {
+    id: "github-jobs",
+    name: "GitHub Jobs API",
+    url: "https://jobs.github.com",
+    logo: "/placeholder.svg",
+    features: ["Developer focused", "Tech stacks", "Open source"],
+    supported: true
+  },
+  {
+    id: "lever-api",
+    name: "Lever API",
+    url: "https://api.lever.co",
+    logo: "/placeholder.svg",
+    features: ["Structured data", "Direct integration", "ATS data"],
     supported: true
   },
   {
@@ -230,9 +248,86 @@ export const ScraperSources = ({ settings, setSettings }: ScraperSourcesProps) =
             <Label htmlFor="extract-company-data">Extract additional company data</Label>
           </div>
           
+          <Separator className="my-4" />
+          
+          <h4 className="text-md font-medium mb-2">AI-Enhanced Data Processing</h4>
+          
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="use-ai" 
+              checked={settings.useAI}
+              onCheckedChange={(checked) => {
+                setSettings({...settings, useAI: checked});
+                if (checked) {
+                  toast.info("AI enhancements enabled - this will improve job matching quality");
+                }
+              }}
+            />
+            <Label htmlFor="use-ai">Enable AI-powered enhancements</Label>
+          </div>
+          
+          {settings.useAI && (
+            <div className="pl-6 space-y-3 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="ai-enhancement" 
+                  checked={settings.aiEnhancement}
+                  onCheckedChange={(checked) => 
+                    setSettings({...settings, aiEnhancement: !!checked})
+                  }
+                />
+                <Label htmlFor="ai-enhancement">Enhance job descriptions</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="similar-job-detection" 
+                  checked={settings.similarJobDetection}
+                  onCheckedChange={(checked) => 
+                    setSettings({...settings, similarJobDetection: !!checked})
+                  }
+                />
+                <Label htmlFor="similar-job-detection">Detect similar job postings</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="company-info-enrichment" 
+                  checked={settings.companyInfoEnrichment}
+                  onCheckedChange={(checked) => 
+                    setSettings({...settings, companyInfoEnrichment: !!checked})
+                  }
+                />
+                <Label htmlFor="company-info-enrichment">Enrich company information</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="semantic-search" 
+                  checked={settings.semanticSearch}
+                  onCheckedChange={(checked) => 
+                    setSettings({...settings, semanticSearch: !!checked})
+                  }
+                />
+                <Label htmlFor="semantic-search">Enable semantic search capabilities</Label>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-center space-x-2 mt-4">
+            <Checkbox 
+              id="structured-data-extraction" 
+              checked={settings.structuredDataExtraction}
+              onCheckedChange={(checked) => 
+                setSettings({...settings, structuredDataExtraction: !!checked})
+              }
+            />
+            <Label htmlFor="structured-data-extraction">Extract structured data (JSON-LD, microdata)</Label>
+          </div>
+          
           <Button 
             variant="outline"
-            className="w-full mt-2" 
+            className="w-full mt-4" 
             onClick={() => {
               setSettings({
                 ...settings,

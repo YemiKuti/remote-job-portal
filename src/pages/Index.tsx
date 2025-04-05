@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -125,10 +124,10 @@ const Index = () => {
         <div className="bg-gradient-to-br from-job-green to-job-lightGreen py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Find Your Perfect Tech Job in Africa
+              Find Africa-focused Job Opportunities Worldwide
             </h1>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Discover tech opportunities from companies across Africa
+              Sponsored and Remote Jobs in the UK, US, Canada and more
             </p>
             <div className="flex justify-center">
               <SearchBar 
@@ -141,7 +140,6 @@ const Index = () => {
         
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main content - Jobs */}
             <div className="lg:col-span-2">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-semibold">
@@ -201,7 +199,6 @@ const Index = () => {
               )}
             </div>
             
-            {/* Sidebar content - Featured Companies */}
             <div className="lg:col-span-1">
               <FeaturedCompanies />
             </div>

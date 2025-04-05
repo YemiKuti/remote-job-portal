@@ -40,7 +40,18 @@ const JobScraper = () => {
 
   const handleScrape = () => {
     setLoading(true);
-    toast.info("Starting advanced job scraping process...");
+    
+    // Check if we have keywords
+    if (!scraperSettings.keywords.trim()) {
+      toast.warning("For best results, please enter some keywords to search for jobs");
+    } else {
+      toast.info(`Scraping jobs with keywords: ${scraperSettings.keywords}...`);
+    }
+    
+    // Check if we have company names
+    if (scraperSettings.companyNames.trim()) {
+      toast.info(`Filtering for companies: ${scraperSettings.companyNames}...`);
+    }
     
     // Simulate scraping process with more advanced parameters
     setTimeout(() => {
@@ -49,7 +60,7 @@ const JobScraper = () => {
         const { mockJobs, stats } = mockScrapedJobs(scraperSettings);
         
         if (mockJobs.length === 0) {
-          toast.warning("No jobs found with the current filter settings. Try adjusting your filters.");
+          toast.warning("No jobs found with the current filter settings. Try using fewer or broader keywords.");
           setScrapedJobs([]);
           setResultsData(null);
         } else {
@@ -60,7 +71,16 @@ const JobScraper = () => {
             dateScraped: new Date().toISOString(),
             stats: stats
           });
-          toast.success(`Successfully scraped ${mockJobs.length} jobs from ${scraperSettings.sources.length} sources`);
+          
+          // More detailed success message
+          let successMsg = `Successfully scraped ${mockJobs.length} jobs`;
+          if (scraperSettings.keywords.trim()) {
+            successMsg += ` matching "${scraperSettings.keywords.trim().substring(0, 30)}${scraperSettings.keywords.trim().length > 30 ? '...' : ''}"`;
+          }
+          if (scraperSettings.companyNames.trim()) {
+            successMsg += ` from companies like "${scraperSettings.companyNames.trim().substring(0, 30)}${scraperSettings.companyNames.trim().length > 30 ? '...' : ''}"`;
+          }
+          toast.success(successMsg);
         }
       } catch (error) {
         console.error("Error during job scraping:", error);

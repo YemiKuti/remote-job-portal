@@ -1,4 +1,3 @@
-
 import { Job } from "@/types";
 import { jobs } from "@/data/jobs";
 import { ScraperSettings } from "@/types/scraper";
@@ -19,17 +18,40 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
   
   let filteredJobs = [...mockJobs];
   
-  // Filter by company names if provided
+  // Apply keyword filtering strictly (new functionality)
+  if (settings.keywords.trim()) {
+    const keywordsList = settings.keywords.split(',').map(keyword => keyword.trim().toLowerCase());
+    
+    filteredJobs = filteredJobs.filter(job => {
+      // Check if any of the keywords appear in title or description
+      return keywordsList.some(keyword => 
+        job.title.toLowerCase().includes(keyword) || 
+        job.description.toLowerCase().includes(keyword)
+      );
+    });
+    
+    if (filteredJobs.length === 0) {
+      console.log("No jobs match keyword filter, using fallback with reduced strictness");
+      // As a fallback, try matching at least one keyword
+      filteredJobs = mockJobs.filter(job => {
+        const jobText = (job.title + " " + job.description).toLowerCase();
+        return keywordsList.some(keyword => jobText.includes(keyword));
+      });
+    }
+  }
+  
+  // Filter by company names strictly (improved filtering)
   if (settings.companyNames.trim()) {
     const companyNameList = settings.companyNames.split(',').map(name => name.trim().toLowerCase());
-    filteredJobs = filteredJobs.filter(job => 
+    const companyFilteredJobs = filteredJobs.filter(job => 
       companyNameList.some(name => job.company.toLowerCase().includes(name))
     );
     
-    // If no jobs match company filter, skip this filter
-    if (filteredJobs.length === 0) {
+    // Only if we have matches, apply this filter
+    if (companyFilteredJobs.length > 0) {
+      filteredJobs = companyFilteredJobs;
+    } else {
       console.log("No jobs match company filter, skipping this filter");
-      filteredJobs = [...mockJobs];
     }
   }
   
@@ -121,9 +143,21 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     }
   }
   
-  // If after all filters we have no jobs, return at least some of the original jobs
+  // If after all filters we have no jobs, try a more relaxed approach with just keywords
+  if (filteredJobs.length === 0 && settings.keywords.trim()) {
+    console.log("No jobs match all filters, trying with just keywords");
+    const keywordsList = settings.keywords.split(',').map(keyword => keyword.trim().toLowerCase());
+    
+    filteredJobs = mockJobs.filter(job => {
+      const jobText = (job.title + " " + job.description + " " + job.company).toLowerCase();
+      // Match if any keyword is found anywhere
+      return keywordsList.some(keyword => jobText.includes(keyword));
+    });
+  }
+  
+  // If we still have no results, return some default jobs
   if (filteredJobs.length === 0) {
-    console.log("No jobs match all filters, returning default jobs");
+    console.log("No jobs match any filters, returning default jobs");
     filteredJobs = mockJobs.slice(0, Math.min(settings.jobLimit, 10));
   }
   
@@ -224,6 +258,8 @@ const randomDateInRange = (daysBack: number): string => {
  * Enhance job title with keywords
  */
 const enhanceJobTitle = (title: string, keywords: string): string => {
+  if (!keywords.trim()) return title;
+  
   const keywordsList = keywords.split(',').map(k => k.trim());
   const specificKeywords = ['Africa', 'African', 'tech', 'developer'];
   
@@ -244,6 +280,8 @@ const enhanceJobTitle = (title: string, keywords: string): string => {
  * Enhance job description with keywords
  */
 const enhanceJobDescription = (description: string, keywords: string): string => {
+  if (!keywords.trim()) return description;
+  
   const keywordsList = keywords.split(',').map(k => k.trim());
   
   if (Math.random() > 0.3) {

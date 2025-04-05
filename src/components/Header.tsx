@@ -8,7 +8,11 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-job-green">Africantechjobs</h1>
+            <img 
+              src="/lovable-uploads/c3d4b18f-b8eb-4077-bed6-b984759a5c02.png" 
+              alt="Africantechjobs Logo" 
+              className="h-12 mr-2" 
+            />
           </Link>
           <div className="flex gap-2 sm:gap-4">
             <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">

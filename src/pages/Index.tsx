@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -5,6 +6,7 @@ import JobCard from "@/components/JobCard";
 import AdvancedFilters from "@/components/AdvancedFilters";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import FeaturedCompanies from "@/components/FeaturedCompanies";
 import { Button } from "@/components/ui/button";
 import { SearchFilters, Job } from "@/types";
 import { toast } from "sonner";
@@ -138,62 +140,72 @@ const Index = () => {
         </div>
         
         <div className="container mx-auto px-4 py-12">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold">
-              {isFiltering ? "Search Results" : "Latest Tech Jobs"}
-            </h2>
-            {isFiltering && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  const sortedJobs = [...jobs].sort((a, b) => 
-                    new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
-                  );
-                  setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-                  setIsFiltering(false);
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main content - Jobs */}
+            <div className="lg:col-span-2">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-semibold">
+                  {isFiltering ? "Search Results" : "Latest Tech Jobs"}
+                </h2>
+                {isFiltering && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      const sortedJobs = [...jobs].sort((a, b) => 
+                        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+                      );
+                      setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+                      setIsFiltering(false);
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+              
+              {filteredJobs.length > 0 ? (
+                <div className="space-y-6">
+                  {filteredJobs.map((job) => (
+                    <JobCard key={job.id} job={job} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">No jobs found</h3>
+                  <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
+                  <Button 
+                    onClick={() => {
+                      const sortedJobs = [...jobs].sort((a, b) => 
+                        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+                      );
+                      setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+                      setIsFiltering(false);
+                    }}
+                  >
+                    View All Jobs
+                  </Button>
+                </div>
+              )}
+              
+              {filteredJobs.length > 0 && (
+                <div className="mt-10 text-center">
+                  <p className="mb-4 text-gray-600">
+                    {isFiltering 
+                      ? "Want to see more search results?" 
+                      : "Want to see more tech jobs?"}
+                  </p>
+                  <Button className="bg-job-green hover:bg-job-darkGreen">
+                    <Link to="/pricing">Subscribe Now</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            {/* Sidebar content - Featured Companies */}
+            <div className="lg:col-span-1">
+              <FeaturedCompanies />
+            </div>
           </div>
-          
-          {filteredJobs.length > 0 ? (
-            <div className="space-y-6">
-              {filteredJobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <h3 className="text-xl font-medium text-gray-800 mb-2">No jobs found</h3>
-              <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
-              <Button 
-                onClick={() => {
-                  const sortedJobs = [...jobs].sort((a, b) => 
-                    new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
-                  );
-                  setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-                  setIsFiltering(false);
-                }}
-              >
-                View All Jobs
-              </Button>
-            </div>
-          )}
-          
-          {filteredJobs.length > 0 && (
-            <div className="mt-10 text-center">
-              <p className="mb-4 text-gray-600">
-                {isFiltering 
-                  ? "Want to see more search results?" 
-                  : "Want to see more tech jobs?"}
-              </p>
-              <Button className="bg-job-green hover:bg-job-darkGreen">
-                <Link to="/pricing">Subscribe Now</Link>
-              </Button>
-            </div>
-          )}
         </div>
       </main>
       

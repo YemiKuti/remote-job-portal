@@ -23,7 +23,7 @@ const testimonials: Testimonial[] = [
     name: "Jason",
     title: "Discovered top talent",
     content: "AfricanTechJobs.co.uk has emerged as an ideal solution for our hiring demands. The platform facilitated swift connection with candidates possessing the specific mix of technical skills and market insight we sought.",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?fit=crop&w=800&q=80"
   },
   {
     id: 3,

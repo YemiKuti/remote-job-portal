@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -44,7 +45,7 @@ const Pricing = () => {
       <Header />
       
       <main className="flex-grow">
-        <div className="bg-gradient-to-br from-job-blue to-job-lightBlue py-16">
+        <div className="bg-gradient-to-br from-job-green to-job-lightGreen py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Choose Your Plan

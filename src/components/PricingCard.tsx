@@ -95,7 +95,7 @@ const PricingCard = ({
       </CardContent>
       <CardFooter>
         <Button 
-          className="w-full bg-job-blue hover:bg-job-darkBlue" 
+          className="w-full bg-job-green hover:bg-job-darkGreen" 
           onClick={() => onSubscribe(localPrice, currency)}
         >
           Subscribe Now

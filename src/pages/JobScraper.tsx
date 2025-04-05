@@ -18,6 +18,15 @@ import Footer from "@/components/Footer";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Job } from "@/types";
 import { jobs } from "@/data/jobs";
+import { Calendar } from "@/components/ui/calendar";
+import { format, isAfter, isBefore, isWithinInterval, parseISO } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const JobScraper = () => {
   const [scrapedJobs, setScrapedJobs] = useState<Job[]>([]);
@@ -29,6 +38,8 @@ const JobScraper = () => {
   const [jobLimit, setJobLimit] = useState(20);
   const [autoExport, setAutoExport] = useState(false);
   const [schedule, setSchedule] = useState("daily");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const handleScrape = () => {
     setLoading(true);
@@ -51,6 +62,23 @@ const JobScraper = () => {
         mockScrapedJobs = mockScrapedJobs.filter(job => 
           companyNameList.some(name => job.company.toLowerCase().includes(name))
         );
+      }
+      
+      // Filter by date range if provided
+      if (startDate || endDate) {
+        mockScrapedJobs = mockScrapedJobs.filter(job => {
+          const jobDate = parseISO(job.postedDate);
+          
+          if (startDate && endDate) {
+            return isWithinInterval(jobDate, { start: startDate, end: endDate });
+          } else if (startDate) {
+            return isAfter(jobDate, startDate) || jobDate.getTime() === startDate.getTime();
+          } else if (endDate) {
+            return isBefore(jobDate, endDate) || jobDate.getTime() === endDate.getTime();
+          }
+          
+          return true;
+        });
       }
       
       setScrapedJobs(mockScrapedJobs);
@@ -189,6 +217,89 @@ const JobScraper = () => {
                     placeholder="Enter company names separated by commas (e.g., Google, Meta, Microsoft)"
                   />
                   <p className="text-sm text-gray-500">Filter jobs by specific companies</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Time Period</Label>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="startDate">From</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="startDate"
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !startDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "PPP") : <span>Select start date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {startDate && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs"
+                          onClick={() => setStartDate(undefined)}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="endDate">To</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="endDate"
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !endDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, "PPP") : <span>Select end date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                            disabled={startDate ? (date) => isBefore(date, startDate) : undefined}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {endDate && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs"
+                          onClick={() => setEndDate(undefined)}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500">Filter jobs by posting date range</p>
                 </div>
                 
                 <div className="space-y-2">

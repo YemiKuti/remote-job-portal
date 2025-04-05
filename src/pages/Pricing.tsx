@@ -4,17 +4,31 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PricingCard from "@/components/PricingCard";
 import { toast } from "sonner";
+import memberfulService from "@/services/memberful";
+
+// Map of plan names to Memberful plan IDs - replace with your actual plan IDs
+const MEMBERFUL_PLAN_IDS: Record<string, string> = {
+  "Monthly": "monthly-plan-id", // Replace with your Memberful plan ID
+  "3-Month": "quarterly-plan-id", // Replace with your Memberful plan ID
+  "Annual": "annual-plan-id" // Replace with your Memberful plan ID
+};
 
 const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   
   const handleSubscribe = (price: number, currency: string, plan: string) => {
     setSelectedPlan(plan);
-    toast.success(`You've selected the ${plan} plan. Payment of ${price} ${currency} will be processed.`);
-    // In a real application, we would redirect to a payment page or open a payment modal
-    setTimeout(() => {
-      toast.info("This is where we would integrate with a payment gateway like Stripe to process the payment.");
-    }, 1000);
+    
+    // Get the Memberful plan ID
+    const planId = MEMBERFUL_PLAN_IDS[plan];
+    
+    if (planId) {
+      toast.info(`Opening Memberful checkout for the ${plan} plan.`);
+      memberfulService.checkout(planId);
+    } else {
+      toast.error(`Memberful plan ID not configured for ${plan} plan.`);
+      console.error(`No Memberful plan ID configured for: ${plan}`);
+    }
   };
 
   return (
@@ -90,11 +104,11 @@ const Pricing = () => {
               </div>
               <div>
                 <h4 className="font-medium text-job-blue">How does the currency conversion work?</h4>
-                <p className="text-gray-600">Our system automatically detects your location and displays prices in your local currency. You can also manually select your preferred currency.</p>
+                <p className="text-gray-600">While you can view prices in different currencies, all payments are processed by Memberful in the default currency.</p>
               </div>
               <div>
                 <h4 className="font-medium text-job-blue">What payment methods do you accept?</h4>
-                <p className="text-gray-600">We accept all major credit cards, PayPal, and bank transfers for select countries.</p>
+                <p className="text-gray-600">We accept all major credit cards and PayPal through our Memberful integration.</p>
               </div>
             </div>
           </div>

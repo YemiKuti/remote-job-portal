@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -71,7 +72,8 @@ const Index = () => {
         return false;
       }
       
-      if (filters.experienceLevel && job.experienceLevel !== filters.experienceLevel) {
+      // Skip experience level filter if "all-levels" is selected
+      if (filters.experienceLevel && filters.experienceLevel !== "all-levels" && job.experienceLevel !== filters.experienceLevel) {
         return false;
       }
       
@@ -79,11 +81,13 @@ const Index = () => {
         return false;
       }
       
-      if (filters.companySize && job.companySize !== filters.companySize) {
+      // Skip company size filter if "all-sizes" is selected
+      if (filters.companySize && filters.companySize !== "all-sizes" && job.companySize !== filters.companySize) {
         return false;
       }
       
-      if (filters.employmentType && job.employmentType !== filters.employmentType) {
+      // Skip employment type filter if "all-types" is selected
+      if (filters.employmentType && filters.employmentType !== "all-types" && job.employmentType !== filters.employmentType) {
         return false;
       }
       

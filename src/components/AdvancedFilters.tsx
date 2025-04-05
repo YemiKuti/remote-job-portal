@@ -116,7 +116,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                     <SelectValue placeholder="Select experience level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Levels</SelectItem>
+                    <SelectItem value="all-levels">All Levels</SelectItem>
                     <SelectItem value="Entry-level">Entry-level</SelectItem>
                     <SelectItem value="Mid-level">Mid-level</SelectItem>
                     <SelectItem value="Senior">Senior</SelectItem>
@@ -135,7 +135,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                     <SelectValue placeholder="Select employment type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all-types">All Types</SelectItem>
                     <SelectItem value="Full-time">Full-time</SelectItem>
                     <SelectItem value="Part-time">Part-time</SelectItem>
                     <SelectItem value="Contract">Contract</SelectItem>
@@ -156,7 +156,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                     <SelectValue placeholder="Select company size" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sizes</SelectItem>
+                    <SelectItem value="all-sizes">All Sizes</SelectItem>
                     <SelectItem value="Startup">Startup</SelectItem>
                     <SelectItem value="Small">Small</SelectItem>
                     <SelectItem value="Medium">Medium</SelectItem>

@@ -8,13 +8,13 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-job-blue">RemoteJobBoard</h1>
+            <h1 className="text-2xl font-bold text-job-green">Africantechjobs</h1>
           </Link>
           <div className="flex gap-4">
-            <Button variant="outline" className="border-job-blue text-job-blue hover:bg-job-hover">
+            <Button variant="outline" className="border-job-green text-job-green hover:bg-job-hover">
               <Link to="/post-job">Post a Job</Link>
             </Button>
-            <Button className="bg-job-blue hover:bg-job-darkBlue">
+            <Button className="bg-job-green hover:bg-job-darkGreen">
               <Link to="/pricing">Subscribe</Link>
             </Button>
           </div>

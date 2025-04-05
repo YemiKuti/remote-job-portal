@@ -29,14 +29,14 @@ const SearchBar = ({ onSearch, onAdvancedSearch }: SearchBarProps) => {
           className="pl-10 w-full h-12"
         />
       </div>
-      <Button type="submit" className="h-12 px-6 bg-job-blue hover:bg-job-darkBlue">
+      <Button type="submit" className="h-12 px-6 bg-job-green hover:bg-job-darkGreen">
         Search
       </Button>
       <Button 
         type="button" 
         variant="outline"
         onClick={onAdvancedSearch}
-        className="h-12 border-job-blue text-job-blue hover:bg-job-hover hover:text-job-blue"
+        className="h-12 border-job-green text-job-green hover:bg-job-hover hover:text-job-green"
       >
         Filters
       </Button>

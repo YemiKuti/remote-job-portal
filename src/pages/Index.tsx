@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -19,7 +18,6 @@ const Index = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   
-  // Sort jobs by posted date (newest first) and limit to MAX_JOBS_DEFAULT
   useEffect(() => {
     const sortedJobs = [...jobs].sort((a, b) => 
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
@@ -29,7 +27,6 @@ const Index = () => {
 
   const handleSearch = (query: string) => {
     if (!query.trim()) {
-      // Reset to default view if search is empty
       const sortedJobs = [...jobs].sort((a, b) => 
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
@@ -63,47 +60,38 @@ const Index = () => {
     setIsFiltering(true);
     
     const filteredResults = jobs.filter(job => {
-      // Filter by search query
       if (filters.query && !`${job.title} ${job.company} ${job.description}`.toLowerCase().includes(filters.query.toLowerCase())) {
         return false;
       }
       
-      // Filter by location
       if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
         return false;
       }
       
-      // Filter by experience level
       if (filters.experienceLevel && job.experienceLevel !== filters.experienceLevel) {
         return false;
       }
       
-      // Filter by visa sponsorship
       if (filters.visaSponsorship !== null && job.visaSponsorship !== filters.visaSponsorship) {
         return false;
       }
       
-      // Filter by company size
       if (filters.companySize && job.companySize !== filters.companySize) {
         return false;
       }
       
-      // Filter by employment type
       if (filters.employmentType && job.employmentType !== filters.employmentType) {
         return false;
       }
       
-      // Filter by tech stack
       if (filters.techStack.length > 0 && !filters.techStack.some(tech => job.techStack.includes(tech))) {
         return false;
       }
       
-      // Filter by minimum salary
       if (filters.minSalary !== null && job.salary.min < filters.minSalary) {
         return false;
       }
       
-      // Filter out jobs with hide keywords
       if (filters.hideKeywords.length > 0) {
         const jobText = `${job.title} ${job.company} ${job.description} ${job.techStack.join(' ')}`.toLowerCase();
         if (filters.hideKeywords.some(keyword => jobText.includes(keyword.toLowerCase()))) {
@@ -132,13 +120,13 @@ const Index = () => {
       <Header />
       
       <main className="flex-grow">
-        <div className="bg-gradient-to-br from-job-blue to-job-lightBlue py-16">
+        <div className="bg-gradient-to-br from-job-green to-job-lightGreen py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Find Your Perfect Remote Job
+              Find Your Perfect Tech Job in Africa
             </h1>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Discover remote opportunities from companies worldwide
+              Discover tech opportunities from companies across Africa
             </p>
             <div className="flex justify-center">
               <SearchBar 
@@ -152,7 +140,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-12">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-semibold">
-              {isFiltering ? "Search Results" : "Latest Remote Jobs"}
+              {isFiltering ? "Search Results" : "Latest Tech Jobs"}
             </h2>
             {isFiltering && (
               <Button 
@@ -199,9 +187,9 @@ const Index = () => {
               <p className="mb-4 text-gray-600">
                 {isFiltering 
                   ? "Want to see more search results?" 
-                  : "Want to see more remote jobs?"}
+                  : "Want to see more tech jobs?"}
               </p>
-              <Button className="bg-job-blue hover:bg-job-darkBlue">
+              <Button className="bg-job-green hover:bg-job-darkGreen">
                 <Link to="/pricing">Subscribe Now</Link>
               </Button>
             </div>

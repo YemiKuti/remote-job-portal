@@ -23,14 +23,14 @@ const JobScraper = () => {
   const [resultsData, setResultsData] = useState<ScraperResultData | null>(null);
   const [scraperSettings, setScraperSettings] = useState<ScraperSettings>({
     countries: ["USA", "UK", "Canada"],
-    keywords: "tech, developer, engineer, Africa, African, sustainability, green, renewable",
+    keywords: "tech, developer, engineer, Africa, African",
     companyNames: "",
     jobLimit: 20,
     autoExport: false,
     schedule: "daily",
     startDate: undefined,
     endDate: undefined,
-    sources: ["LinkedIn", "Indeed", "Glassdoor", "StackOverflow", "GreenJobs", "SustainableCareers"],
+    sources: ["LinkedIn", "Indeed", "Glassdoor", "StackOverflow"],
     jobTypes: ["Full-time"],
     experienceLevels: ["Entry-level", "Mid-level"],
     salaryRange: { min: 0, max: 200000 },
@@ -54,12 +54,6 @@ const JobScraper = () => {
     companyInfoEnrichment: false,
     structuredDataExtraction: true,
     semanticSearch: false,
-    // Sustainability features
-    sustainabilityFocus: false,
-    greenJobsOnly: false,
-    esgScoring: false,
-    carbonFootprintData: false,
-    sustainableTechStack: false
   });
 
   const handleScrape = () => {
@@ -75,16 +69,6 @@ const JobScraper = () => {
     // Check if we have company names
     if (scraperSettings.companyNames.trim()) {
       toast.info(`Filtering for companies: ${scraperSettings.companyNames}...`);
-    }
-    
-    // Sustainability focus notification
-    if (scraperSettings.sustainabilityFocus) {
-      toast.info("Applying sustainability focus to job search");
-    }
-    
-    // Green jobs only notification
-    if (scraperSettings.greenJobsOnly) {
-      toast.info("Filtering for green and sustainability-focused jobs only");
     }
     
     // New: Add proxy notification
@@ -133,11 +117,6 @@ const JobScraper = () => {
             toast.success("AI enhancement applied: improved job descriptions and matched skills");
           }
           
-          // New: Sustainability scoring notification
-          if (scraperSettings.esgScoring) {
-            toast.success("ESG scoring applied to companies in search results");
-          }
-          
           setScrapedJobs(mockJobs);
           setResultsData({
             totalResults: mockJobs.length,
@@ -154,7 +133,6 @@ const JobScraper = () => {
             const activeFilters = [];
             if (scraperSettings.keywords.trim()) activeFilters.push("keywords");
             if (scraperSettings.companyNames.trim()) activeFilters.push("companies");
-            if (scraperSettings.sustainabilityFocus) activeFilters.push("sustainability focus");
             if (activeFilters.length > 0) {
               successMsg += ` filtered by ${activeFilters.join(" and ")}`;
             }
@@ -180,16 +158,15 @@ const JobScraper = () => {
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-job-green mb-2">Enhanced Job Scraper Tool</h1>
-          <p className="text-gray-600">Advanced scraping with multiple data sources, sustainability focus, and intelligent filtering</p>
+          <p className="text-gray-600">Advanced scraping with multiple data sources and intelligent filtering</p>
         </div>
         
         <div className="grid md:grid-cols-5 gap-8">
           <div className="md:col-span-2 space-y-6">
             <Tabs defaultValue="filters">
-              <TabsList className="grid grid-cols-4 mb-4">
+              <TabsList className="grid grid-cols-3 mb-4">
                 <TabsTrigger value="filters">Settings</TabsTrigger>
                 <TabsTrigger value="sources">Sources</TabsTrigger>
-                <TabsTrigger value="sustainability">Green Jobs</TabsTrigger>
                 <TabsTrigger value="automation">Automation</TabsTrigger>
               </TabsList>
               
@@ -213,109 +190,6 @@ const JobScraper = () => {
                       settings={scraperSettings}
                       setSettings={setScraperSettings}
                     />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="sustainability" className="space-y-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-medium mb-4">Sustainability Options</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="sustainabilityFocus"
-                            checked={scraperSettings.sustainabilityFocus}
-                            onChange={(e) => setScraperSettings({
-                              ...scraperSettings,
-                              sustainabilityFocus: e.target.checked
-                            })}
-                            className="h-4 w-4 rounded border-gray-300 text-job-green focus:ring-job-green"
-                          />
-                          <label htmlFor="sustainabilityFocus" className="text-sm font-medium text-gray-700">
-                            Focus on sustainability-related jobs
-                          </label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="greenJobsOnly"
-                            checked={scraperSettings.greenJobsOnly}
-                            onChange={(e) => setScraperSettings({
-                              ...scraperSettings,
-                              greenJobsOnly: e.target.checked
-                            })}
-                            className="h-4 w-4 rounded border-gray-300 text-job-green focus:ring-job-green"
-                          />
-                          <label htmlFor="greenJobsOnly" className="text-sm font-medium text-gray-700">
-                            Show only green jobs
-                          </label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="esgScoring"
-                            checked={scraperSettings.esgScoring}
-                            onChange={(e) => setScraperSettings({
-                              ...scraperSettings,
-                              esgScoring: e.target.checked
-                            })}
-                            className="h-4 w-4 rounded border-gray-300 text-job-green focus:ring-job-green"
-                          />
-                          <label htmlFor="esgScoring" className="text-sm font-medium text-gray-700">
-                            Include ESG scores for companies
-                          </label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="carbonFootprintData"
-                            checked={scraperSettings.carbonFootprintData}
-                            onChange={(e) => setScraperSettings({
-                              ...scraperSettings,
-                              carbonFootprintData: e.target.checked
-                            })}
-                            className="h-4 w-4 rounded border-gray-300 text-job-green focus:ring-job-green"
-                          />
-                          <label htmlFor="carbonFootprintData" className="text-sm font-medium text-gray-700">
-                            Include carbon footprint data
-                          </label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="sustainableTechStack"
-                            checked={scraperSettings.sustainableTechStack}
-                            onChange={(e) => setScraperSettings({
-                              ...scraperSettings,
-                              sustainableTechStack: e.target.checked
-                            })}
-                            className="h-4 w-4 rounded border-gray-300 text-job-green focus:ring-job-green"
-                          />
-                          <label htmlFor="sustainableTechStack" className="text-sm font-medium text-gray-700">
-                            Highlight jobs with sustainable tech stacks
-                          </label>
-                        </div>
-                        
-                        <div className="pt-4">
-                          <p className="text-sm text-gray-500">These options will refine your job search to focus on sustainability and environmental positions across industries.</p>
-                        </div>
-                        
-                        <Button 
-                          onClick={handleScrape} 
-                          disabled={loading}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {loading ? "Scraping..." : "Find Green Jobs"}
-                        </Button>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

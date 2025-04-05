@@ -35,6 +35,12 @@ export interface ScraperSettings {
   companyInfoEnrichment: boolean;
   structuredDataExtraction: boolean;
   semanticSearch: boolean;
+  // Sustainability features
+  sustainabilityFocus: boolean;
+  greenJobsOnly: boolean;
+  esgScoring: boolean;
+  carbonFootprintData: boolean;
+  sustainableTechStack: boolean;
 }
 
 export interface ScraperResultData {

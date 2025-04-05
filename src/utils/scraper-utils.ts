@@ -1,4 +1,3 @@
-
 import { Job } from "@/types";
 import { jobs } from "@/data/jobs";
 import { ScraperSettings } from "@/types/scraper";
@@ -13,8 +12,8 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     ...job,
     id: `scraped-${Math.random().toString(36).substring(2, 9)}`,
     postedDate: randomDateInRange(30),
-    title: enhanceJobTitle(job.title, settings.keywords),
-    description: enhanceJobDescription(job.description, settings.keywords),
+    title: enhanceJobTitle(job.title, settings.keywords, settings.sustainabilityFocus),
+    description: enhanceJobDescription(job.description, settings.keywords, settings.sustainabilityFocus),
   }));
   
   let filteredJobs = [...mockJobs];
@@ -56,6 +55,33 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
       console.log(`After company filtering: ${filteredJobs.length} jobs match`);
     } else {
       console.log("No jobs match company filter exactly, skipping this filter");
+    }
+  }
+  
+  // New: Apply sustainability filters
+  if (settings.sustainabilityFocus || settings.greenJobsOnly) {
+    const sustainabilityKeywords = [
+      'sustainability', 'sustainable', 'green', 'renewable', 'climate', 
+      'environmental', 'eco', 'carbon', 'clean energy', 'solar', 'wind', 
+      'esg', 'recycling', 'conservation', 'biodiversity'
+    ];
+    
+    const sustainabilityFilteredJobs = filteredJobs.filter(job => {
+      const jobText = `${job.title} ${job.description}`.toLowerCase();
+      return sustainabilityKeywords.some(keyword => jobText.includes(keyword));
+    });
+    
+    // For greenJobsOnly, strictly enforce this filter
+    if (settings.greenJobsOnly) {
+      filteredJobs = sustainabilityFilteredJobs;
+      console.log(`After green jobs filtering: ${filteredJobs.length} jobs match`);
+    } 
+    // For sustainabilityFocus, only apply if we have matches
+    else if (settings.sustainabilityFocus && sustainabilityFilteredJobs.length > 0) {
+      filteredJobs = sustainabilityFilteredJobs;
+      console.log(`After sustainability focus filtering: ${filteredJobs.length} jobs match`);
+    } else if (settings.sustainabilityFocus) {
+      console.log("No jobs match sustainability criteria, skipping this filter");
     }
   }
   
@@ -155,14 +181,34 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     console.log(`After data cleaning: ${filteredJobs.length} jobs`);
   }
   
+  // New: Add ESG scores if enabled
+  if (settings.esgScoring) {
+    filteredJobs = addESGScores(filteredJobs);
+  }
+  
+  // New: Add carbon footprint data if enabled
+  if (settings.carbonFootprintData) {
+    filteredJobs = addCarbonFootprintData(filteredJobs);
+  }
+  
+  // New: Highlight sustainable tech stacks
+  if (settings.sustainableTechStack) {
+    filteredJobs = highlightSustainableTech(filteredJobs);
+  }
+  
   // Fallback: If filtering was applied but no results, try to give relevant results
   if (filteringApplied && filteredJobs.length === 0) {
     console.log("No jobs match all filters, providing most relevant matches instead");
     
     // Create a scoring system to rank jobs by relevance to keywords and company names
-    if (settings.keywords.trim() || settings.companyNames.trim()) {
+    if (settings.keywords.trim() || settings.companyNames.trim() || settings.sustainabilityFocus) {
       const keywordsList = settings.keywords.split(',').map(keyword => keyword.trim().toLowerCase());
       const companyList = settings.companyNames.split(',').map(name => name.trim().toLowerCase());
+      
+      // Add sustainability keywords if that filter is enabled
+      if (settings.sustainabilityFocus) {
+        keywordsList.push(...['sustainability', 'green', 'renewable', 'climate', 'environmental']);
+      }
       
       // Score each job based on how well it matches the search criteria
       const scoredJobs = mockJobs.map(job => {
@@ -226,6 +272,119 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     mockJobs: filteredJobs,
     stats
   };
+};
+
+/**
+ * Add ESG scores to companies in job listings
+ */
+const addESGScores = (jobs: Job[]): Job[] => {
+  // Mock ESG data for companies - in real implementation this would come from an API
+  const esgScores: {[company: string]: {score: number, rating: string}} = {
+    'Google': {score: 85, rating: 'High ESG performer'},
+    'Microsoft': {score: 88, rating: 'High ESG performer'},
+    'Apple': {score: 82, rating: 'High ESG performer'},
+    'Amazon': {score: 65, rating: 'Medium ESG performer'},
+    'Meta': {score: 70, rating: 'Medium ESG performer'},
+    'Tesla': {score: 75, rating: 'Medium ESG performer'},
+    'IBM': {score: 80, rating: 'High ESG performer'},
+    'Netflix': {score: 68, rating: 'Medium ESG performer'}
+  };
+  
+  // Add ESG scores to job listings
+  return jobs.map(job => {
+    const companyName = Object.keys(esgScores).find(name => 
+      job.company.toLowerCase().includes(name.toLowerCase())
+    );
+    
+    if (companyName && esgScores[companyName]) {
+      return {
+        ...job,
+        description: `${job.description}\n\nESG Score: ${esgScores[companyName].score}/100 - ${esgScores[companyName].rating}`
+      };
+    }
+    
+    // Generate a random ESG score for companies not in our database
+    const randomScore = Math.floor(Math.random() * 30) + 50; // 50-80 range
+    const rating = randomScore >= 75 ? 'High ESG performer' : 
+                 randomScore >= 60 ? 'Medium ESG performer' : 'Low ESG performer';
+                 
+    return {
+      ...job,
+      description: `${job.description}\n\nESG Score: ${randomScore}/100 - ${rating}`
+    };
+  });
+};
+
+/**
+ * Add carbon footprint data to job listings
+ */
+const addCarbonFootprintData = (jobs: Job[]): Job[] => {
+  // Mock carbon data for industries - in real implementation this would come from an API
+  const carbonData: {[industry: string]: string} = {
+    'Tech': 'Low carbon footprint industry',
+    'Energy': 'High carbon footprint industry, with renewable transitions underway',
+    'Manufacturing': 'Medium-high carbon footprint industry',
+    'Healthcare': 'Medium carbon footprint industry',
+    'Finance': 'Low-medium carbon footprint industry',
+    'Education': 'Low carbon footprint industry',
+    'Retail': 'Medium carbon footprint industry'
+  };
+  
+  // Add carbon footprint data to job listings
+  return jobs.map(job => {
+    // Determine industry from job title or description
+    let industry = 'Tech'; // Default
+    
+    if (job.title.includes('Energy') || job.description.includes('energy sector')) {
+      industry = 'Energy';
+    } else if (job.title.includes('Manufacturing') || job.description.includes('manufacturing')) {
+      industry = 'Manufacturing';
+    } else if (job.title.includes('Health') || job.description.includes('healthcare')) {
+      industry = 'Healthcare';
+    } else if (job.title.includes('Finance') || job.description.includes('financial')) {
+      industry = 'Finance';
+    } else if (job.title.includes('Education') || job.description.includes('education')) {
+      industry = 'Education';
+    } else if (job.title.includes('Retail') || job.description.includes('retail')) {
+      industry = 'Retail';
+    }
+    
+    return {
+      ...job,
+      description: `${job.description}\n\nIndustry Carbon Impact: ${carbonData[industry]}`
+    };
+  });
+};
+
+/**
+ * Highlight jobs with sustainable tech stacks
+ */
+const highlightSustainableTech = (jobs: Job[]): Job[] => {
+  // Sustainable technologies
+  const sustainableTech = [
+    'renewable energy', 'solar', 'wind', 'geothermal', 'hydroelectric',
+    'energy efficiency', 'green cloud', 'carbon accounting', 'emissions tracking',
+    'python', 'r', 'data science', 'machine learning', 'api', 'golang',
+    'sustainability reporting', 'esg data', 'lifecycle assessment'
+  ];
+  
+  return jobs.map(job => {
+    const techMatches = sustainableTech.filter(tech => 
+      job.description.toLowerCase().includes(tech) || 
+      job.techStack.some(t => t.toLowerCase().includes(tech))
+    );
+    
+    if (techMatches.length > 0) {
+      // Highlight this job as having sustainable tech
+      return {
+        ...job,
+        description: `${job.description}\n\nSustainable Technologies: ${techMatches.join(', ')}`,
+        title: `${job.title} 🌱` // Add a leaf emoji to indicate sustainable tech
+      };
+    }
+    
+    return job;
+  });
 };
 
 /**
@@ -360,18 +519,23 @@ const randomDateInRange = (daysBack: number): string => {
 };
 
 /**
- * Enhance job title with keywords - now ensures exact keyword usage
+ * Enhance job title with keywords - now ensures exact keyword usage and sustainability focus
  */
-const enhanceJobTitle = (title: string, keywords: string): string => {
-  if (!keywords.trim()) return title;
+const enhanceJobTitle = (title: string, keywords: string, sustainabilityFocus: boolean): string => {
+  if (!keywords.trim() && !sustainabilityFocus) return title;
   
   const keywordsList = keywords.split(',').map(k => k.trim());
-  const specificKeywords = ['Africa', 'African', 'tech', 'developer'];
+  const specificKeywords = ['Africa', 'African', 'tech', 'developer', 'sustainability', 'green'];
   
-  // Only add Africa-related keywords to title if they're in the search
+  // Only add specific keywords to title if they're in the search
   const relevantKeywords = keywordsList.filter(keyword => 
     specificKeywords.includes(keyword) && !title.includes(keyword)
   );
+  
+  if (sustainabilityFocus && !title.toLowerCase().includes('sustainability') && 
+      !title.toLowerCase().includes('green') && Math.random() > 0.7) {
+    return `${title} (Sustainability Focus)`;
+  }
   
   if (relevantKeywords.length > 0 && Math.random() > 0.5) {
     const keyword = relevantKeywords[Math.floor(Math.random() * relevantKeywords.length)];
@@ -382,10 +546,10 @@ const enhanceJobTitle = (title: string, keywords: string): string => {
 };
 
 /**
- * Enhance job description with keywords - now ensures exact keyword usage
+ * Enhance job description with keywords - now ensures exact keyword usage and sustainability focus
  */
-const enhanceJobDescription = (description: string, keywords: string): string => {
-  if (!keywords.trim()) return description;
+const enhanceJobDescription = (description: string, keywords: string, sustainabilityFocus: boolean): string => {
+  if (!keywords.trim() && !sustainabilityFocus) return description;
   
   const keywordsList = keywords.split(',').map(k => k.trim());
   
@@ -394,6 +558,26 @@ const enhanceJobDescription = (description: string, keywords: string): string =>
     ['africa', 'african'].includes(k.toLowerCase())
   );
   
+  // Add sustainability context if needed
+  if (sustainabilityFocus && Math.random() > 0.4) {
+    const sustainabilityPhrases = [
+      "This position contributes to our organization's sustainability goals.",
+      "We're looking for candidates passionate about environmental impact.",
+      "This role helps drive our green initiatives forward.",
+      "Join our team working on solutions for a more sustainable future.",
+      "This position is part of our commitment to environmental stewardship."
+    ];
+    
+    const phrase = sustainabilityPhrases[Math.floor(Math.random() * sustainabilityPhrases.length)];
+    
+    if (hasAfricanKeywords) {
+      return `${phrase} Additionally, this position specifically targets African tech talent. ${description}`;
+    }
+    
+    return `${phrase} ${description}`;
+  }
+  
+  // Otherwise use the original African talent enhancement if those keywords are present
   if (hasAfricanKeywords && Math.random() > 0.3) {
     const enhancementPhrases = [
       "This position specifically targets African tech talent.",

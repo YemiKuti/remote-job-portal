@@ -94,12 +94,31 @@ const Pricing = () => {
                 <p className="text-gray-600">Yes, you can cancel your subscription at any time. Your access will remain until the end of your billing period.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-green">How does the currency conversion work?</h4>
-                <p className="text-gray-600">All payments are processed in British Pounds (GBP) through our Memberful integration.</p>
+                <h4 className="font-medium text-job-green">How do I manage my account?</h4>
+                <p className="text-gray-600">To manage your account, simply click on "Account" located in the top right corner of the website. This will open the account menu where you can manage all aspects of your membership.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-green">What payment methods do you accept?</h4>
-                <p className="text-gray-600">We accept all major credit cards and PayPal through our Memberful integration.</p>
+                <h4 className="font-medium text-job-green">What can I do from the account menu?</h4>
+                <p className="text-gray-600">From your account menu, you can:
+                View and manage your subscriptions.
+                Access and download payment receipts.
+                Update your personal information such as name, email address, and password.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-job-green">How do I update my account information?</h4>
+                <p className="text-gray-600">To update your account information (name, email, password, etc.), navigate to the "Account" section within the menu.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-job-green">Where can I find my subscription details?</h4>
+                <p className="text-gray-600">Your subscription details, including current plan information and billing cycle, can be found under the "Subscriptions" section in your account menu.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-job-green">Can I manage multiple subscriptions from one account?</h4>
+                <p className="text-gray-600">Yes, if you have multiple subscriptions, you can manage them all conveniently from your account menu under the "Subscriptions" section.</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-job-green">How can I contact customer support regarding my account?</h4>
+                <p className="text-gray-600">For any account-related inquiries or assistance, please reach out to us at hello@africantechjobs.co.uk</p>
               </div>
             </div>
           </div>

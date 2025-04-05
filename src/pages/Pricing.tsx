@@ -90,15 +90,15 @@ const Pricing = () => {
             <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
             <div className="space-y-4">
               <div>
-                <h4 className="font-medium text-job-blue">Can I cancel my subscription?</h4>
+                <h4 className="font-medium text-job-green">Can I cancel my subscription?</h4>
                 <p className="text-gray-600">Yes, you can cancel your subscription at any time. Your access will remain until the end of your billing period.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-blue">How does the currency conversion work?</h4>
+                <h4 className="font-medium text-job-green">How does the currency conversion work?</h4>
                 <p className="text-gray-600">All payments are processed in British Pounds (GBP) through our Memberful integration.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-blue">What payment methods do you accept?</h4>
+                <h4 className="font-medium text-job-green">What payment methods do you accept?</h4>
                 <p className="text-gray-600">We accept all major credit cards and PayPal through our Memberful integration.</p>
               </div>
             </div>

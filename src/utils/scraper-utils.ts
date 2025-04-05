@@ -17,17 +17,25 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
     description: enhanceJobDescription(job.description, settings.keywords),
   }));
   
+  let filteredJobs = [...mockJobs];
+  
   // Filter by company names if provided
   if (settings.companyNames.trim()) {
     const companyNameList = settings.companyNames.split(',').map(name => name.trim().toLowerCase());
-    mockJobs = mockJobs.filter(job => 
+    filteredJobs = filteredJobs.filter(job => 
       companyNameList.some(name => job.company.toLowerCase().includes(name))
     );
+    
+    // If no jobs match company filter, skip this filter
+    if (filteredJobs.length === 0) {
+      console.log("No jobs match company filter, skipping this filter");
+      filteredJobs = [...mockJobs];
+    }
   }
   
   // Filter by date range if provided
   if (settings.startDate || settings.endDate) {
-    mockJobs = mockJobs.filter(job => {
+    const dateFilteredJobs = filteredJobs.filter(job => {
       const jobDate = parseISO(job.postedDate);
       
       if (settings.startDate && settings.endDate) {
@@ -40,45 +48,93 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
       
       return true;
     });
+    
+    // If no jobs match date filter, skip this filter
+    if (dateFilteredJobs.length === 0) {
+      console.log("No jobs match date filter, skipping this filter");
+    } else {
+      filteredJobs = dateFilteredJobs;
+    }
   }
   
   // Filter by job types
   if (settings.jobTypes.length > 0) {
-    mockJobs = mockJobs.filter(job => 
+    const typeFilteredJobs = filteredJobs.filter(job => 
       settings.jobTypes.includes(job.employmentType)
     );
+    
+    // If no jobs match job type filter, skip this filter
+    if (typeFilteredJobs.length === 0) {
+      console.log("No jobs match job type filter, skipping this filter");
+    } else {
+      filteredJobs = typeFilteredJobs;
+    }
   }
   
   // Filter by experience levels
   if (settings.experienceLevels.length > 0) {
-    mockJobs = mockJobs.filter(job => 
+    const expFilteredJobs = filteredJobs.filter(job => 
       settings.experienceLevels.includes(job.experienceLevel)
     );
+    
+    // If no jobs match experience level filter, skip this filter
+    if (expFilteredJobs.length === 0) {
+      console.log("No jobs match experience level filter, skipping this filter");
+    } else {
+      filteredJobs = expFilteredJobs;
+    }
   }
   
   // Filter by salary range
-  mockJobs = mockJobs.filter(job => 
+  const salaryFilteredJobs = filteredJobs.filter(job => 
     job.salary.min >= settings.salaryRange.min && job.salary.max <= settings.salaryRange.max
   );
   
+  // If no jobs match salary filter, skip this filter
+  if (salaryFilteredJobs.length === 0) {
+    console.log("No jobs match salary filter, skipping this filter");
+  } else {
+    filteredJobs = salaryFilteredJobs;
+  }
+  
   // Filter by remote option
   if (!settings.includeRemote) {
-    mockJobs = mockJobs.filter(job => !job.remote);
+    const remoteFilteredJobs = filteredJobs.filter(job => !job.remote);
+    
+    // If no jobs match remote filter, skip this filter
+    if (remoteFilteredJobs.length === 0) {
+      console.log("No jobs match remote filter, skipping this filter");
+    } else {
+      filteredJobs = remoteFilteredJobs;
+    }
   }
   
   // Filter by visa sponsorship
   if (!settings.includeVisaSponsorship) {
-    mockJobs = mockJobs.filter(job => !job.visaSponsorship);
+    const visaFilteredJobs = filteredJobs.filter(job => !job.visaSponsorship);
+    
+    // If no jobs match visa filter, skip this filter
+    if (visaFilteredJobs.length === 0) {
+      console.log("No jobs match visa filter, skipping this filter");
+    } else {
+      filteredJobs = visaFilteredJobs;
+    }
+  }
+  
+  // If after all filters we have no jobs, return at least some of the original jobs
+  if (filteredJobs.length === 0) {
+    console.log("No jobs match all filters, returning default jobs");
+    filteredJobs = mockJobs.slice(0, Math.min(settings.jobLimit, 10));
   }
   
   // Limit the number of jobs
-  mockJobs = mockJobs.slice(0, settings.jobLimit);
+  filteredJobs = filteredJobs.slice(0, settings.jobLimit);
   
   // Generate stats for analytics
-  const stats = generateJobStats(mockJobs, settings);
+  const stats = generateJobStats(filteredJobs, settings);
   
   return {
-    mockJobs,
+    mockJobs: filteredJobs,
     stats
   };
 };

@@ -44,19 +44,30 @@ const JobScraper = () => {
     
     // Simulate scraping process with more advanced parameters
     setTimeout(() => {
-      // Use our utility function to get mock data
-      const { mockJobs, stats } = mockScrapedJobs(scraperSettings);
-      
-      setScrapedJobs(mockJobs);
-      setResultsData({
-        totalResults: mockJobs.length,
-        sources: scraperSettings.sources,
-        dateScraped: new Date().toISOString(),
-        stats: stats
-      });
-      
-      setLoading(false);
-      toast.success(`Successfully scraped ${mockJobs.length} jobs from ${scraperSettings.sources.length} sources`);
+      try {
+        // Use our utility function to get mock data
+        const { mockJobs, stats } = mockScrapedJobs(scraperSettings);
+        
+        if (mockJobs.length === 0) {
+          toast.warning("No jobs found with the current filter settings. Try adjusting your filters.");
+          setScrapedJobs([]);
+          setResultsData(null);
+        } else {
+          setScrapedJobs(mockJobs);
+          setResultsData({
+            totalResults: mockJobs.length,
+            sources: scraperSettings.sources,
+            dateScraped: new Date().toISOString(),
+            stats: stats
+          });
+          toast.success(`Successfully scraped ${mockJobs.length} jobs from ${scraperSettings.sources.length} sources`);
+        }
+      } catch (error) {
+        console.error("Error during job scraping:", error);
+        toast.error("An error occurred during job scraping. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }, 2000);
   };
 

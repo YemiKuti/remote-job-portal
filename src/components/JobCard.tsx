@@ -1,5 +1,6 @@
 
-import { Job, formatSalary, getTimeAgo } from "../data/jobs";
+import { Job } from "../types";
+import { formatSalary, getTimeAgo } from "../data/jobs";
 import { MapPin, Briefcase, Clock, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 

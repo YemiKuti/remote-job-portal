@@ -16,21 +16,21 @@ const testimonials: Testimonial[] = [
     name: "Bodunde",
     title: "Found my tribe",
     content: "I had struggled to find job opportunities that matched my expertise but this platform helped me find numerous businesses who valued my experience and understanging of the African market. Highly recommended!",
-    image: "/lovable-uploads/8021a706-d45e-4049-a9e1-f76e38da88a9.png"
+    image: "https://images.unsplash.com/photo-1472396961693-142e6e269027"
   },
   {
     id: 2,
     name: "Jason",
     title: "Discovered top talent",
     content: "AfricanTechJobs.co.uk has emerged as an ideal solution for our hiring demands. The platform facilitated swift connection with candidates possessing the specific mix of technical skills and market insight we sought.",
-    image: "/lovable-uploads/8021a706-d45e-4049-a9e1-f76e38da88a9.png"
+    image: "https://images.unsplash.com/photo-1466721591366-2d5fba72006d"
   },
   {
     id: 3,
     name: "Chiedza",
     title: "The platform is awesome",
     content: "The website helped me overcome the frustrations of continuous job rejections. I found the platform incredibly user-friendly and efficient in landing my dream job. Glad to be helping empower the continent",
-    image: "/lovable-uploads/8021a706-d45e-4049-a9e1-f76e38da88a9.png"
+    image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9"
   }
 ];
 

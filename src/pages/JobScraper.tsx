@@ -60,7 +60,7 @@ const JobScraper = () => {
         const { mockJobs, stats } = mockScrapedJobs(scraperSettings);
         
         if (mockJobs.length === 0) {
-          toast.warning("No jobs found with the current filter settings. Try using fewer or broader keywords.");
+          toast.warning("No jobs found with the current filter settings. Try using different keywords or fewer filters.");
           setScrapedJobs([]);
           setResultsData(null);
         } else {
@@ -72,15 +72,22 @@ const JobScraper = () => {
             stats: stats
           });
           
-          // More detailed success message
-          let successMsg = `Successfully scraped ${mockJobs.length} jobs`;
-          if (scraperSettings.keywords.trim()) {
-            successMsg += ` matching "${scraperSettings.keywords.trim().substring(0, 30)}${scraperSettings.keywords.trim().length > 30 ? '...' : ''}"`;
+          if (scraperSettings.keywords.trim() || scraperSettings.companyNames.trim()) {
+            // Provide detailed success message for exact matching
+            let successMsg = `Successfully found ${mockJobs.length} matching jobs`;
+            
+            // Mention which filters were applied
+            const activeFilters = [];
+            if (scraperSettings.keywords.trim()) activeFilters.push("keywords");
+            if (scraperSettings.companyNames.trim()) activeFilters.push("companies");
+            if (activeFilters.length > 0) {
+              successMsg += ` filtered by ${activeFilters.join(" and ")}`;
+            }
+            
+            toast.success(successMsg);
+          } else {
+            toast.success(`Found ${mockJobs.length} jobs. For more specific results, try adding keywords or company names.`);
           }
-          if (scraperSettings.companyNames.trim()) {
-            successMsg += ` from companies like "${scraperSettings.companyNames.trim().substring(0, 30)}${scraperSettings.companyNames.trim().length > 30 ? '...' : ''}"`;
-          }
-          toast.success(successMsg);
         }
       } catch (error) {
         console.error("Error during job scraping:", error);

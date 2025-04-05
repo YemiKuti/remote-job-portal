@@ -25,6 +25,7 @@ const JobScraper = () => {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [countries, setCountries] = useState<string[]>(["USA", "UK", "Canada"]);
   const [keywords, setKeywords] = useState("tech, developer, engineer, Africa, African");
+  const [companyNames, setCompanyNames] = useState("");
   const [jobLimit, setJobLimit] = useState(20);
   const [autoExport, setAutoExport] = useState(false);
   const [schedule, setSchedule] = useState("daily");
@@ -36,13 +37,21 @@ const JobScraper = () => {
     // Simulate scraping process
     setTimeout(() => {
       // For demo purposes, we'll use the existing jobs data and modify it
-      const mockScrapedJobs = [...jobs].map(job => ({
+      let mockScrapedJobs = [...jobs].map(job => ({
         ...job,
         id: `scraped-${Math.random().toString(36).substring(2, 9)}`,
         postedDate: new Date().toISOString(),
         title: job.title + " (Africa Focus)",
         description: "This is a position specifically targeting African tech talent. " + job.description,
       }));
+      
+      // Filter by company names if provided
+      if (companyNames.trim()) {
+        const companyNameList = companyNames.split(',').map(name => name.trim().toLowerCase());
+        mockScrapedJobs = mockScrapedJobs.filter(job => 
+          companyNameList.some(name => job.company.toLowerCase().includes(name))
+        );
+      }
       
       setScrapedJobs(mockScrapedJobs);
       setLoading(false);
@@ -169,6 +178,17 @@ const JobScraper = () => {
                     placeholder="Enter keywords separated by commas"
                   />
                   <p className="text-sm text-gray-500">These keywords will be used to filter for Africa-focused jobs</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="companyNames">Company Names</Label>
+                  <Textarea 
+                    id="companyNames"
+                    value={companyNames}
+                    onChange={(e) => setCompanyNames(e.target.value)}
+                    placeholder="Enter company names separated by commas (e.g., Google, Meta, Microsoft)"
+                  />
+                  <p className="text-sm text-gray-500">Filter jobs by specific companies</p>
                 </div>
                 
                 <div className="space-y-2">

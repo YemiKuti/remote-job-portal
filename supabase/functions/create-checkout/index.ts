@@ -24,8 +24,8 @@ serve(async (req) => {
     logStep("Function started");
 
     // Get request data
-    const { plan, annual } = await req.json();
-    logStep("Received request data", { plan, annual });
+    const { plan, annual, userType } = await req.json();
+    logStep("Received request data", { plan, annual, userType });
 
     // Verify authentication
     const supabaseClient = createClient(
@@ -70,18 +70,47 @@ serve(async (req) => {
       logStep("Created new customer", { customerId });
     }
 
-    // Get price ID based on the plan and billing frequency
-    const priceId = getPriceId(plan, annual);
-    logStep("Determined price ID", { priceId });
+    // Create product if it doesn't exist
+    const productName = getProductName(userType, plan);
+    const productDescription = getProductDescription(userType, plan);
+    const productInterval = getProductInterval(plan);
+    const productPrice = calculatePrice(userType, plan, annual);
+
+    logStep("Creating checkout session with", { 
+      productName, 
+      productDescription, 
+      productInterval, 
+      productPrice,
+      annual
+    });
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
+      line_items: [{
+        price_data: {
+          currency: "gbp",
+          product_data: {
+            name: productName,
+            description: productDescription,
+          },
+          unit_amount: productPrice * 100, // Convert to cents
+          recurring: productInterval ? {
+            interval: productInterval
+          } : undefined,
+        },
+        quantity: 1,
+      }],
+      mode: productInterval ? "subscription" : "payment",
       success_url: `${req.headers.get("origin")}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/pricing`,
+      metadata: {
+        userId: user.id,
+        plan: plan,
+        userType: userType,
+        annual: annual ? "true" : "false"
+      }
     });
 
     logStep("Checkout session created", { sessionId: session.id });
@@ -100,30 +129,53 @@ serve(async (req) => {
   }
 });
 
-// Helper function to get price ID based on plan and billing frequency
-function getPriceId(plan: string, annual: boolean): string {
-  // IMPORTANT: Replace these with your actual Stripe price IDs
-  const priceMap: Record<string, Record<string, string>> = {
-    "jobSeeker": {
-      "Monthly": "price_monthly_jobseeker",
-      "Quarterly": "price_quarterly_jobseeker",
-      "Annual": "price_annual_jobseeker",
-    },
-    "employer": {
-      "Basic": "price_basic_employer",
-      "Pro": "price_pro_employer",
-      "Enterprise": "price_enterprise_employer",
-    }
-  };
-
-  // For job seekers
-  if (plan === "Monthly" || plan === "Quarterly" || plan === "Annual") {
-    return priceMap.jobSeeker[plan];
-  } 
-  // For employers
-  else if (plan === "Basic" || plan === "Pro" || plan === "Enterprise") {
-    return priceMap.employer[plan];
+// Helper function to get product name
+function getProductName(userType: string, plan: string): string {
+  if (userType === 'jobSeeker') {
+    if (plan === 'Monthly') return 'Job Seeker Monthly Plan';
+    if (plan === 'Quarterly') return 'Job Seeker Quarterly Plan';
+    if (plan === 'Annual') return 'Job Seeker Annual Plan';
+  } else if (userType === 'employer') {
+    if (plan === 'Basic') return 'Employer Basic Plan';
+    if (plan === 'Pro') return 'Employer Pro Plan';
+    if (plan === 'Enterprise') return 'Employer Enterprise Plan';
   }
-  
-  throw new Error(`Invalid plan: ${plan}`);
+  return `${userType} ${plan} Plan`;
+}
+
+// Helper function to get product description
+function getProductDescription(userType: string, plan: string): string {
+  if (userType === 'jobSeeker') {
+    if (plan === 'Monthly') return 'Access to premium job listings for 1 month';
+    if (plan === 'Quarterly') return 'Access to premium job listings for 3 months';
+    if (plan === 'Annual') return 'Access to premium job listings for 1 year';
+  } else if (userType === 'employer') {
+    if (plan === 'Basic') return 'Post up to 5 job listings';
+    if (plan === 'Pro') return 'Post up to 15 job listings with enhanced visibility';
+    if (plan === 'Enterprise') return 'Unlimited job postings with premium features';
+  }
+  return `${userType} subscription plan - ${plan}`;
+}
+
+// Helper function to get product interval
+function getProductInterval(plan: string): string | null {
+  if (plan === 'Monthly') return 'month';
+  if (plan === 'Quarterly') return 'month'; // Still monthly billing for quarterly plan
+  if (plan === 'Annual') return 'year';
+  // For employer plans, we're assuming monthly billing
+  return 'month';
+}
+
+// Helper function to calculate price based on plan and billing frequency
+function calculatePrice(userType: string, plan: string, annual: boolean): number {
+  if (userType === 'jobSeeker') {
+    if (plan === 'Monthly') return annual ? 8 : 10;
+    if (plan === 'Quarterly') return annual ? 20 : 25;
+    if (plan === 'Annual') return annual ? 72 : 90;
+  } else if (userType === 'employer') {
+    if (plan === 'Basic') return annual ? 40 : 50;
+    if (plan === 'Pro') return annual ? 80 : 100;
+    if (plan === 'Enterprise') return annual ? 160 : 200;
+  }
+  return 0;
 }

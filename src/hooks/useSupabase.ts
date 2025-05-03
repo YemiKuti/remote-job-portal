@@ -44,6 +44,8 @@ export const useSubscription = () => {
         loading: false,
         error: null
       });
+      
+      return data;
     } catch (error) {
       console.error("Error checking subscription:", error);
       setSubscription(prev => ({
@@ -51,6 +53,7 @@ export const useSubscription = () => {
         loading: false,
         error: "Failed to check subscription status"
       }));
+      return null;
     }
   };
   

@@ -20,8 +20,17 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CandidateProfile from "./pages/candidate/Profile";
 import CandidateApplications from "./pages/candidate/Applications";
 import CandidateMessages from "./pages/candidate/Messages";
+import Account from "./pages/Account";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60000, // 1 minute
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   return (
@@ -40,6 +49,7 @@ const App = () => {
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/account" element={<Profile />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/candidate" element={<CandidateDashboard />} />
                 <Route path="/candidate/profile" element={<CandidateProfile />} />

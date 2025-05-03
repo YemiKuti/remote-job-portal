@@ -42,11 +42,13 @@ const EmployerMessages = () => {
           </div>
           
           <div className="mb-4">
-            <Input 
-              placeholder="Search conversations..."
-              className="w-full"
-              startIcon={<Search className="h-4 w-4" />}
-            />
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search conversations..."
+                className="w-full pl-8"
+              />
+            </div>
           </div>
           
           <div className="space-y-2">

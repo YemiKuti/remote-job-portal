@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface BlogPost {
   id: string;
@@ -13,6 +14,7 @@ interface BlogPost {
   created_at: string;
   updated_at: string;
   user_id: string;
+  featured_image: string | null;
   profiles: {
     full_name: string | null;
   } | null;
@@ -35,6 +37,7 @@ const Blog: React.FC = () => {
             created_at, 
             updated_at, 
             user_id,
+            featured_image,
             profiles (full_name)
           `)
           .eq('is_published', true)
@@ -63,8 +66,10 @@ const Blog: React.FC = () => {
   };
 
   const getExcerpt = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
+    // Remove any markdown image syntax first
+    const contentWithoutImages = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
+    if (contentWithoutImages.length <= maxLength) return contentWithoutImages;
+    return contentWithoutImages.substring(0, maxLength) + '...';
   };
 
   return (
@@ -92,21 +97,35 @@ const Blog: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {posts.map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow duration-300">
-                <CardHeader className="pb-2">
-                  <div className="h-40 bg-gray-200 rounded-t-lg mb-4"></div>
-                  <CardTitle className="text-xl hover:text-green-600 transition-colors">{post.title}</CardTitle>
-                  <CardDescription className="text-sm text-gray-500">
-                    By {post.profiles?.full_name || 'Anonymous'} • {formatDate(post.created_at)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700">{getExcerpt(post.content)}</p>
-                  <button className="mt-4 text-green-600 hover:text-green-800 font-medium">
-                    Read more →
-                  </button>
-                </CardContent>
-              </Card>
+              <Link to={`/blog/${post.id}`} key={post.id}>
+                <Card className="hover:shadow-md transition-shadow duration-300 h-full">
+                  <CardHeader className="pb-2">
+                    <div className="h-40 bg-gray-200 rounded-t-lg mb-4 overflow-hidden">
+                      {post.featured_image ? (
+                        <img 
+                          src={post.featured_image} 
+                          alt={post.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <CardTitle className="text-xl hover:text-green-600 transition-colors">{post.title}</CardTitle>
+                    <CardDescription className="text-sm text-gray-500">
+                      By {post.profiles?.full_name || 'Anonymous'} • {formatDate(post.created_at)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700">{getExcerpt(post.content)}</p>
+                    <div className="mt-4 text-green-600 hover:text-green-800 font-medium">
+                      Read more →
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}

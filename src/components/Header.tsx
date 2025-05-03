@@ -1,85 +1,151 @@
 
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "./AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 
-const Header = () => {
+export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   return (
-    <header className="bg-white shadow-sm py-4 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center">
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/c3d4b18f-b8eb-4077-bed6-b984759a5c02.png" 
-              alt="Africantechjobs Logo" 
-              className="h-12 mr-2" 
-            />
+    <header className="bg-white shadow-sm sticky top-0 z-10">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <img
+            src="/placeholder.svg"
+            alt="Logo"
+            className="h-8 w-8"
+          />
+          <span className="text-xl font-bold">Hirebase</span>
+        </Link>
+        <div className="hidden md:flex space-x-6">
+          <Link to="/" className="text-gray-600 hover:text-gray-900">
+            Home
           </Link>
-          <div className="flex gap-2 sm:gap-4 items-center">
+          <Link to="/job-scraper" className="text-gray-600 hover:text-gray-900">
+            Job Scraper
+          </Link>
+          <Link to="/pricing" className="text-gray-600 hover:text-gray-900">
+            Pricing
+          </Link>
+          <Link to="/blog" className="text-gray-600 hover:text-gray-900">
+            Blog
+          </Link>
+        </div>
+        <div className="flex items-center space-x-4">
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-1 px-2 sm:px-4">
-                  Explore
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+                <Avatar className="cursor-pointer">
+                  <AvatarImage src={user.user_metadata.avatar_url} />
+                  <AvatarFallback>{getInitials(user.user_metadata.full_name)}</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link to="/" className="w-full">Job Listings</Link>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/blog" className="w-full">Blog</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/pricing" className="w-full">Pricing</Link>
+                {user.user_metadata.role === 'admin' && (
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleSignOut}>
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover hidden sm:flex">
-              <Link to="/blog">Blog</Link>
+          ) : (
+            <Button variant="outline" onClick={() => navigate('/auth')}>
+              Sign In
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
-                  <Link to="/signin">Sign In</Link>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link to="/signin" className="w-full flex items-center justify-between">
-                    <span>Candidate Portal</span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                      Job Seeker
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/signin" className="w-full flex items-center justify-between">
-                    <span>Employer Portal</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                      Hiring
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Button size="sm" className="bg-job-green hover:bg-job-darkGreen">
-              <Link to="/pricing">Subscribe</Link>
-            </Button>
-          </div>
+          )}
+          <Button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden"
+            variant="ghost"
+            size="icon"
+          >
+            <MenuIcon className="h-6 w-6" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
         </div>
       </div>
+      {isMenuOpen && (
+        <div className="md:hidden px-4 pb-4">
+          <nav className="flex flex-col space-y-2">
+            <Link
+              to="/"
+              className="px-4 py-2 rounded-md hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              to="/job-scraper"
+              className="px-4 py-2 rounded-md hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Job Scraper
+            </Link>
+            <Link
+              to="/pricing"
+              className="px-4 py-2 rounded-md hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            <Link
+              to="/blog"
+              className="px-4 py-2 rounded-md hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Blog
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
-};
+}
 
-export default Header;
+function MenuIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="4" x2="20" y1="12" y2="12" />
+      <line x1="4" x2="20" y1="6" y2="6" />
+      <line x1="4" x2="20" y1="18" y2="18" />
+    </svg>
+  );
+}

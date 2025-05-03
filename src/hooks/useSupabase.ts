@@ -1,18 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Create a single supabase client for the entire app
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-// For development, we'll provide fallbacks if env variables aren't set
-// In production, make sure these are properly configured
-export const supabase = createClient(
-  supabaseUrl || 'https://your-project-url.supabase.co',
-  supabaseAnonKey || 'your-anon-key'
-);
-
+// Export the pre-configured supabase client from our integrations folder
 export const useSupabaseClient = () => {
   return supabase;
 };

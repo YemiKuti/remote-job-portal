@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -32,18 +31,15 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <img
-            src="/placeholder.svg"
+            src="/lovable-uploads/c3d4b18f-b8eb-4077-bed6-b984759a5c02.png"
             alt="Logo"
             className="h-8 w-8"
           />
-          <span className="text-xl font-bold">Hirebase</span>
+          <span className="text-xl font-bold">Africantechjobs</span>
         </Link>
         <div className="hidden md:flex space-x-6">
           <Link to="/" className="text-gray-600 hover:text-gray-900">
             Home
-          </Link>
-          <Link to="/job-scraper" className="text-gray-600 hover:text-gray-900">
-            Job Scraper
           </Link>
           <Link to="/pricing" className="text-gray-600 hover:text-gray-900">
             Pricing
@@ -100,13 +96,6 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Home
-            </Link>
-            <Link
-              to="/job-scraper"
-              className="px-4 py-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Job Scraper
             </Link>
             <Link
               to="/pricing"

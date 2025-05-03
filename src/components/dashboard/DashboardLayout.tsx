@@ -1,7 +1,19 @@
 
-import React from 'react';
-import { Bell, Home, Settings, LogOut, User, Briefcase, Users } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { 
+  Bell, 
+  Home, 
+  Settings, 
+  LogOut, 
+  User, 
+  Briefcase, 
+  Users, 
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Search 
+} from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Sidebar, 
   SidebarContent,
@@ -17,6 +29,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,6 +47,29 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  const handleLogout = () => {
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    navigate('/');
+  };
+  
+  const handleSwitchRole = (role: 'candidate' | 'employer' | 'admin') => {
+    if (role === userType) return;
+    
+    const routes = {
+      candidate: '/candidate',
+      employer: '/employer',
+      admin: '/admin'
+    };
+    
+    navigate(routes[role]);
+  };
 
   const candidateMenuItems = [
     { title: "Dashboard", icon: Home, url: "/candidate" },
@@ -49,6 +94,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
     { title: "Users", icon: Users, url: "/admin/users" },
     { title: "Jobs", icon: Briefcase, url: "/admin/jobs" },
     { title: "Companies", icon: Briefcase, url: "/admin/companies" },
+    { title: "Job Scraper", icon: Search, url: "/job-scraper" },
     { title: "Settings", icon: Settings, url: "/admin/settings" },
   ];
 
@@ -62,28 +108,43 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   };
 
   const menuItems = getMenuItems();
-  
   const userTypeLabel = userType.charAt(0).toUpperCase() + userType.slice(1);
+  
+  const userTypeColors = {
+    candidate: 'bg-green-100 text-green-800',
+    employer: 'bg-blue-100 text-blue-800',
+    admin: 'bg-purple-100 text-purple-800'
+  };
 
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-gray-50">
-        <Sidebar>
-          <SidebarHeader>
-            <div className="flex items-center gap-2 px-2">
+        <Sidebar className={`transition-all duration-300 ${isCollapsed ? 'w-[70px]' : 'w-[240px]'}`}>
+          <SidebarHeader className="flex justify-between items-center">
+            <div className={`flex items-center gap-2 px-2 ${isCollapsed ? 'justify-center' : ''}`}>
               <Avatar>
                 <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>{userTypeLabel[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="font-medium">{userTypeLabel} Portal</span>
-                <span className="text-xs text-gray-500">Welcome back!</span>
-              </div>
+              {!isCollapsed && (
+                <div className="flex flex-col">
+                  <span className="font-medium">{userTypeLabel} Portal</span>
+                  <span className="text-xs text-gray-500">Welcome back!</span>
+                </div>
+              )}
             </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-8 w-8"
+            >
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              {!isCollapsed && <SidebarGroupLabel>Navigation</SidebarGroupLabel>}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {menuItems.map((item) => (
@@ -91,11 +152,11 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
                       <SidebarMenuButton 
                         asChild
                         isActive={location.pathname === item.url}
-                        tooltip={item.title}
+                        tooltip={isCollapsed ? item.title : undefined}
                       >
-                        <Link to={item.url}>
+                        <Link to={item.url} className="flex items-center">
                           <item.icon />
-                          <span>{item.title}</span>
+                          {!isCollapsed && <span>{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -106,27 +167,112 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
           </SidebarContent>
           <SidebarFooter>
             <div className="px-4 py-2">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Log out</span>
-              </Button>
+              {isCollapsed ? (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleLogout}
+                  className="w-full flex justify-center"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </Button>
+              )}
             </div>
           </SidebarFooter>
         </Sidebar>
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex h-16 items-center justify-between border-b px-6">
-            <h1 className="text-2xl font-bold">{userTypeLabel} Portal</h1>
+          <header className="flex h-16 items-center justify-between border-b px-6 bg-white">
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold">{userTypeLabel} Portal</h1>
+              <span className={`px-2 py-0.5 text-xs rounded-full ${userTypeColors[userType]}`}>
+                {userTypeLabel}
+              </span>
+            </div>
+            
             <div className="flex items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">Switch Role</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Available Roles</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleSwitchRole('candidate')}
+                    disabled={userType === 'candidate'}
+                    className="flex justify-between"
+                  >
+                    <span>Candidate Portal</span>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                      Job Seeker
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleSwitchRole('employer')}
+                    disabled={userType === 'employer'}
+                    className="flex justify-between"
+                  >
+                    <span>Employer Portal</span>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                      Hiring
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleSwitchRole('admin')}
+                    disabled={userType === 'admin'}
+                    className="flex justify-between"
+                  >
+                    <span>Admin Portal</span>
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                      Admin
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Avatar>
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="cursor-pointer">
+                    <AvatarImage src="/placeholder.svg" />
+                    <AvatarFallback>{userTypeLabel[0]}</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={`/${userType}/profile`} className="cursor-pointer">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={`/${userType}/settings`} className="cursor-pointer">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">

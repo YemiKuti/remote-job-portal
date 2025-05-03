@@ -4,16 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Building, ShieldCheck } from "lucide-react";
-import memberfulService from "@/services/memberful";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const SignIn = () => {
   const navigate = useNavigate();
-
-  const handleMemberfulSignIn = () => {
-    memberfulService.signIn();
-  };
 
   const handleRoleSelection = (role: "candidate" | "employer" | "admin") => {
     // For now navigate directly to the respective dashboards
@@ -41,25 +36,11 @@ const SignIn = () => {
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
                 <CardDescription>
-                  Choose how you want to sign in to AfricanTechJobs
+                  Choose your role to access AfricanTechJobs
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  <Button 
-                    onClick={handleMemberfulSignIn} 
-                    variant="outline"
-                    className="border-job-green text-job-green hover:bg-job-hover h-16"
-                  >
-                    Continue with Memberful
-                  </Button>
-                  
-                  <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-gray-300"></div>
-                    <span className="flex-shrink mx-4 text-gray-400">or sign in as</span>
-                    <div className="flex-grow border-t border-gray-300"></div>
-                  </div>
-                  
                   <Button 
                     onClick={() => handleRoleSelection("candidate")} 
                     className="bg-job-green hover:bg-job-darkGreen h-16"

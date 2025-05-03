@@ -4,18 +4,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PricingCard from "@/components/PricingCard";
 import { toast } from "sonner";
-import memberfulService from "@/services/memberful";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-
-// Map of plan names to Memberful plan IDs - replace with your actual plan IDs
-const MEMBERFUL_PLAN_IDS: Record<string, string> = {
-  "Monthly": "monthly-plan-id", // Replace with your Memberful plan ID
-  "Quarterly": "quarterly-plan-id", // Replace with your Memberful plan ID
-  "Annual": "annual-plan-id" // Replace with your Memberful plan ID
-};
 
 // Common features shared across all plans
 const COMMON_FEATURES = [
@@ -63,17 +55,12 @@ const Pricing = () => {
   
   const handleSubscribe = (price: number, currency: string, plan: string) => {
     setSelectedPlan(plan);
+    toast.success(`You've selected the ${plan} plan. Redirecting to checkout...`);
     
-    // Get the Memberful plan ID
-    const planId = MEMBERFUL_PLAN_IDS[plan];
-    
-    if (planId) {
-      toast.info(`Opening Memberful checkout for the ${plan} plan.`);
-      memberfulService.checkout(planId);
-    } else {
-      toast.error(`Memberful plan ID not configured for ${plan} plan.`);
-      console.error(`No Memberful plan ID configured for: ${plan}`);
-    }
+    // Here we would redirect to our own checkout page instead of using Memberful
+    setTimeout(() => {
+      window.location.href = `/checkout?plan=${plan}&price=${price}&currency=${currency}&billing=${annual ? 'annual' : 'monthly'}`;
+    }, 1500);
   };
 
   return (
@@ -180,7 +167,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
-                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                    onClick={() => handleSubscribe(annual ? 40 : 50, "GBP", "Basic")}
                   >
                     Get Started
                   </button>
@@ -212,7 +199,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
-                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                    onClick={() => handleSubscribe(annual ? 80 : 100, "GBP", "Pro")}
                   >
                     Get Started
                   </button>
@@ -243,7 +230,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
-                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                    onClick={() => handleSubscribe(annual ? 160 : 200, "GBP", "Enterprise")}
                   >
                     Get Started
                   </button>

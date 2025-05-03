@@ -35,6 +35,15 @@ export interface ScraperSettings {
   companyInfoEnrichment: boolean;
   structuredDataExtraction: boolean;
   semanticSearch: boolean;
+  // New features for social sharing and apply options
+  enableSocialSharing: boolean;
+  multipleApplyOptions: boolean;
+  relatedJobsListing: boolean;
+  candidateManagement: boolean;
+  applicationDeadline: boolean;
+  enhancedCompanyProfiles: boolean;
+  advancedAnalytics: boolean;
+  gdprCompliance: boolean;
 }
 
 export interface ScraperResultData {
@@ -56,4 +65,27 @@ export interface JobScrapingSource {
   logo: string;
   features: string[];
   supported: boolean;
+}
+
+// New interfaces for the requested features
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  interval: 'monthly' | 'quarterly' | 'annual';
+  features: string[];
+  jobPostLimit: number;
+  featuredJobsLimit: number;
+}
+
+export interface ApplyOption {
+  type: 'internal' | 'external' | 'email' | 'phone';
+  value: string;
+  label: string;
+}
+
+export interface SocialLogin {
+  provider: 'facebook' | 'linkedin' | 'google';
+  enabled: boolean;
 }

@@ -5,6 +5,10 @@ import Footer from "@/components/Footer";
 import PricingCard from "@/components/PricingCard";
 import { toast } from "sonner";
 import memberfulService from "@/services/memberful";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // Map of plan names to Memberful plan IDs - replace with your actual plan IDs
 const MEMBERFUL_PLAN_IDS: Record<string, string> = {
@@ -22,8 +26,40 @@ const COMMON_FEATURES = [
   "Apply to premium jobs"
 ];
 
+// Employer plan features
+const EMPLOYER_FEATURES = {
+  basic: [
+    "5 job postings",
+    "1 featured job",
+    "30-day listings",
+    "Basic company profile",
+    "Email support"
+  ],
+  pro: [
+    "15 job postings",
+    "3 featured jobs",
+    "60-day listings",
+    "Enhanced company profile",
+    "Priority email support",
+    "Candidate management",
+    "Application analytics"
+  ],
+  enterprise: [
+    "Unlimited job postings",
+    "10 featured jobs",
+    "90-day listings",
+    "Premium company profile",
+    "Dedicated account manager",
+    "Advanced analytics dashboard",
+    "API access",
+    "Custom integration options"
+  ]
+};
+
 const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [userType, setUserType] = useState<'jobSeeker' | 'employer'>('jobSeeker');
+  const [annual, setAnnual] = useState<boolean>(false);
   
   const handleSubscribe = (price: number, currency: string, plan: string) => {
     setSelectedPlan(plan);
@@ -57,34 +93,164 @@ const Pricing = () => {
         </div>
         
         <div className="container mx-auto px-4 py-16">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
-            <PricingCard
-              title="Monthly Plan"
-              price={10}
-              currency="GBP"
-              description="Perfect for job seekers"
-              features={COMMON_FEATURES}
-              onSubscribe={(price, currency) => handleSubscribe(price, currency, "Monthly")}
-            />
+          <div className="flex flex-col items-center mb-12">
+            <Tabs defaultValue="jobSeeker" className="w-full max-w-md mb-6">
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger 
+                  value="jobSeeker" 
+                  onClick={() => setUserType('jobSeeker')}
+                >
+                  Job Seekers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="employer" 
+                  onClick={() => setUserType('employer')}
+                >
+                  Employers
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             
-            <PricingCard
-              title="Quarterly Plan"
-              price={25}
-              currency="GBP"
-              description="Save with our 3-month plan"
-              features={COMMON_FEATURES}
-              onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
-            />
-            
-            <PricingCard
-              title="Annual Plan"
-              price={90}
-              currency="GBP"
-              description="Best value for long-term job seekers"
-              features={COMMON_FEATURES}
-              onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
-            />
+            <div className="flex items-center gap-3 mb-8">
+              <Label htmlFor="billing-toggle">Monthly</Label>
+              <Switch 
+                id="billing-toggle" 
+                checked={annual}
+                onCheckedChange={(checked) => setAnnual(checked)}
+              />
+              <Label htmlFor="billing-toggle" className="flex items-center gap-2">
+                Annual <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">Save 20%</span>
+              </Label>
+            </div>
           </div>
+
+          {userType === 'jobSeeker' ? (
+            <div className="grid md:grid-cols-3 gap-8 justify-center">
+              <PricingCard
+                title="Monthly Plan"
+                price={annual ? 8 : 10}
+                currency="GBP"
+                description="Perfect for job seekers"
+                features={COMMON_FEATURES}
+                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Monthly")}
+              />
+              
+              <PricingCard
+                title="Quarterly Plan"
+                price={annual ? 20 : 25}
+                currency="GBP"
+                description="Save with our 3-month plan"
+                features={COMMON_FEATURES}
+                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
+              />
+              
+              <PricingCard
+                title="Annual Plan"
+                price={annual ? 72 : 90}
+                currency="GBP"
+                description="Best value for long-term job seekers"
+                features={COMMON_FEATURES}
+                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
+              />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8 justify-center">
+              {/* Employer Plans */}
+              <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
+                <div className="p-6 border-b">
+                  <h3 className="text-2xl font-bold">Basic</h3>
+                  <div className="mt-4">
+                    <div className="text-3xl font-bold">${annual ? 79 : 99}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    {annual && (
+                      <div className="text-sm text-green-600 mt-1">Billed annually (${79*12})</div>
+                    )}
+                  </div>
+                  <p className="text-gray-500 mt-2">For startups and small businesses</p>
+                </div>
+                
+                <div className="p-6">
+                  <ul className="space-y-4">
+                    {EMPLOYER_FEATURES.basic.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <button 
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              </div>
+              
+              <div className="border-2 border-job-green rounded-lg overflow-hidden shadow-lg bg-white relative">
+                <div className="absolute -top-3 right-6 bg-job-green text-white text-xs font-bold px-3 py-1 rounded">POPULAR</div>
+                <div className="p-6 border-b">
+                  <h3 className="text-2xl font-bold">Pro</h3>
+                  <div className="mt-4">
+                    <div className="text-3xl font-bold">${annual ? 159 : 199}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    {annual && (
+                      <div className="text-sm text-green-600 mt-1">Billed annually (${159*12})</div>
+                    )}
+                  </div>
+                  <p className="text-gray-500 mt-2">For growing companies</p>
+                </div>
+                
+                <div className="p-6">
+                  <ul className="space-y-4">
+                    {EMPLOYER_FEATURES.pro.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <button 
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
+                <div className="p-6 border-b">
+                  <h3 className="text-2xl font-bold">Enterprise</h3>
+                  <div className="mt-4">
+                    <div className="text-3xl font-bold">${annual ? 319 : 399}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    {annual && (
+                      <div className="text-sm text-green-600 mt-1">Billed annually (${319*12})</div>
+                    )}
+                  </div>
+                  <p className="text-gray-500 mt-2">For large organizations</p>
+                </div>
+                
+                <div className="p-6">
+                  <ul className="space-y-4">
+                    {EMPLOYER_FEATURES.enterprise.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <button 
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    onClick={() => toast.info("Employer subscription functionality will be available soon!")}
+                  >
+                    Get Started
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="mt-16 max-w-3xl mx-auto bg-gray-50 rounded-lg p-6 border border-gray-200">
             <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
@@ -126,6 +292,26 @@ const Pricing = () => {
       </main>
       
       <Footer />
+      
+      {/* GDPR-compliant cookie notice */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-lg border-t border-gray-200 z-50">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-sm text-gray-600 md:w-3/4">
+            <p>
+              We use cookies to enhance your experience on our website. By continuing to browse, you agree to our{' '}
+              <a href="#" className="text-job-blue hover:underline">Cookie Policy</a>. You can manage your preferences at any time.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 transition">
+              Manage Preferences
+            </button>
+            <button className="px-4 py-2 text-sm bg-job-green text-white rounded hover:bg-job-darkGreen transition">
+              Accept All
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

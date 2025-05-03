@@ -12,14 +12,16 @@ export const useSupabaseClient = () => {
   return supabase;
 };
 
+type SubscriptionState = {
+  subscribed: boolean;
+  subscription_tier: string | null;
+  subscription_end: string | null;
+  loading: boolean;
+  error: string | null;
+};
+
 export const useSubscription = () => {
-  const [subscription, setSubscription] = useState<{
-    subscribed: boolean;
-    subscription_tier: string | null;
-    subscription_end: string | null;
-    loading: boolean;
-    error: string | null;
-  }>({
+  const [subscription, setSubscription] = useState<SubscriptionState>({
     subscribed: false,
     subscription_tier: null,
     subscription_end: null,
@@ -28,7 +30,11 @@ export const useSubscription = () => {
   });
 
   const checkSubscription = async () => {
-    setSubscription(prev => ({ ...prev, loading: true, error: null }));
+    setSubscription(prev => ({
+      ...prev,
+      loading: true,
+      error: null
+    }));
     
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
@@ -71,7 +77,7 @@ export const useSubscription = () => {
 };
 
 export const useManageSubscription = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
   const openCustomerPortal = async () => {

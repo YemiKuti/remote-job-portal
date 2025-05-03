@@ -160,9 +160,9 @@ const Pricing = () => {
                 <div className="p-6 border-b">
                   <h3 className="text-2xl font-bold">Basic</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">${annual ? 79 : 99}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    <div className="text-3xl font-bold">£{annual ? 40 : 50}<span className="text-sm text-gray-500 font-normal">/month</span></div>
                     {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (${79*12})</div>
+                      <div className="text-sm text-green-600 mt-1">Billed annually (£{40*12})</div>
                     )}
                   </div>
                   <p className="text-gray-500 mt-2">For startups and small businesses</p>
@@ -192,9 +192,9 @@ const Pricing = () => {
                 <div className="p-6 border-b">
                   <h3 className="text-2xl font-bold">Pro</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">${annual ? 159 : 199}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    <div className="text-3xl font-bold">£{annual ? 80 : 100}<span className="text-sm text-gray-500 font-normal">/month</span></div>
                     {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (${159*12})</div>
+                      <div className="text-sm text-green-600 mt-1">Billed annually (£{80*12})</div>
                     )}
                   </div>
                   <p className="text-gray-500 mt-2">For growing companies</p>
@@ -223,9 +223,9 @@ const Pricing = () => {
                 <div className="p-6 border-b">
                   <h3 className="text-2xl font-bold">Enterprise</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">${annual ? 319 : 399}<span className="text-sm text-gray-500 font-normal">/month</span></div>
+                    <div className="text-3xl font-bold">£{annual ? 160 : 200}<span className="text-sm text-gray-500 font-normal">/month</span></div>
                     {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (${319*12})</div>
+                      <div className="text-sm text-green-600 mt-1">Billed annually (£{160*12})</div>
                     )}
                   </div>
                   <p className="text-gray-500 mt-2">For large organizations</p>

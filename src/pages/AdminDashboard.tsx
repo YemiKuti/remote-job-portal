@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,8 @@ import {
   FileText,
   AlertCircle,
   MessageSquare,
-  Bell
+  Bell,
+  BookOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -78,6 +78,16 @@ const AdminDashboard = () => {
                     {stats.pendingApprovals}
                   </span>
                 )}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2"
+                asChild
+              >
+                <Link to="/admin/blog">
+                  <BookOpen className="h-6 w-6 text-indigo-500" />
+                  <span>Manage Blog</span>
+                </Link>
               </Button>
               <Button 
                 variant="outline" 

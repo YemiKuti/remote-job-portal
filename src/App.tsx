@@ -10,6 +10,8 @@ import Pricing from "./pages/Pricing";
 import JobScraper from "./pages/JobScraper";
 import Blog from "./pages/Blog";
 import AdminDashboard from "./pages/AdminDashboard";
+import BlogManagement from "./pages/admin/BlogManagement";
+import BlogEditor from "./pages/admin/BlogEditor";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
 import SignIn from "./pages/SignIn";
@@ -57,7 +59,12 @@ const App = () => {
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/account" element={<Account />} />
+                
+                {/* Admin Routes */}
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/blog" element={<BlogManagement />} />
+                <Route path="/admin/blog/create" element={<BlogEditor />} />
+                <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
                 
                 {/* Candidate Routes */}
                 <Route path="/candidate" element={<CandidateDashboard />} />

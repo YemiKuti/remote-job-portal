@@ -12,6 +12,7 @@ import Blog from "./pages/Blog";
 import AdminDashboard from "./pages/AdminDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
+import SignIn from "./pages/SignIn";
 import NotFound from "./pages/NotFound";
 import memberfulService from "./services/memberful";
 
@@ -35,6 +36,7 @@ const App = () => {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/job-scraper" element={<JobScraper />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/signin" element={<SignIn />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/candidate" element={<CandidateDashboard />} />
               <Route path="/employer" element={<EmployerDashboard />} />

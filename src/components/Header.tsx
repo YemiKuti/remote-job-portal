@@ -1,13 +1,8 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import memberfulService from "@/services/memberful";
 
 const Header = () => {
-  const handleSignIn = () => {
-    memberfulService.signIn();
-  };
-
   return (
     <header className="bg-white shadow-sm py-4">
       <div className="container mx-auto px-4">
@@ -23,8 +18,8 @@ const Header = () => {
             <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
               <Link to="/blog">Blog</Link>
             </Button>
-            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover" onClick={handleSignIn}>
-              Sign In
+            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
+              <Link to="/signin">Sign In</Link>
             </Button>
             <Button size="sm" className="bg-job-green hover:bg-job-darkGreen">
               <Link to="/pricing">Subscribe</Link>

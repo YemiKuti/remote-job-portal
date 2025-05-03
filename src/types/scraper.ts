@@ -35,7 +35,7 @@ export interface ScraperSettings {
   companyInfoEnrichment: boolean;
   structuredDataExtraction: boolean;
   semanticSearch: boolean;
-  // New features for social sharing and apply options
+  // Features for social sharing and apply options
   enableSocialSharing: boolean;
   multipleApplyOptions: boolean;
   relatedJobsListing: boolean;
@@ -67,7 +67,7 @@ export interface JobScrapingSource {
   supported: boolean;
 }
 
-// New interfaces for the requested features
+// Interface for the requested features
 export interface SubscriptionPlan {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 
 import { Job } from "@/types";
-import { ScraperSettings } from "@/types/scraper";
+import { ScraperSettings, ApplyOption } from "@/types/scraper";
 import { jobs } from "@/data/jobs";
 
 /**
@@ -147,7 +147,7 @@ const enhanceDescription = (description: string) => {
  * Gets random apply options for a job
  */
 const getRandomApplyOptions = () => {
-  const options = [];
+  const options: ApplyOption[] = [];
   
   if (Math.random() > 0.3) {
     options.push({

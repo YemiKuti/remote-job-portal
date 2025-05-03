@@ -34,7 +34,7 @@ export default function Header() {
           <img
             src="/lovable-uploads/c3d4b18f-b8eb-4077-bed6-b984759a5c02.png"
             alt="Logo"
-            className="h-8 w-8"
+            className="h-10 w-auto"
           />
         </Link>
         <div className="hidden md:flex space-x-6">

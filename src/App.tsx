@@ -17,6 +17,9 @@ import AuthPage from "./pages/Auth";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CandidateProfile from "./pages/candidate/Profile";
+import CandidateApplications from "./pages/candidate/Applications";
+import CandidateMessages from "./pages/candidate/Messages";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,9 @@ const App = () => {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/candidate" element={<CandidateDashboard />} />
+                <Route path="/candidate/profile" element={<CandidateProfile />} />
+                <Route path="/candidate/applications" element={<CandidateApplications />} />
+                <Route path="/candidate/messages" element={<CandidateMessages />} />
                 <Route path="/employer" element={<EmployerDashboard />} />
                 <Route path="/checkout/success" element={<CheckoutSuccess />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PricingCard from "@/components/PricingCard";
@@ -8,6 +7,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
+import { useSupabaseClient } from "@/hooks/useSupabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 // Common features shared across all plans
 const COMMON_FEATURES = [
@@ -52,15 +55,64 @@ const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [userType, setUserType] = useState<'jobSeeker' | 'employer'>('jobSeeker');
   const [annual, setAnnual] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const supabase = useSupabaseClient();
+  const navigate = useNavigate();
   
-  const handleSubscribe = (price: number, currency: string, plan: string) => {
-    setSelectedPlan(plan);
-    toast.success(`You've selected the ${plan} plan. Redirecting to checkout...`);
+  // Check if user is authenticated
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
     
-    // Here we would redirect to our own checkout page instead of using Memberful
-    setTimeout(() => {
-      window.location.href = `/checkout?plan=${plan}&price=${price}&currency=${currency}&billing=${annual ? 'annual' : 'monthly'}`;
-    }, 1500);
+    checkAuth();
+  }, [supabase.auth]);
+  
+  const handleSubscribe = async (price: number, currency: string, plan: string) => {
+    setSelectedPlan(plan);
+    
+    // If user is not authenticated, redirect to sign in
+    if (!isAuthenticated) {
+      toast.info("Please sign in to subscribe to a plan", {
+        description: "You'll be redirected to the login page",
+        duration: 4000,
+      });
+      
+      // Store plan details in local storage to retrieve after login
+      localStorage.setItem("selectedPlan", JSON.stringify({ plan, userType, annual }));
+      
+      setTimeout(() => {
+        navigate("/signin");
+      }, 1500);
+      return;
+    }
+    
+    // User is authenticated, proceed with checkout
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan, annual, userType }
+      });
+      
+      if (error) throw error;
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      toast.error("Failed to create checkout session", {
+        description: "Please try again later",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,6 +132,15 @@ const Pricing = () => {
         </div>
         
         <div className="container mx-auto px-4 py-16">
+          {isLoading && (
+            <Alert className="mb-8 bg-blue-50 border-blue-200">
+              <AlertDescription className="flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating your checkout session...
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex flex-col items-center mb-12">
             <Tabs defaultValue="jobSeeker" className="w-full max-w-md mb-6">
               <TabsList className="grid grid-cols-2 w-full">
@@ -166,10 +227,11 @@ const Pricing = () => {
                   </ul>
                   
                   <button 
-                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSubscribe(annual ? 40 : 50, "GBP", "Basic")}
+                    disabled={isLoading}
                   >
-                    Get Started
+                    {isLoading ? "Processing..." : "Get Started"}
                   </button>
                 </div>
               </div>
@@ -198,10 +260,11 @@ const Pricing = () => {
                   </ul>
                   
                   <button 
-                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSubscribe(annual ? 80 : 100, "GBP", "Pro")}
+                    disabled={isLoading}
                   >
-                    Get Started
+                    {isLoading ? "Processing..." : "Get Started"}
                   </button>
                 </div>
               </div>
@@ -229,10 +292,11 @@ const Pricing = () => {
                   </ul>
                   
                   <button 
-                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition"
+                    className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSubscribe(annual ? 160 : 200, "GBP", "Enterprise")}
+                    disabled={isLoading}
                   >
-                    Get Started
+                    {isLoading ? "Processing..." : "Get Started"}
                   </button>
                 </div>
               </div>
@@ -251,23 +315,20 @@ const Pricing = () => {
                 <p className="text-gray-600">To manage your account, simply click on "Account" located in the top right corner of the website. This will open the account menu where you can manage all aspects of your membership.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-green">What can I do from the account menu?</h4>
-                <p className="text-gray-600">From your account menu, you can:
-                View and manage your subscriptions.
-                Access and download payment receipts.
-                Update your personal information such as name, email address, and password.</p>
+                <h4 className="font-medium text-job-green">How can I manage my subscription?</h4>
+                <p className="text-gray-600">You can manage your subscription through our Stripe Customer Portal, which allows you to upgrade, downgrade, or cancel your plan at any time.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-green">How do I update my account information?</h4>
-                <p className="text-gray-600">To update your account information (name, email, password, etc.), navigate to the "Account" section within the menu.</p>
+                <h4 className="font-medium text-job-green">What payment methods do you accept?</h4>
+                <p className="text-gray-600">We accept all major credit and debit cards including Visa, Mastercard, and American Express through our secure payment processor, Stripe.</p>
               </div>
               <div>
                 <h4 className="font-medium text-job-green">Where can I find my subscription details?</h4>
                 <p className="text-gray-600">Your subscription details, including current plan information and billing cycle, can be found under the "Subscriptions" section in your account menu.</p>
               </div>
               <div>
-                <h4 className="font-medium text-job-green">Can I manage multiple subscriptions from one account?</h4>
-                <p className="text-gray-600">Yes, if you have multiple subscriptions, you can manage them all conveniently from your account menu under the "Subscriptions" section.</p>
+                <h4 className="font-medium text-job-green">Will I be billed automatically when my subscription renews?</h4>
+                <p className="text-gray-600">Yes, your subscription will automatically renew at the end of your billing period unless you cancel before the renewal date.</p>
               </div>
               <div>
                 <h4 className="font-medium text-job-green">How can I contact customer support regarding my account?</h4>

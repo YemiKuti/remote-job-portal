@@ -4,7 +4,8 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Building, Briefcase, DollarSign } from 'lucide-react';
+import { Users, Building, Briefcase, DollarSign, Settings, Database, Server } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   // Mock data for admin dashboard
@@ -139,6 +140,7 @@ const AdminDashboard = () => {
                 <TabsTrigger value="jobs">Jobs</TabsTrigger>
                 <TabsTrigger value="companies">Companies</TabsTrigger>
                 <TabsTrigger value="payments">Payments</TabsTrigger>
+                <TabsTrigger value="tools">Tools</TabsTrigger>
               </TabsList>
               <TabsContent value="users" className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -201,6 +203,24 @@ const AdminDashboard = () => {
                   <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
                     <DollarSign className="h-8 w-8" />
                     <span>Payment Settings</span>
+                  </Button>
+                </div>
+              </TabsContent>
+              <TabsContent value="tools">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
+                    <Link to="/job-scraper">
+                      <Server className="h-8 w-8" />
+                      <span>Job Scraper Tool</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
+                    <Database className="h-8 w-8" />
+                    <span>Data Import/Export</span>
+                  </Button>
+                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
+                    <Settings className="h-8 w-8" />
+                    <span>System Settings</span>
                   </Button>
                 </div>
               </TabsContent>

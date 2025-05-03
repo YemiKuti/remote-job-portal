@@ -23,12 +23,6 @@ const Header = () => {
             <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
               <Link to="/blog">Blog</Link>
             </Button>
-            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
-              <Link to="/job-scraper">Scraper Tool</Link>
-            </Button>
-            <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover">
-              <Link to="/admin">Admin</Link>
-            </Button>
             <Button variant="outline" size="sm" className="border-job-green text-job-green hover:bg-job-hover" onClick={handleSignIn}>
               Sign In
             </Button>

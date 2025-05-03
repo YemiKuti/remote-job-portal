@@ -1,4 +1,3 @@
-
 import { Job } from "@/types";
 
 /**
@@ -81,9 +80,9 @@ export function parseJobsXML(xmlString: string): Job[] {
         views: 0,
         applications: 0,
         employerId: getText("employerId") || "unknown",
-        // Add plugins if available
+        // Add plugins as a custom field
         plugins: plugins.length > 0 ? plugins : undefined
-      };
+      } as Job; // Use type assertion to avoid the TypeScript error
       
       jobs.push(job);
     }

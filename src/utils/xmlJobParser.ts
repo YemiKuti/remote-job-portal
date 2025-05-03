@@ -63,7 +63,13 @@ export function parseJobsXML(xmlString: string): Job[] {
         visaSponsorship: getText("visaSponsorship") === "true",
         companySize: getText("companySize") as Job["companySize"],
         techStack,
-        remote: getText("remote") === "true"
+        remote: getText("remote") === "true",
+        // Adding required fields
+        status: "active",
+        isFeatured: false,
+        views: 0,
+        applications: 0,
+        employerId: getText("employerId") || "unknown"
       };
       
       jobs.push(job);

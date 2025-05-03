@@ -1,4 +1,3 @@
-
 import { Job } from "@/types";
 import { ScraperSettings, ApplyOption } from "@/types/scraper";
 import { jobs } from "@/data/jobs";
@@ -100,7 +99,7 @@ export const mockScrapedJobs = (settings: ScraperSettings) => {
   if (settings.relatedJobsListing) {
     enhancedJobs = enhancedJobs.map(job => ({
       ...job,
-      relatedJobs: getRelatedJobs(job, filteredJobs, 3)
+      relatedJobs: getRelatedJobIds(job, filteredJobs, 3)
     }));
   }
   
@@ -185,12 +184,14 @@ const getRandomApplyOptions = () => {
 };
 
 /**
- * Gets related jobs for a job
+ * Gets related job IDs for a job
  */
-const getRelatedJobs = (currentJob: Job, allJobs: Job[], limit: number) => {
+const getRelatedJobIds = (currentJob: Job, allJobs: Job[], limit: number) => {
   // Filter out the current job and get random related jobs
   const otherJobs = allJobs.filter(job => job.id !== currentJob.id);
-  return getRandomElements(otherJobs, Math.min(limit, otherJobs.length));
+  const relatedJobs = getRandomElements(otherJobs, Math.min(limit, otherJobs.length));
+  // Return just the IDs instead of the whole job objects
+  return relatedJobs.map(job => job.id);
 };
 
 /**

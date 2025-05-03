@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -29,13 +30,12 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link to="/" className="flex items-center">
           <img
             src="/lovable-uploads/c3d4b18f-b8eb-4077-bed6-b984759a5c02.png"
             alt="Logo"
             className="h-8 w-8"
           />
-          <span className="text-xl font-bold">Africantechjobs</span>
         </Link>
         <div className="hidden md:flex space-x-6">
           <Link to="/" className="text-gray-600 hover:text-gray-900">

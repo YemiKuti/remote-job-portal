@@ -9,6 +9,90 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      jobs: {
+        Row: {
+          application_deadline: string | null
+          applications: number | null
+          company: string
+          company_size: string | null
+          created_at: string | null
+          description: string
+          employer_id: string | null
+          employment_type: string
+          experience_level: string
+          id: string
+          is_featured: boolean | null
+          is_verified: boolean | null
+          location: string
+          logo: string | null
+          remote: boolean | null
+          requirements: string[]
+          salary_currency: string | null
+          salary_max: number | null
+          salary_min: number | null
+          status: string
+          tech_stack: string[]
+          title: string
+          updated_at: string | null
+          views: number | null
+          visa_sponsorship: boolean | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          applications?: number | null
+          company: string
+          company_size?: string | null
+          created_at?: string | null
+          description: string
+          employer_id?: string | null
+          employment_type: string
+          experience_level: string
+          id?: string
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          location: string
+          logo?: string | null
+          remote?: boolean | null
+          requirements?: string[]
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string
+          tech_stack?: string[]
+          title: string
+          updated_at?: string | null
+          views?: number | null
+          visa_sponsorship?: boolean | null
+        }
+        Update: {
+          application_deadline?: string | null
+          applications?: number | null
+          company?: string
+          company_size?: string | null
+          created_at?: string | null
+          description?: string
+          employer_id?: string | null
+          employment_type?: string
+          experience_level?: string
+          id?: string
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          location?: string
+          logo?: string | null
+          remote?: boolean | null
+          requirements?: string[]
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string
+          tech_stack?: string[]
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+          visa_sponsorship?: boolean | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           content: string
@@ -82,7 +166,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,62 +1,109 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search, Briefcase, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Search, Briefcase, CheckCircle, XCircle, Eye, Plus, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
+
+interface Job {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  created_at: string | null;
+  status: string;
+  applications: number | null;
+}
 
 const JobsAdmin = () => {
-  // Mock data for the jobs page
-  const jobs = [
-    { 
-      id: "1", 
-      title: "Senior React Developer", 
-      company: "TechCorp Inc.", 
-      location: "Nairobi, Kenya", 
-      postedDate: "2025-05-01", 
-      status: "active",
-      applications: 14 
-    },
-    { 
-      id: "2", 
-      title: "UI/UX Designer", 
-      company: "Design Studio", 
-      location: "Remote", 
-      postedDate: "2025-04-28", 
-      status: "active",
-      applications: 8 
-    },
-    { 
-      id: "3", 
-      title: "Data Scientist", 
-      company: "Analytics Africa", 
-      location: "Lagos, Nigeria", 
-      postedDate: "2025-04-25", 
-      status: "pending",
-      applications: 0 
-    },
-    { 
-      id: "4", 
-      title: "DevOps Engineer", 
-      company: "Cloud Solutions", 
-      location: "Cape Town, South Africa", 
-      postedDate: "2025-04-22", 
-      status: "active",
-      applications: 6 
-    },
-    { 
-      id: "5", 
-      title: "Marketing Manager", 
-      company: "GrowthHub", 
-      location: "Accra, Ghana", 
-      postedDate: "2025-04-20", 
-      status: "expired",
-      applications: 11 
-    },
-  ];
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('id, title, company, location, created_at, status, applications')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        setJobs(data || []);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load jobs. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchJobs();
+  }, [toast]);
+
+  const handleJobAction = async (jobId: string, action: string) => {
+    try {
+      let updateData: { status?: string } = {};
+      let successMessage = '';
+      
+      if (action === 'approve') {
+        updateData.status = 'active';
+        successMessage = 'Job approved and published';
+      } else if (action === 'reject') {
+        updateData.status = 'draft';
+        successMessage = 'Job rejected and moved to draft';
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from('jobs')
+          .update(updateData)
+          .eq('id', jobId);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setJobs(jobs.map(job => 
+          job.id === jobId 
+            ? { ...job, ...updateData } 
+            : job
+        ));
+        
+        toast({
+          title: 'Success',
+          description: successMessage,
+        });
+      }
+    } catch (error) {
+      console.error(`Error performing action ${action}:`, error);
+      toast({
+        title: 'Error',
+        description: `Failed to ${action} job. Please try again.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredJobs = searchTerm.trim() === '' 
+    ? jobs 
+    : jobs.filter(job => 
+        job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
   return (
     <DashboardLayout userType="admin">
@@ -66,7 +113,7 @@ const JobsAdmin = () => {
             <h1 className="text-2xl font-bold">Job Management</h1>
             <p className="text-muted-foreground">Manage all job listings in the system</p>
           </div>
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2" onClick={() => navigate('/admin/create-job')}>
             <Briefcase className="h-4 w-4" />
             <span>Add Job</span>
           </Button>
@@ -78,9 +125,13 @@ const JobsAdmin = () => {
             <Input 
               placeholder="Search jobs by title, company, or location..." 
               className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">Filters</Button>
+          <Button variant="outline">
+            <Filter className="mr-2 h-4 w-4" /> Filters
+          </Button>
         </div>
 
         <Card>
@@ -89,58 +140,86 @@ const JobsAdmin = () => {
             <CardDescription>Showing all job listings</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Posted Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Applications</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {jobs.map((job) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="font-medium">{job.title}</TableCell>
-                    <TableCell>{job.company}</TableCell>
-                    <TableCell>{job.location}</TableCell>
-                    <TableCell>{new Date(job.postedDate).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        job.status === 'active' 
-                          ? 'bg-green-100 text-green-800'
-                          : job.status === 'pending' 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{job.applications}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {job.status === 'pending' ? (
-                        <>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600">
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600">
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      )}
-                    </TableCell>
+            {loading ? (
+              <div className="text-center py-4">Loading jobs...</div>
+            ) : filteredJobs.length === 0 ? (
+              <div className="text-center py-4">No jobs found. Try a different search term.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Posted Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Applications</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredJobs.map((job) => (
+                    <TableRow key={job.id}>
+                      <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableCell>{job.company}</TableCell>
+                      <TableCell>{job.location}</TableCell>
+                      <TableCell>{job.created_at ? new Date(job.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge className={`px-2 py-1 rounded-full text-xs ${
+                          job.status === 'active' 
+                            ? 'bg-green-100 text-green-800'
+                            : job.status === 'pending' 
+                              ? 'bg-amber-100 text-amber-800' 
+                              : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{job.applications || 0}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/admin/edit-job/${job.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {job.status === 'pending' && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-green-600"
+                              onClick={() => handleJobAction(job.id, 'approve')}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-red-600"
+                              onClick={() => handleJobAction(job.id, 'reject')}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        {job.status !== 'pending' && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => navigate(`/admin/edit-job/${job.id}`)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

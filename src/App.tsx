@@ -15,6 +15,8 @@ import BlogManagement from "./pages/admin/BlogManagement";
 import BlogEditor from "./pages/admin/BlogEditor";
 import UsersAdmin from "./pages/admin/Users";
 import JobsAdmin from "./pages/admin/Jobs";
+import CreateJob from "./pages/admin/CreateJob";
+import EditJob from "./pages/admin/EditJob";
 import CompaniesAdmin from "./pages/admin/Companies";
 import SettingsAdmin from "./pages/admin/Settings";
 import CandidateDashboard from "./pages/CandidateDashboard";
@@ -31,6 +33,8 @@ import CandidateMessages from "./pages/candidate/Messages";
 import CandidateSavedJobs from "./pages/candidate/SavedJobs";
 import CandidateSettings from "./pages/candidate/Settings";
 import EmployerJobs from "./pages/employer/Jobs";
+import PostJob from "./pages/employer/PostJob";
+import EditJobPage from "./pages/employer/EditJob";
 import EmployerCandidates from "./pages/employer/Candidates";
 import EmployerCompany from "./pages/employer/Company";
 import EmployerMessages from "./pages/employer/Messages";
@@ -73,6 +77,8 @@ const App = () => {
                 <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
                 <Route path="/admin/users" element={<UsersAdmin />} />
                 <Route path="/admin/jobs" element={<JobsAdmin />} />
+                <Route path="/admin/create-job" element={<CreateJob />} />
+                <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
                 <Route path="/admin/companies" element={<CompaniesAdmin />} />
                 <Route path="/admin/settings" element={<SettingsAdmin />} />
                 
@@ -87,6 +93,8 @@ const App = () => {
                 {/* Employer Routes */}
                 <Route path="/employer" element={<EmployerDashboard />} />
                 <Route path="/employer/jobs" element={<EmployerJobs />} />
+                <Route path="/employer/post-job" element={<PostJob />} />
+                <Route path="/employer/edit-job/:jobId" element={<EditJobPage />} />
                 <Route path="/employer/candidates" element={<EmployerCandidates />} />
                 <Route path="/employer/company" element={<EmployerCompany />} />
                 <Route path="/employer/messages" element={<EmployerMessages />} />

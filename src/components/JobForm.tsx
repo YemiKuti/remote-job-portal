@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -163,10 +162,11 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
           : null
       };
 
-      // Add employer_id if not admin or if creating a new job
-      if (!jobId || !isAdmin) {
-        formattedValues.employer_id = user?.id;
-      }
+      // Create an object with the data that will be saved to Supabase
+      const jobData = {
+        ...formattedValues,
+        employer_id: user?.id
+      };
 
       let response;
       
@@ -174,13 +174,13 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
         // Update existing job
         response = await supabase
           .from("jobs")
-          .update(formattedValues)
+          .update(jobData)
           .eq("id", jobId);
       } else {
         // Create new job
         response = await supabase
           .from("jobs")
-          .insert([formattedValues])
+          .insert(jobData)
           .select();
       }
 

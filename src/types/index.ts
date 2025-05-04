@@ -1,4 +1,3 @@
-
 export interface Job {
   id: string;
   title: string;
@@ -112,4 +111,26 @@ export interface CandidateFilter {
   education?: string[];
   jobType?: string[];
   availability?: string[];
+}
+
+export interface BlogPostDetails {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  is_published: boolean;
+  profiles?: {
+    full_name: string | null;
+  } | null;
+}
+
+export interface RelatedPostDetails {
+  id: string;
+  title: string;
+  created_at: string;
+  profiles?: {
+    full_name: string | null;
+  } | null;
 }

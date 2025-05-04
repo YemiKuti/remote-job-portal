@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -155,17 +156,34 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
       setLoading(true);
       
       // Transform date string to ISO format if it exists
-      const formattedValues = {
-        ...values,
-        application_deadline: values.application_deadline 
-          ? new Date(values.application_deadline).toISOString()
-          : null
-      };
+      const applicationDeadline = values.application_deadline 
+        ? new Date(values.application_deadline).toISOString()
+        : null;
 
-      // Create an object with the data that will be saved to Supabase
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Create a properly typed object for Supabase
       const jobData = {
-        ...formattedValues,
-        employer_id: user?.id
+        title: values.title,
+        company: values.company,
+        location: values.location,
+        description: values.description,
+        requirements: values.requirements,
+        salary_min: values.salary_min,
+        salary_max: values.salary_max,
+        salary_currency: values.salary_currency,
+        employment_type: values.employment_type,
+        experience_level: values.experience_level,
+        tech_stack: values.tech_stack,
+        visa_sponsorship: values.visa_sponsorship,
+        remote: values.remote,
+        company_size: values.company_size,
+        application_deadline: applicationDeadline,
+        logo: values.logo,
+        status: values.status,
+        employer_id: user.id
       };
 
       let response;

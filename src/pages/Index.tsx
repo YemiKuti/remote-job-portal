@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { SearchFilters, Job } from "@/types";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSupabase";
 
 const MAX_JOBS_DEFAULT = 5;
 const MAX_JOBS_SEARCH = 3;
@@ -21,20 +22,24 @@ const Index = () => {
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const { subscribed, loading: subscriptionLoading } = useSubscription();
   
   useEffect(() => {
     const sortedJobs = [...jobs].sort((a, b) => 
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
-    setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-  }, []);
+    
+    // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+    setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+  }, [subscribed]);
 
   const handleSearch = (query: string) => {
     if (!query.trim()) {
       const sortedJobs = [...jobs].sort((a, b) => 
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
-      setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
       setIsFiltering(false);
       return;
     }
@@ -51,11 +56,12 @@ const Index = () => {
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
 
-    setFilteredJobs(sortedResults.slice(0, MAX_JOBS_SEARCH));
+    // If user is subscribed, show all results, otherwise limit to MAX_JOBS_SEARCH
+    setFilteredJobs(subscribed ? sortedResults : sortedResults.slice(0, MAX_JOBS_SEARCH));
     
     if (searchResults.length === 0) {
       toast.info("No jobs found matching your search.");
-    } else if (searchResults.length > MAX_JOBS_SEARCH) {
+    } else if (!subscribed && searchResults.length > MAX_JOBS_SEARCH) {
       toast.info(`Showing ${MAX_JOBS_SEARCH} of ${searchResults.length} matching jobs. Subscribe to see more.`);
     }
   };
@@ -113,11 +119,12 @@ const Index = () => {
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
     
-    setFilteredJobs(sortedResults.slice(0, MAX_JOBS_SEARCH));
+    // If user is subscribed, show all results, otherwise limit to MAX_JOBS_SEARCH
+    setFilteredJobs(subscribed ? sortedResults : sortedResults.slice(0, MAX_JOBS_SEARCH));
     
     if (filteredResults.length === 0) {
       toast.info("No jobs found matching your filters.");
-    } else if (filteredResults.length > MAX_JOBS_SEARCH) {
+    } else if (!subscribed && filteredResults.length > MAX_JOBS_SEARCH) {
       toast.info(`Showing ${MAX_JOBS_SEARCH} of ${filteredResults.length} matching jobs. Subscribe to see more.`);
     }
   };
@@ -154,7 +161,8 @@ const Index = () => {
                       const sortedJobs = [...jobs].sort((a, b) => 
                         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
                       );
-                      setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+                      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+                      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
                       setIsFiltering(false);
                     }}
                   >
@@ -178,7 +186,8 @@ const Index = () => {
                       const sortedJobs = [...jobs].sort((a, b) => 
                         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
                       );
-                      setFilteredJobs(sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+                      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+                      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
                       setIsFiltering(false);
                     }}
                   >
@@ -187,7 +196,7 @@ const Index = () => {
                 </div>
               )}
               
-              {filteredJobs.length > 0 && (
+              {filteredJobs.length > 0 && !subscribed && (
                 <div className="mt-10 text-center">
                   <p className="mb-4 text-gray-600">
                     {isFiltering 

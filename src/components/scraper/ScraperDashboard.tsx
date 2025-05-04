@@ -11,7 +11,29 @@ import ScraperPipelines from "@/components/scraper/ScraperPipelines";
 import ScraperLogs from "@/components/scraper/ScraperLogs";
 import ScraperResults from "@/components/scraper/ScraperResults";
 import ScraperSchedule from "@/components/scraper/ScraperSchedule";
-import { LineChart, BarChart } from "@/components/ui/chart";
+
+// Create a simple chart component since the chart components aren't available
+const SimpleLineChart = ({ data, options, className }: any) => {
+  return (
+    <div className={`${className} bg-gray-50 flex items-center justify-center p-4 rounded-md`}>
+      <div className="text-center text-gray-500">
+        <p>Line Chart Visualization</p>
+        <p className="text-sm">Data points: {data.datasets[0].data.join(', ')}</p>
+      </div>
+    </div>
+  );
+};
+
+const SimpleBarChart = ({ data, options, className }: any) => {
+  return (
+    <div className={`${className} bg-gray-50 flex items-center justify-center p-4 rounded-md`}>
+      <div className="text-center text-gray-500">
+        <p>Bar Chart Visualization</p>
+        <p className="text-sm">Data points: {data.datasets[0].data.join(', ')}</p>
+      </div>
+    </div>
+  );
+};
 
 interface ScraperDashboardProps {
   settings: ScraperSettings;
@@ -134,7 +156,7 @@ const ScraperDashboard = ({
                 <CardDescription>Job scraping activity over time</CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <LineChart 
+                <SimpleLineChart 
                   data={dummyChartData} 
                   options={{
                     responsive: true,
@@ -151,7 +173,7 @@ const ScraperDashboard = ({
                 <CardDescription>Distribution across platforms</CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <BarChart 
+                <SimpleBarChart 
                   data={sourcesChartData} 
                   options={{
                     responsive: true,

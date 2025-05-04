@@ -41,7 +41,7 @@ export const JobScraperAutomation = ({
   const [enableSchedule, setEnableSchedule] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [copied, setCopied] = useState(false);
-  const [proxyEnabled, setProxyEnabled] = useState(false);
+  const [proxyEnabled, setProxyEnabled] = useState(settings.useProxy || false);
   const [proxyUrl, setProxyUrl] = useState("");
   const [proxyRotation, setProxyRotation] = useState(false);
 
@@ -64,7 +64,7 @@ export const JobScraperAutomation = ({
       ? `Automation scheduled for ${format(scheduledDate!, "PPP")}. Results will be delivered ${
           enableEmail ? `to ${emailAddress}` : "via webhook"
         }.`
-      : `Automation setup with ${settings.schedule} schedule. Results will be delivered ${
+      : `Automation setup with ${settings.schedule || 'daily'} schedule. Results will be delivered ${
           enableEmail ? `to ${emailAddress}` : "via webhook"
         }.`;
 
@@ -125,7 +125,7 @@ export const JobScraperAutomation = ({
               <div className="space-y-2">
                 <Label htmlFor="schedule">Schedule Frequency</Label>
                 <Select 
-                  value={settings.schedule} 
+                  value={settings.schedule || 'daily'} 
                   onValueChange={(value) => updateSettings({ schedule: value })}
                 >
                   <SelectTrigger id="schedule">
@@ -205,7 +205,7 @@ export const JobScraperAutomation = ({
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="autoExport" 
-                  checked={settings.autoExport}
+                  checked={settings.autoExport || false}
                   onCheckedChange={(checked) => updateSettings({ autoExport: !!checked })}
                 />
                 <Label htmlFor="autoExport">Auto-export to {settings.exportFormat.toUpperCase()} after scraping</Label>
@@ -214,7 +214,7 @@ export const JobScraperAutomation = ({
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="cleanData" 
-                  checked={settings.cleanData}
+                  checked={settings.cleanData || false}
                   onCheckedChange={(checked) => updateSettings({ cleanData: !!checked })}
                 />
                 <Label htmlFor="cleanData">Clean data before export (remove duplicates, format inconsistencies)</Label>
@@ -274,7 +274,7 @@ export const JobScraperAutomation = ({
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="captchaDetection" 
-                      checked={settings.captchaDetection}
+                      checked={settings.captchaDetection || false}
                       onCheckedChange={(checked) => updateSettings({ captchaDetection: !!checked })}
                     />
                     <Label htmlFor="captchaDetection">Enable CAPTCHA detection and notifications</Label>
@@ -283,7 +283,7 @@ export const JobScraperAutomation = ({
                   <div className="flex items-center space-x-2">
                     <Checkbox 
                       id="delayBetweenRequests" 
-                      checked={settings.delayBetweenRequests}
+                      checked={settings.delayBetweenRequests || false}
                       onCheckedChange={(checked) => updateSettings({ delayBetweenRequests: !!checked })}
                     />
                     <Label htmlFor="delayBetweenRequests">Add random delay between requests</Label>

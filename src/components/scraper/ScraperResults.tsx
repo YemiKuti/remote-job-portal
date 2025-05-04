@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DownloadCloud, FileJson, FileCsv, FileSpreadsheet, Search, Filter } from "lucide-react";
+import { DownloadCloud, FileJson, File, FileSpreadsheet, Search, Filter } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -115,7 +114,7 @@ const ScraperResults = ({ results = sampleResults }: ScraperResultsProps) => {
                 <FileJson className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon">
-                <FileCsv className="h-4 w-4" />
+                <File className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon">
                 <FileSpreadsheet className="h-4 w-4" />

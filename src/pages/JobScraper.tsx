@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -30,7 +29,11 @@ const defaultSettings: ScraperSettings = {
   similarJobDetection: true,
   companyInfoEnrichment: false,
   semanticSearch: false,
-  structuredDataExtraction: true
+  structuredDataExtraction: true,
+  schedule: "daily",
+  useProxy: false,
+  autoExport: false,
+  cleanData: true
 };
 
 const JobScraper = () => {

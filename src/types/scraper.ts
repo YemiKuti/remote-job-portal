@@ -8,6 +8,12 @@ export interface JobScrapingSource {
   supported: boolean;
 }
 
+export interface ApplyOption {
+  type: 'internal' | 'external' | 'email' | 'phone';
+  value: string;
+  label: string;
+}
+
 export interface ScraperSettings {
   keywords: string;
   companyNames: string;
@@ -38,6 +44,21 @@ export interface ScraperSettings {
   companyInfoEnrichment: boolean;
   semanticSearch: boolean;
   structuredDataExtraction: boolean;
+
+  // Additional settings for automation
+  schedule?: string;
+  useProxy?: boolean;
+  rotateUserAgent?: boolean;
+  captchaDetection?: boolean;
+  delayBetweenRequests?: boolean;
+  autoExport?: boolean;
+  cleanData?: boolean;
+  
+  // Enhanced job data settings
+  multipleApplyOptions?: boolean;
+  relatedJobsListing?: boolean;
+  applicationDeadline?: boolean;
+  enhancedCompanyProfiles?: boolean;
 }
 
 export interface ScrapedJob {
@@ -76,4 +97,13 @@ export interface ScraperMetrics {
   averageTime: number;
   lastRun?: Date;
   nextRun?: Date;
+}
+
+export interface ScraperResultData {
+  stats: {
+    bySource: Array<{ name: string; value: number }>;
+    byExperience: Array<{ name: string; value: number }>;
+    byLocation: Array<{ name: string; value: number }>;
+    bySalary: Array<{ name: string; value: number }>;
+  };
 }

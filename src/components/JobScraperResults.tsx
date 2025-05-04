@@ -179,7 +179,7 @@ export const JobScraperResults = ({
         <div className="flex gap-2">
           <Select 
             value={settings.exportFormat} 
-            onValueChange={(value) => setSettings({...settings, exportFormat: value})}
+            onValueChange={(value: "json" | "xml" | "csv" | "excel") => setSettings({...settings, exportFormat: value})}
           >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Format" />

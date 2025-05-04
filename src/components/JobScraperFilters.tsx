@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +50,13 @@ export const JobScraperFilters = ({
   const jobTypes = ["Full-time", "Part-time", "Contract", "Freelance", "Internship", "Temporary"];
   const experienceLevels = ["Entry-level", "Mid-level", "Senior", "Lead", "Executive"];
   
+  const exportFormatOptions = [
+    { value: "json", label: "JSON" },
+    { value: "xml", label: "XML" },
+    { value: "csv", label: "CSV" },
+    { value: "excel", label: "Excel (.xlsx)" }
+  ];
+
   return (
     <div className="space-y-6">
       <Accordion type="multiple" defaultValue={["basic", "advanced", "sources"]}>
@@ -316,15 +322,16 @@ export const JobScraperFilters = ({
               
               <div className="space-y-2">
                 <Label htmlFor="exportFormat">Export Format</Label>
-                <Select value={settings.exportFormat} onValueChange={(value) => updateSettings({ exportFormat: value })}>
-                  <SelectTrigger>
+                <Select value={settings.exportFormat} onValueChange={(value: "json" | "xml" | "csv" | "excel") => updateSettings({ exportFormat: value })}>
+                  <SelectTrigger id="exportFormat">
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="xml">XML</SelectItem>
-                    <SelectItem value="json">JSON</SelectItem>
-                    <SelectItem value="csv">CSV</SelectItem>
-                    <SelectItem value="excel">Excel</SelectItem>
+                    {exportFormatOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

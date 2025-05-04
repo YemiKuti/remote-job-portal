@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./components/AuthProvider";
 import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
@@ -52,63 +53,65 @@ const queryClient = new QueryClient({
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <div className="w-full">
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/job-scraper" element={<JobScraper />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:id" element={<BlogPost />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/account" element={<Account />} />
-                
-                {/* Admin Routes */}
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/blog" element={<BlogManagement />} />
-                <Route path="/admin/blog/create" element={<BlogEditor />} />
-                <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
-                <Route path="/admin/users" element={<UsersAdmin />} />
-                <Route path="/admin/jobs" element={<JobsAdmin />} />
-                <Route path="/admin/create-job" element={<CreateJob />} />
-                <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
-                <Route path="/admin/companies" element={<CompaniesAdmin />} />
-                <Route path="/admin/settings" element={<SettingsAdmin />} />
-                
-                {/* Candidate Routes */}
-                <Route path="/candidate" element={<CandidateDashboard />} />
-                <Route path="/candidate/profile" element={<CandidateProfile />} />
-                <Route path="/candidate/applications" element={<CandidateApplications />} />
-                <Route path="/candidate/messages" element={<CandidateMessages />} />
-                <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
-                <Route path="/candidate/settings" element={<CandidateSettings />} />
-                
-                {/* Employer Routes */}
-                <Route path="/employer" element={<EmployerDashboard />} />
-                <Route path="/employer/jobs" element={<EmployerJobs />} />
-                <Route path="/employer/post-job" element={<PostJob />} />
-                <Route path="/employer/edit-job/:jobId" element={<EditJobPage />} />
-                <Route path="/employer/candidates" element={<EmployerCandidates />} />
-                <Route path="/employer/company" element={<EmployerCompany />} />
-                <Route path="/employer/messages" element={<EmployerMessages />} />
-                <Route path="/employer/settings" element={<EmployerSettings />} />
-                
-                <Route path="/checkout/success" element={<CheckoutSuccess />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </div>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <div className="w-full">
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/job-scraper" element={<JobScraper />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:id" element={<BlogPost />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/account" element={<Account />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/blog" element={<BlogManagement />} />
+                  <Route path="/admin/blog/create" element={<BlogEditor />} />
+                  <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
+                  <Route path="/admin/users" element={<UsersAdmin />} />
+                  <Route path="/admin/jobs" element={<JobsAdmin />} />
+                  <Route path="/admin/create-job" element={<CreateJob />} />
+                  <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
+                  <Route path="/admin/companies" element={<CompaniesAdmin />} />
+                  <Route path="/admin/settings" element={<SettingsAdmin />} />
+                  
+                  {/* Candidate Routes */}
+                  <Route path="/candidate" element={<CandidateDashboard />} />
+                  <Route path="/candidate/profile" element={<CandidateProfile />} />
+                  <Route path="/candidate/applications" element={<CandidateApplications />} />
+                  <Route path="/candidate/messages" element={<CandidateMessages />} />
+                  <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
+                  <Route path="/candidate/settings" element={<CandidateSettings />} />
+                  
+                  {/* Employer Routes */}
+                  <Route path="/employer" element={<EmployerDashboard />} />
+                  <Route path="/employer/jobs" element={<EmployerJobs />} />
+                  <Route path="/employer/post-job" element={<PostJob />} />
+                  <Route path="/employer/edit-job/:jobId" element={<EditJobPage />} />
+                  <Route path="/employer/candidates" element={<EmployerCandidates />} />
+                  <Route path="/employer/company" element={<EmployerCompany />} />
+                  <Route path="/employer/messages" element={<EmployerMessages />} />
+                  <Route path="/employer/settings" element={<EmployerSettings />} />
+                  
+                  <Route path="/checkout/success" element={<CheckoutSuccess />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </div>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };
 

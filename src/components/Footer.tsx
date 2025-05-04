@@ -54,7 +54,7 @@ const Footer = () => {
             </div>
           </div>
           
-          <div className="md:col-span-2 md:col-start-6">
+          <div className="md:col-span-2 md:col-start-auto">
             <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
@@ -152,7 +151,7 @@ const Index = () => {
             <div className="lg:col-span-2">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-semibold">
-                  {isFiltering ? "Search Results" : "Latest Tech Jobs"}
+                  {isFiltering ? "Search Results" : "Latest Jobs"}
                 </h2>
                 {isFiltering && (
                   <Button 
@@ -201,7 +200,7 @@ const Index = () => {
                   <p className="mb-4 text-gray-600">
                     {isFiltering 
                       ? "Want to see more search results?" 
-                      : "Want to see more tech jobs?"}
+                      : "Want to see more jobs?"}
                   </p>
                   <Button className="bg-job-green hover:bg-job-darkGreen">
                     <Link to="/pricing">Subscribe Now</Link>

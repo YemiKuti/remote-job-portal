@@ -2,18 +2,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-
-interface RelatedPost {
-  id: string;
-  title: string;
-  created_at: string;
-  profiles: {
-    full_name: string | null;
-  } | null;
-}
+import { RelatedPostDetails } from '@/types';
 
 interface RelatedPostsProps {
-  posts: RelatedPost[];
+  posts: RelatedPostDetails[];
   currentPostId: string;
 }
 

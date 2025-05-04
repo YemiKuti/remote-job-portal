@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import BlogSEO from '@/components/blog/BlogSEO';
 import TableOfContents from '@/components/blog/TableOfContents';
 import RelatedPosts from '@/components/blog/RelatedPosts';
+import { BlogPostDetails, RelatedPostDetails } from '@/types';
 import {
   Tooltip,
   TooltipContent,
@@ -16,24 +16,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface BlogPostDetails {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  is_published: boolean;
-  profiles: {
-    full_name: string | null;
-  } | null;
-}
-
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<BlogPostDetails | null>(null);
-  const [relatedPosts, setRelatedPosts] = useState<BlogPostDetails[]>([]);
+  const [relatedPosts, setRelatedPosts] = useState<RelatedPostDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   

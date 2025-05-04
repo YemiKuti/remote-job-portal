@@ -1,3 +1,4 @@
+
 export interface SearchFilters {
   query: string;
   location: string;
@@ -107,6 +108,15 @@ export interface BlogPostDetails {
   user_id: string;
   is_published: boolean;
   profiles?: {
-    full_name: string;
-  };
+    full_name: string | null;
+  } | null;
+}
+
+export interface RelatedPostDetails {
+  id: string;
+  title: string;
+  created_at: string;
+  profiles?: {
+    full_name: string | null;
+  } | null;
 }

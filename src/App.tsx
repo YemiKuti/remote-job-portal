@@ -9,9 +9,14 @@ import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import JobScraper from "./pages/JobScraper";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import AdminDashboard from "./pages/AdminDashboard";
 import BlogManagement from "./pages/admin/BlogManagement";
 import BlogEditor from "./pages/admin/BlogEditor";
+import UsersAdmin from "./pages/admin/Users";
+import JobsAdmin from "./pages/admin/Jobs";
+import CompaniesAdmin from "./pages/admin/Companies";
+import SettingsAdmin from "./pages/admin/Settings";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
 import SignIn from "./pages/SignIn";
@@ -55,6 +60,7 @@ const App = () => {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/job-scraper" element={<JobScraper />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:id" element={<BlogPost />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/profile" element={<Profile />} />
@@ -65,6 +71,10 @@ const App = () => {
                 <Route path="/admin/blog" element={<BlogManagement />} />
                 <Route path="/admin/blog/create" element={<BlogEditor />} />
                 <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
+                <Route path="/admin/users" element={<UsersAdmin />} />
+                <Route path="/admin/jobs" element={<JobsAdmin />} />
+                <Route path="/admin/companies" element={<CompaniesAdmin />} />
+                <Route path="/admin/settings" element={<SettingsAdmin />} />
                 
                 {/* Candidate Routes */}
                 <Route path="/candidate" element={<CandidateDashboard />} />

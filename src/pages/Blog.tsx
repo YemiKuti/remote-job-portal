@@ -14,7 +14,7 @@ interface BlogPost {
   created_at: string;
   updated_at: string;
   user_id: string;
-  featured_image: string | null;
+  is_published: boolean;
   profiles: {
     full_name: string | null;
   } | null;
@@ -37,7 +37,7 @@ const Blog: React.FC = () => {
             created_at, 
             updated_at, 
             user_id,
-            featured_image,
+            is_published,
             profiles (full_name)
           `)
           .eq('is_published', true)
@@ -100,19 +100,6 @@ const Blog: React.FC = () => {
               <Link to={`/blog/${post.id}`} key={post.id}>
                 <Card className="hover:shadow-md transition-shadow duration-300 h-full">
                   <CardHeader className="pb-2">
-                    <div className="h-40 bg-gray-200 rounded-t-lg mb-4 overflow-hidden">
-                      {post.featured_image ? (
-                        <img 
-                          src={post.featured_image} 
-                          alt={post.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
-                          No image
-                        </div>
-                      )}
-                    </div>
                     <CardTitle className="text-xl hover:text-green-600 transition-colors">{post.title}</CardTitle>
                     <CardDescription className="text-sm text-gray-500">
                       By {post.profiles?.full_name || 'Anonymous'} • {formatDate(post.created_at)}

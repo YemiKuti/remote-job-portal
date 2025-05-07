@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./components/AuthProvider";
 import Index from "./pages/Index";
@@ -101,6 +100,9 @@ const App = () => {
                   <Route path="/employer/company" element={<EmployerCompany />} />
                   <Route path="/employer/messages" element={<EmployerMessages />} />
                   <Route path="/employer/settings" element={<EmployerSettings />} />
+                  
+                  {/* Redirect old PostJob route to employer route */}
+                  <Route path="/post-job" element={<Navigate to="/employer/post-job" replace />} />
                   
                   <Route path="/checkout/success" element={<CheckoutSuccess />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

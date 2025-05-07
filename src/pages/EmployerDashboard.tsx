@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Eye, Briefcase, BarChart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const EmployerDashboard = () => {
+  const navigate = useNavigate();
+  
   // Mock data
   const recentApplications = [
     { id: '1', candidate: 'John Smith', position: 'Frontend Developer', date: '2025-05-01', status: 'pending' },
@@ -115,7 +118,7 @@ const EmployerDashboard = () => {
                   </div>
                 </div>
               ))}
-              <Button className="w-full">Post New Job</Button>
+              <Button className="w-full" onClick={() => navigate('/employer/post-job')}>Post New Job</Button>
             </CardContent>
           </Card>
         </div>

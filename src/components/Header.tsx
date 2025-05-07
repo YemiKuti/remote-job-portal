@@ -2,8 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useAuth } from "./AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -14,11 +12,12 @@ import {
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user } = useAuth();
+  // For testing, we'll assume the user is always logged in as admin
+  const user = { user_metadata: { role: 'admin', full_name: 'Test Admin' } };
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // Just navigate to home for testing
     navigate('/');
   };
 
@@ -53,7 +52,6 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="cursor-pointer">
-                  <AvatarImage src={user.user_metadata.avatar_url} />
                   <AvatarFallback>{getInitials(user.user_metadata.full_name)}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -61,11 +59,15 @@ export default function Header() {
                 <DropdownMenuItem onClick={() => navigate('/profile')}>
                   Profile
                 </DropdownMenuItem>
-                {user.user_metadata.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    Admin Dashboard
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  Admin Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/employer')}>
+                  Employer Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/candidate')}>
+                  Candidate Dashboard
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   Sign Out
                 </DropdownMenuItem>

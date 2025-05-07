@@ -54,7 +54,7 @@ const CreateJob = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Create Job (Admin)</h2>
           <p className="text-muted-foreground">
-            Create a new job listing as an administrator.
+            Create a new job listing as an administrator. Jobs created by admins can be immediately published.
           </p>
         </div>
         

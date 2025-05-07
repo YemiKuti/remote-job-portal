@@ -62,7 +62,7 @@ const AdminEditJob = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Edit Job (Admin)</h2>
           <p className="text-muted-foreground">
-            Edit job details as an administrator.
+            Edit job details as an administrator. You can change any job details and update its status.
           </p>
         </div>
         

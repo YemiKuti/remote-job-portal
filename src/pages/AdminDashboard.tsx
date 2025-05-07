@@ -21,7 +21,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -97,6 +97,16 @@ const AdminDashboard = () => {
                 <Link to="/job-scraper">
                   <Server className="h-6 w-6 text-blue-500" />
                   <span>Job Scraper</span>
+                </Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2"
+                asChild
+              >
+                <Link to="/admin/create-job">
+                  <Briefcase className="h-6 w-6 text-green-500" />
+                  <span>Create Job</span>
                 </Link>
               </Button>
               <Button 

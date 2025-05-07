@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,8 +113,8 @@ const JobsAdmin = () => {
             <p className="text-muted-foreground">Manage all job listings in the system</p>
           </div>
           <Button className="flex items-center gap-2" onClick={() => navigate('/admin/create-job')}>
-            <Briefcase className="h-4 w-4" />
-            <span>Add Job</span>
+            <Plus className="h-4 w-4" />
+            <span>Create Job</span>
           </Button>
         </div>
 

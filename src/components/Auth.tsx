@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,24 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // For testing, we'll just show a success message without actually signing up
-      toast({
-        title: "Test Mode",
-        description: "Sign up successful (test mode)",
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: fullName,
+          }
+        }
       });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Check your email for the confirmation link",
+      });
+      
       navigate('/');
     } catch (error: any) {
       toast({
@@ -43,11 +57,18 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // For testing, we'll just navigate to the home page
-      toast({
-        title: "Test Mode",
-        description: "Sign in successful (test mode)",
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Signed in successfully",
+      });
+      
       navigate('/');
     } catch (error: any) {
       toast({

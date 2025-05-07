@@ -9,15 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // For testing, we'll assume the user is always logged in as admin
-  const user = { user_metadata: { role: 'admin', full_name: 'Test Admin' } };
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    // Just navigate to home for testing
+    await signOut();
     navigate('/');
   };
 
@@ -52,7 +52,7 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="cursor-pointer">
-                  <AvatarFallback>{getInitials(user.user_metadata.full_name)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(user.user_metadata?.full_name)}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { COUNTRIES } from "@/components/job-form/countries";
 
 interface AdvancedFiltersProps {
   isOpen: boolean;
@@ -98,12 +98,23 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
 
               <div>
                 <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  placeholder="Country, region, etc."
+                <Select
                   value={filters.location}
-                  onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                />
+                  onValueChange={(value) => setFilters({ ...filters, location: value })}
+                >
+                  <SelectTrigger id="location">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    <SelectItem value="">Any location</SelectItem>
+                    <SelectItem value="Remote">Remote</SelectItem>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -175,17 +186,6 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                   value={filters.minSalary || ""}
                   onChange={(e) => setFilters({ ...filters, minSalary: e.target.value ? Number(e.target.value) : null })}
                 />
-              </div>
-
-              <div className="flex items-center space-x-2 py-2">
-                <Switch
-                  id="visa-sponsorship"
-                  checked={filters.visaSponsorship === true}
-                  onCheckedChange={(checked) =>
-                    setFilters({ ...filters, visaSponsorship: checked ? true : null })
-                  }
-                />
-                <Label htmlFor="visa-sponsorship">Visa Sponsorship</Label>
               </div>
             </div>
           </div>

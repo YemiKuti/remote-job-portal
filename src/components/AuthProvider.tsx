@@ -20,13 +20,16 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // For testing, create a mock user
+  // For testing, create a mock user that properly satisfies the User type
   const mockUser = {
     id: 'test-user-id',
+    app_metadata: {},
     user_metadata: {
       full_name: 'Test User',
       username: 'testuser'
-    }
+    },
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
   } as User;
   
   const [user, setUser] = useState<User | null>(mockUser);

@@ -17,16 +17,27 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // For testing purposes, we'll automatically navigate to home page
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // For testing, we'll just simulate a successful sign up
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+      
       toast({
         title: "Success",
-        description: "Signed up successfully (Auth disabled for testing)",
+        description: "Signed up successfully! Please check your email for confirmation.",
       });
       
       navigate('/');
@@ -46,10 +57,16 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // For testing, we'll just simulate a successful sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
       toast({
         title: "Success",
-        description: "Signed in successfully (Auth disabled for testing)",
+        description: "Signed in successfully!",
       });
       
       navigate('/');

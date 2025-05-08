@@ -13,37 +13,45 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  isLoading: false, // Set to false for testing
+  isLoading: true,
   signOut: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // For testing, create a mock user that properly satisfies the User type
-  const mockUser = {
-    id: 'test-user-id',
-    app_metadata: {},
-    user_metadata: {
-      full_name: 'Test User',
-      username: 'testuser'
-    },
-    aud: 'authenticated',
-    created_at: new Date().toISOString(),
-  } as User;
-  
-  const [user, setUser] = useState<User | null>(mockUser);
-  const [session, setSession] = useState<Session | null>({
-    access_token: 'mock-token',
-    refresh_token: 'mock-refresh-token',
-    user: mockUser
-  } as Session);
-  const [isLoading, setIsLoading] = useState(false); // Set to false for testing
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signOut = async () => {
-    // For testing, just clear the mock user
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

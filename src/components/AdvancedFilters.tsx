@@ -106,7 +106,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                     <SelectValue placeholder="Select country" />
                   </SelectTrigger>
                   <SelectContent className="max-h-80">
-                    <SelectItem value="">Any location</SelectItem>
+                    <SelectItem value="any-location">Any location</SelectItem>
                     <SelectItem value="Remote">Remote</SelectItem>
                     {COUNTRIES.map((country) => (
                       <SelectItem key={country} value={country}>

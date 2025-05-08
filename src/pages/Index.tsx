@@ -73,16 +73,12 @@ const Index = () => {
         return false;
       }
       
-      if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      if (filters.location && filters.location !== "any-location" && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
         return false;
       }
       
       // Skip experience level filter if "all-levels" is selected
       if (filters.experienceLevel && filters.experienceLevel !== "all-levels" && job.experienceLevel !== filters.experienceLevel) {
-        return false;
-      }
-      
-      if (filters.visaSponsorship !== null && job.visaSponsorship !== filters.visaSponsorship) {
         return false;
       }
       

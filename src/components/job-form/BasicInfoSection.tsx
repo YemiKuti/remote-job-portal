@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { Globe } from "lucide-react";
+import { COUNTRIES } from "./countries";
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<JobFormValues>;
@@ -59,9 +61,26 @@ export const BasicInfoSection = ({ form }: BasicInfoSectionProps) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Location*</FormLabel>
-            <FormControl>
-              <Input placeholder="e.g. Nairobi, Kenya or Remote" {...field} />
-            </FormControl>
+            <Select 
+              onValueChange={field.onChange} 
+              defaultValue={field.value}
+              value={field.value}
+            >
+              <FormControl>
+                <SelectTrigger className="flex items-center">
+                  <Globe className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="Remote">Remote</SelectItem>
+                {COUNTRIES.map((country) => (
+                  <SelectItem key={country} value={country}>
+                    {country}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}

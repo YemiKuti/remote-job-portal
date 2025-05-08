@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,6 +40,7 @@ import EmployerCandidates from "./pages/employer/Candidates";
 import EmployerCompany from "./pages/employer/Company";
 import EmployerMessages from "./pages/employer/Messages";
 import EmployerSettings from "./pages/employer/Settings";
+import JobDetail from "./pages/JobDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +72,7 @@ const App = () => {
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/account" element={<Account />} />
+                  <Route path="/jobs/:jobId" element={<JobDetail />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminDashboard />} />

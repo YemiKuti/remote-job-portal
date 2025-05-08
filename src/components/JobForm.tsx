@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -142,18 +141,16 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
           formattedDate = new Date(data.application_deadline).toISOString().split('T')[0];
         }
         
-        // Handle application type and value - if they don't exist in the database yet
-        // set them to defaults
-        const applicationType = data.application_type || "internal";
-        const applicationValue = data.application_value || "";
+        // Type assertion to handle potentially missing properties
+        const jobData = data as any;
         
         form.reset({
           ...data,
           application_deadline: formattedDate,
           salary_min: data.salary_min || undefined,
           salary_max: data.salary_max || undefined,
-          application_type: applicationType,
-          application_value: applicationValue,
+          application_type: jobData.application_type || "internal",
+          application_value: jobData.application_value || "",
         });
       }
       setLoading(false);

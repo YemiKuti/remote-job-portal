@@ -31,7 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { X, Plus, Mail, Phone, ExternalLink } from "lucide-react";
 
 // Define the form schema with Zod
 const jobFormSchema = z.object({
@@ -65,7 +66,9 @@ const jobFormSchema = z.object({
   company_size: z.string().optional(),
   application_deadline: z.string().optional(),
   logo: z.string().optional(),
-  status: z.string().default("draft")
+  status: z.string().default("draft"),
+  application_type: z.string().default("internal"),
+  application_value: z.string().optional(),
 });
 
 type JobFormValues = z.infer<typeof jobFormSchema>;
@@ -105,7 +108,9 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
       company_size: "",
       application_deadline: "",
       logo: "",
-      status: "draft"
+      status: "draft",
+      application_type: "internal",
+      application_value: "",
     },
   });
 
@@ -142,6 +147,8 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
           application_deadline: formattedDate,
           salary_min: data.salary_min || undefined,
           salary_max: data.salary_max || undefined,
+          application_type: data.application_type || "internal",
+          application_value: data.application_value || "",
         });
       }
       setLoading(false);
@@ -183,6 +190,8 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
         application_deadline: applicationDeadline,
         logo: values.logo,
         status: values.status,
+        application_type: values.application_type,
+        application_value: values.application_value,
         employer_id: user.id
       };
 
@@ -264,6 +273,9 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
       currentTechStack.filter((_, i) => i !== index)
     );
   };
+
+  // Application type handler
+  const applicationType = form.watch("application_type");
 
   return (
     <Card>
@@ -643,6 +655,100 @@ export const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) =
               />
             </div>
 
+            <Separator />
+
+            {/* Application Method Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Application Method</h3>
+
+              <FormField
+                control={form.control}
+                name="application_type"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>How should candidates apply?</FormLabel>
+                    <FormControl>
+                      <RadioGroup 
+                        onValueChange={field.onChange} 
+                        value={field.value} 
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="internal" id="internal" />
+                          <label
+                            htmlFor="internal" 
+                            className="flex items-center text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Internal (Apply through our platform)
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="external" id="external" />
+                          <label
+                            htmlFor="external"
+                            className="flex items-center text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            <ExternalLink className="mr-1 h-4 w-4" /> External website
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="email" id="email" />
+                          <label
+                            htmlFor="email"
+                            className="flex items-center text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            <Mail className="mr-1 h-4 w-4" /> Email
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="phone" id="phone" />
+                          <label
+                            htmlFor="phone"
+                            className="flex items-center text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            <Phone className="mr-1 h-4 w-4" /> Phone
+                          </label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {(applicationType === "external" || applicationType === "email" || applicationType === "phone") && (
+                <FormField
+                  control={form.control}
+                  name="application_value"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {applicationType === "external" && "Application URL"}
+                        {applicationType === "email" && "Email Address"}
+                        {applicationType === "phone" && "Phone Number"}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder={
+                            applicationType === "external" ? "https://yourcompany.com/apply" :
+                            applicationType === "email" ? "jobs@yourcompany.com" :
+                            "+12345678901"
+                          } 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {applicationType === "external" && "The URL where candidates will be redirected to apply"}
+                        {applicationType === "email" && "Email address where applications will be sent"}
+                        {applicationType === "phone" && "Phone number candidates should call to apply"}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+            
             {isAdmin && (
               <FormField
                 control={form.control}

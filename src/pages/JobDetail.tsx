@@ -145,27 +145,6 @@ const JobDetail = () => {
               <Button className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen">Apply Now</Button>
             </div>
           </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-            <h2 className="text-xl font-semibold mb-6">Similar Jobs</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {jobs.filter(j => j.id !== job.id && j.techStack.some(tech => job.techStack.includes(tech)))
-                .slice(0, 2)
-                .map(similarJob => (
-                  <div key={similarJob.id} className="border p-4 rounded-md hover:border-job-green transition-colors">
-                    <h3 className="font-medium mb-1">{similarJob.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{similarJob.company}</p>
-                    <div className="flex items-center text-sm text-gray-500 mb-3">
-                      <MapPin size={14} className="mr-1" />
-                      {similarJob.location}
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => window.location.href = `/jobs/${similarJob.id}`}>
-                      View Job
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          </div>
         </div>
       </div>
       <Footer />

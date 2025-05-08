@@ -203,7 +203,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                   onChange={(e) => setTechInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTechStack())}
                 />
-                <Button type="button" onClick={handleAddTechStack}>
+                <Button type="button" onClick={handleAddTechStack} className="bg-job-green hover:bg-job-darkGreen">
                   Add
                 </Button>
               </div>
@@ -231,7 +231,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
                   onChange={(e) => setHideKeywordInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddHideKeyword())}
                 />
-                <Button type="button" onClick={handleAddHideKeyword}>
+                <Button type="button" onClick={handleAddHideKeyword} className="bg-job-green hover:bg-job-darkGreen">
                   Add
                 </Button>
               </div>
@@ -254,7 +254,7 @@ const AdvancedFilters = ({ isOpen, onClose, onApplyFilters }: AdvancedFiltersPro
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleApply} className="bg-job-blue hover:bg-job-darkBlue">
+            <Button onClick={handleApply} className="bg-job-green hover:bg-job-darkGreen">
               Apply Filters
             </Button>
           </div>

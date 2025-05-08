@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -9,16 +8,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/components/AuthProvider";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+  // For testing purposes, we'll simulate a logged-in user
+  const testUser = {
+    user_metadata: {
+      full_name: 'Test User'
+    }
   };
 
   const getInitials = (name?: string) => {
@@ -48,36 +46,30 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex items-center space-x-4">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
-                  <AvatarFallback>{getInitials(user.user_metadata?.full_name)}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/admin')}>
-                  Admin Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/employer')}>
-                  Employer Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/candidate')}>
-                  Candidate Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button variant="outline" onClick={() => navigate('/auth')}>
-              Sign In
-            </Button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="cursor-pointer">
+                <AvatarFallback>{getInitials(testUser.user_metadata?.full_name)}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/admin')}>
+                Admin Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/employer')}>
+                Employer Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/candidate')}>
+                Candidate Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/')}>
+                Sign Out (Testing)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden"

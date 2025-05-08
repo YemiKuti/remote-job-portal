@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useNavigate, Navigate } from "react-router-dom";
-import { useAuth } from "@/components/AuthProvider";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Job {
   id: string;
@@ -27,17 +26,6 @@ const JobsAdmin = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
-
-  // Show loading state while checking authentication
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-  
-  // Redirect to login if not authenticated
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
 
   useEffect(() => {
     const fetchJobs = async () => {

@@ -1,3 +1,4 @@
+
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,39 +13,34 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  isLoading: true,
+  isLoading: false, // Set to false for testing
   signOut: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Set up the auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        setIsLoading(false);
-      }
-    );
-
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // For testing, create a mock user
+  const mockUser = {
+    id: 'test-user-id',
+    user_metadata: {
+      full_name: 'Test User',
+      username: 'testuser'
+    }
+  } as User;
+  
+  const [user, setUser] = useState<User | null>(mockUser);
+  const [session, setSession] = useState<Session | null>({
+    access_token: 'mock-token',
+    refresh_token: 'mock-refresh-token',
+    user: mockUser
+  } as Session);
+  const [isLoading, setIsLoading] = useState(false); // Set to false for testing
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // For testing, just clear the mock user
+    setUser(null);
+    setSession(null);
   };
 
   return (

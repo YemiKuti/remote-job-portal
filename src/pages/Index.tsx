@@ -207,17 +207,6 @@ const Index = () => {
             
             <div className="lg:col-span-1">
               <FeaturedCompanies />
-              
-              {/* Job Scraping Tool Promo */}
-              <div className="mt-8 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                <h3 className="text-xl font-semibold mb-2">Advanced Job Scraping</h3>
-                <p className="text-gray-600 mb-4">
-                  Access our powerful job scraping tool to automate job discovery across multiple platforms.
-                </p>
-                <Button className="w-full bg-job-green hover:bg-job-darkGreen">
-                  <Link to="/job-scraper">Try Job Scraper</Link>
-                </Button>
-              </div>
             </div>
           </div>
         </div>

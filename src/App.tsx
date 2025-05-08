@@ -41,6 +41,9 @@ import EmployerCompany from "./pages/employer/Company";
 import EmployerMessages from "./pages/employer/Messages";
 import EmployerSettings from "./pages/employer/Settings";
 import JobDetail from "./pages/JobDetail";
+import FAQ from "./pages/FAQ";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +76,9 @@ const App = () => {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/jobs/:jobId" element={<JobDetail />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin" element={<AdminDashboard />} />

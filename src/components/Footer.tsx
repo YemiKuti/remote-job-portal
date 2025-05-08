@@ -73,13 +73,13 @@ const Footer = () => {
             <h4 className="text-lg font-semibold mb-4">Resources</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">FAQs</a>
+                <Link to="/faq" className="text-gray-600 hover:text-primary">FAQs</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Privacy Policy</a>
+                <Link to="/privacy-policy" className="text-gray-600 hover:text-primary">Privacy Policy</Link>
               </li>
               <li>
-                <a href="#" className="text-gray-600 hover:text-primary">Terms of Service</a>
+                <Link to="/terms-of-service" className="text-gray-600 hover:text-primary">Terms of Service</Link>
               </li>
             </ul>
           </div>
@@ -114,9 +114,9 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p>&copy; {new Date().getFullYear()} Africantechjobs. All rights reserved.</p>
             <div className="flex mt-2 md:mt-0 space-x-4">
-              <Link to="#" className="hover:text-primary">Privacy Policy</Link>
-              <Link to="#" className="hover:text-primary">Terms of Service</Link>
-              <Link to="#" className="hover:text-primary">Cookie Policy</Link>
+              <Link to="/privacy-policy" className="hover:text-primary">Privacy Policy</Link>
+              <Link to="/terms-of-service" className="hover:text-primary">Terms of Service</Link>
+              <Link to="/faq" className="hover:text-primary">Cookie Policy</Link>
             </div>
           </div>
         </div>

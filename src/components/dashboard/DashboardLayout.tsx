@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/components/AuthProvider";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -49,26 +50,16 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
     navigate('/');
-  };
-  
-  const handleSwitchRole = (role: 'candidate' | 'employer' | 'admin') => {
-    if (role === userType) return;
-    
-    const routes = {
-      candidate: '/candidate',
-      employer: '/employer',
-      admin: '/admin'
-    };
-    
-    navigate(routes[role]);
   };
 
   const candidateMenuItems = [
@@ -207,46 +198,6 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
             </div>
             
             <div className="flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">Switch Role</Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Available Roles</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => handleSwitchRole('candidate')}
-                    disabled={userType === 'candidate'}
-                    className="flex justify-between"
-                  >
-                    <span>Candidate Portal</span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                      Job Seeker
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleSwitchRole('employer')}
-                    disabled={userType === 'employer'}
-                    className="flex justify-between"
-                  >
-                    <span>Employer Portal</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                      Hiring
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleSwitchRole('admin')}
-                    disabled={userType === 'admin'}
-                    className="flex justify-between"
-                  >
-                    <span>Admin Portal</span>
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                      Admin
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>

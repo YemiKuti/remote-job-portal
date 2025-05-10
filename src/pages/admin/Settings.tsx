@@ -25,7 +25,7 @@ const SettingsAdmin = () => {
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.user_metadata?.phone || '',
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -57,7 +57,7 @@ const SettingsAdmin = () => {
           setFormData({
             fullName: data.full_name || user?.user_metadata?.full_name || '',
             email: user?.email || '',
-            phone: data.phone || '',
+            phone: user?.user_metadata?.phone || '',
           });
         }
       } catch (error) {
@@ -90,20 +90,22 @@ const SettingsAdmin = () => {
         .from('profiles')
         .update({
           full_name: formData.fullName,
-          phone: formData.phone,
         })
         .eq('id', user.id);
         
       if (error) throw error;
       
-      // Update user metadata if name changed
-      if (formData.fullName !== user.user_metadata?.full_name) {
-        await supabase.auth.updateUser({
-          data: { full_name: formData.fullName }
-        });
-        await refreshSession();
-      }
+      // Update user metadata with additional fields that don't exist in profiles table
+      const metadataUpdates = {
+        full_name: formData.fullName,
+        phone: formData.phone
+      };
       
+      await supabase.auth.updateUser({
+        data: metadataUpdates
+      });
+      
+      await refreshSession();
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error('Error updating profile:', error);

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,45 @@ const CandidateProfile = () => {
     bio: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch profile data when component mounts
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+        
+        if (data) {
+          setFormData({
+            fullName: data.full_name || user?.user_metadata?.full_name || '',
+            phone: data.phone || '',
+            location: data.location || '',
+            title: data.title || '',
+            experience: data.experience ? String(data.experience) : '',
+            skills: data.skills || '',
+            bio: data.bio || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchProfileData:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfileData();
+  }, [user]);
   
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +166,16 @@ const CandidateProfile = () => {
       setIsSubmitting(false);
     }
   };
+  
+  if (isLoading) {
+    return (
+      <DashboardLayout userType="candidate">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   return (
     <DashboardLayout userType="candidate">

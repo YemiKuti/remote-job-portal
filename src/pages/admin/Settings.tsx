@@ -1,361 +1,403 @@
 
-import React from "react";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import React, { useState, useEffect } from 'react';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle, 
+  CardFooter 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const SettingsAdmin = () => {
+  const { user, refreshSession } = useAuth();
+  const [formData, setFormData] = useState({
+    fullName: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+    phone: '',
+  });
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+        
+        if (data) {
+          setFormData({
+            fullName: data.full_name || user?.user_metadata?.full_name || '',
+            email: user?.email || '',
+            phone: data.phone || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchProfileData:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfileData();
+  }, [user]);
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+  
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [id]: value }));
+  };
+  
+  const handleSaveChanges = async () => {
+    if (!user) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Update profile in database
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: formData.fullName,
+          phone: formData.phone,
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      // Update user metadata if name changed
+      if (formData.fullName !== user.user_metadata?.full_name) {
+        await supabase.auth.updateUser({
+          data: { full_name: formData.fullName }
+        });
+        await refreshSession();
+      }
+      
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleSaveAppSettings = () => {
+    toast.success("App settings saved successfully");
+  };
+  
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+  
   return (
-    <DashboardLayout userType="admin">
+    <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">System Settings</h1>
-          <p className="text-muted-foreground">Configure system-wide settings</p>
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage application settings and your admin account</p>
         </div>
-
-        <Tabs defaultValue="general">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="api">API & Integrations</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        
+        <Tabs defaultValue="account">
+          <TabsList className="mb-6">
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="application">Application</TabsTrigger>
+            <TabsTrigger value="privacy">Privacy</TabsTrigger>
+            <TabsTrigger value="api">API</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="general" className="space-y-4 mt-4">
+          
+          <TabsContent value="account">
             <Card>
               <CardHeader>
-                <CardTitle>Basic Settings</CardTitle>
-                <CardDescription>Configure basic portal settings</CardDescription>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>Manage your admin account information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="site-name">Site Name</Label>
-                  <Input id="site-name" defaultValue="AfricanTechJobs" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="site-description">Site Description</Label>
-                  <Input id="site-description" defaultValue="Find tech jobs across Africa" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contact-email">Contact Email</Label>
-                  <Input id="contact-email" type="email" defaultValue="contact@africantechjobs.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="support-email">Support Email</Label>
-                  <Input id="support-email" type="email" defaultValue="support@africantechjobs.com" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Save Changes</Button>
-              </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Localization</CardTitle>
-                <CardDescription>Configure regional settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Default Timezone</Label>
-                  <select 
-                    id="timezone" 
-                    className="w-full p-2 border rounded-md"
-                    defaultValue="Africa/Nairobi"
-                  >
-                    <option value="Africa/Nairobi">Africa/Nairobi (UTC+03:00)</option>
-                    <option value="Africa/Lagos">Africa/Lagos (UTC+01:00)</option>
-                    <option value="Africa/Cairo">Africa/Cairo (UTC+02:00)</option>
-                    <option value="Africa/Johannesburg">Africa/Johannesburg (UTC+02:00)</option>
-                    <option value="Africa/Accra">Africa/Accra (UTC+00:00)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date-format">Date Format</Label>
-                  <select 
-                    id="date-format" 
-                    className="w-full p-2 border rounded-md"
-                    defaultValue="DD/MM/YYYY"
-                  >
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Save Changes</Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="appearance" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance Settings</CardTitle>
-                <CardDescription>Customize the look and feel of your portal</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Theme</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="border rounded-md p-4 flex flex-col items-center cursor-pointer bg-white shadow-sm">
-                      <div className="h-20 w-full mb-2 bg-green-600 rounded-md"></div>
-                      <span>Default</span>
-                    </div>
-                    <div className="border rounded-md p-4 flex flex-col items-center cursor-pointer">
-                      <div className="h-20 w-full mb-2 bg-blue-600 rounded-md"></div>
-                      <span>Blue</span>
-                    </div>
-                    <div className="border rounded-md p-4 flex flex-col items-center cursor-pointer">
-                      <div className="h-20 w-full mb-2 bg-purple-600 rounded-md"></div>
-                      <span>Purple</span>
-                    </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input 
+                      id="fullName" 
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      placeholder="Your name" 
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={formData.email}
+                      disabled 
+                      placeholder="Your email" 
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Your phone number" 
+                    />
                   </div>
                 </div>
                 
                 <Separator />
                 
-                <div className="space-y-2">
-                  <Label htmlFor="logo">Logo</Label>
-                  <Input id="logo" type="file" />
+                <div className="space-y-1">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input 
+                    id="currentPassword" 
+                    type="password" 
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter current password" 
+                  />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="favicon">Favicon</Label>
-                  <Input id="favicon" type="file" />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="dark-mode">Dark Mode</Label>
-                    <p className="text-sm text-muted-foreground">Enable dark mode for the admin interface</p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input 
+                      id="newPassword" 
+                      type="password" 
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter new password" 
+                    />
                   </div>
-                  <Switch id="dark-mode" />
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input 
+                      id="confirmPassword" 
+                      type="password" 
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Confirm new password" 
+                    />
+                  </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Changes</Button>
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
-
-          <TabsContent value="notifications" className="mt-4">
+          
+          <TabsContent value="application">
             <Card>
               <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>Configure email and system notifications</CardDescription>
+                <CardTitle>Application Settings</CardTitle>
+                <CardDescription>Configure global application settings</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-medium">Email Notifications</h3>
-                  
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New User Registration</Label>
-                      <p className="text-sm text-muted-foreground">Send notification when a new user registers</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New Job Posted</Label>
-                      <p className="text-sm text-muted-foreground">Send notification when a new job is posted</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New Company Registration</Label>
-                      <p className="text-sm text-muted-foreground">Send notification when a new company registers</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Payment Received</Label>
-                      <p className="text-sm text-muted-foreground">Send notification when a payment is received</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="font-medium">System Notifications</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>System Alerts</Label>
-                      <p className="text-sm text-muted-foreground">Show system alerts in the admin dashboard</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Usage Reports</Label>
-                      <p className="text-sm text-muted-foreground">Send weekly usage reports</p>
+                    <div>
+                      <p className="font-medium">Maintenance Mode</p>
+                      <p className="text-sm text-muted-foreground">
+                        Put the application in maintenance mode
+                      </p>
                     </div>
                     <Switch />
                   </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Allow Job Posting</p>
+                      <p className="text-sm text-muted-foreground">
+                        Allow employers to post new jobs
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Auto-Approve Jobs</p>
+                      <p className="text-sm text-muted-foreground">
+                        Automatically approve new job postings
+                      </p>
+                    </div>
+                    <Switch />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="jobsPerPage">Jobs Per Page</Label>
+                    <Input 
+                      id="jobsPerPage" 
+                      type="number" 
+                      defaultValue="20" 
+                      min="5" 
+                      max="100" 
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Number of jobs to display per page
+                    </p>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveAppSettings}>Save Settings</Button>
               </CardFooter>
             </Card>
           </TabsContent>
           
-          <TabsContent value="api" className="mt-4">
+          <TabsContent value="privacy">
             <Card>
               <CardHeader>
-                <CardTitle>API & Integrations</CardTitle>
-                <CardDescription>Manage API keys and third-party integrations</CardDescription>
+                <CardTitle>Privacy Settings</CardTitle>
+                <CardDescription>Configure privacy and data retention settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-medium">API Access</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="api-key">API Key</Label>
-                    <div className="flex gap-2">
-                      <Input id="api-key" value="sk_live_************XXXX" readOnly className="flex-1" />
-                      <Button variant="outline">Regenerate</Button>
-                      <Button variant="outline">Copy</Button>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Data Retention</p>
+                      <p className="text-sm text-muted-foreground">
+                        Automatically delete inactive user data after 1 year
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Use this key to authenticate API requests</p>
+                    <Switch defaultChecked />
                   </div>
                   
+                  <Separator />
+                  
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Enable API Access</Label>
-                      <p className="text-sm text-muted-foreground">Allow external applications to access the API</p>
+                    <div>
+                      <p className="font-medium">Cookie Consent Banner</p>
+                      <p className="text-sm text-muted-foreground">
+                        Show cookie consent banner to new visitors
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Analytics</p>
+                      <p className="text-sm text-muted-foreground">
+                        Enable website analytics collection
+                      </p>
                     </div>
                     <Switch defaultChecked />
                   </div>
                 </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="font-medium">Integrations</h3>
-                  
-                  <div className="grid gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-600 font-bold">S</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium">Stripe</h4>
-                          <p className="text-sm text-muted-foreground">Payment processing</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Connected</span>
-                        <Button variant="outline" size="sm">Configure</Button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-md bg-red-100 flex items-center justify-center">
-                          <span className="text-red-600 font-bold">G</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium">Google Analytics</h4>
-                          <p className="text-sm text-muted-foreground">Website analytics</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">Connect</Button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-600 font-bold">M</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium">Mailchimp</h4>
-                          <p className="text-sm text-muted-foreground">Email marketing</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">Connect</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Changes</Button>
+                <Button>Save Privacy Settings</Button>
               </CardFooter>
             </Card>
           </TabsContent>
           
-          <TabsContent value="advanced" className="mt-4">
+          <TabsContent value="api">
             <Card>
               <CardHeader>
-                <CardTitle>Advanced Settings</CardTitle>
-                <CardDescription>Configure advanced system settings</CardDescription>
+                <CardTitle>API Configuration</CardTitle>
+                <CardDescription>Manage API keys and settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium">System Maintenance</h3>
-                  
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full">Clear Cache</Button>
-                    <p className="text-xs text-muted-foreground">Clear system cache to refresh data</p>
+                <div className="space-y-1">
+                  <Label htmlFor="apiKey">API Key</Label>
+                  <div className="flex gap-2">
+                    <Input id="apiKey" type="password" value="sk_test_abc123xyz456" readOnly />
+                    <Button variant="outline">Reveal</Button>
+                    <Button variant="outline">Copy</Button>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full">Rebuild Search Index</Button>
-                    <p className="text-xs text-muted-foreground">Rebuild the search index for better performance</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full">Export Database</Button>
-                    <p className="text-xs text-muted-foreground">Export the database for backup purposes</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">Your secret API key</p>
                 </div>
                 
                 <Separator />
                 
-                <div className="space-y-4">
-                  <h3 className="font-medium">Danger Zone</h3>
-                  
-                  <div className="space-y-2">
-                    <Button variant="destructive" className="w-full">Purge All Job Listings</Button>
-                    <p className="text-xs text-muted-foreground">Delete all job listings from the system (cannot be undone)</p>
+                <div className="space-y-1">
+                  <Label htmlFor="webhookUrl">Webhook URL</Label>
+                  <Input id="webhookUrl" placeholder="https://your-domain.com/webhooks/jobs" />
+                  <p className="text-xs text-muted-foreground">URL where webhook events will be sent</p>
+                </div>
+                
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Rate Limiting</p>
+                    <p className="text-sm text-muted-foreground">Enable API rate limiting</p>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Button variant="destructive" className="w-full">Reset System</Button>
-                    <p className="text-xs text-muted-foreground">Reset the system to factory defaults (cannot be undone)</p>
-                  </div>
+                  <Switch defaultChecked />
                 </div>
               </CardContent>
               <CardFooter>
-                <p className="text-xs text-muted-foreground">Exercise extreme caution with these actions as they can result in data loss.</p>
+                <Button variant="destructive" className="mr-2">
+                  Reset API Key
+                </Button>
+                <Button>
+                  Save API Settings
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 };
 

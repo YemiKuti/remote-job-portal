@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,125 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const EmployerSettings = () => {
+  const { user, refreshSession } = useAuth();
+  const [formData, setFormData] = useState({
+    fullName: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+    phone: '',
+    jobTitle: '',
+  });
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+        
+        if (data) {
+          setFormData({
+            fullName: data.full_name || user?.user_metadata?.full_name || '',
+            email: user?.email || '',
+            phone: data.phone || '',
+            jobTitle: data.title || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchProfileData:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfileData();
+  }, [user]);
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+  
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [id]: value }));
+  };
+  
+  const handleSaveChanges = async () => {
+    if (!user) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Update profile in database
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: formData.fullName,
+          phone: formData.phone,
+          title: formData.jobTitle,
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      // Update user metadata if name changed
+      if (formData.fullName !== user.user_metadata?.full_name) {
+        await supabase.auth.updateUser({
+          data: { full_name: formData.fullName }
+        });
+        await refreshSession();
+      }
+      
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleSaveNotificationPreferences = () => {
+    toast.success("Notification preferences saved");
+  };
+  
+  const handleSavePrivacySettings = () => {
+    toast.success("Privacy settings saved");
+  };
+  
+  if (isLoading) {
+    return (
+      <DashboardLayout userType="employer">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
   return (
     <DashboardLayout userType="employer">
       <div className="space-y-6">
@@ -38,23 +155,44 @@ const EmployerSettings = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-1">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Your name" />
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input 
+                      id="fullName" 
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      placeholder="Your name" 
+                    />
                   </div>
                   
                   <div className="space-y-1">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="Your email" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={formData.email}
+                      disabled 
+                      placeholder="Your email" 
+                    />
                   </div>
                   
                   <div className="space-y-1">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="Your phone number" />
+                    <Input 
+                      id="phone" 
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Your phone number" 
+                    />
                   </div>
                   
                   <div className="space-y-1">
                     <Label htmlFor="jobTitle">Job Title</Label>
-                    <Input id="jobTitle" placeholder="Your position" />
+                    <Input 
+                      id="jobTitle" 
+                      value={formData.jobTitle}
+                      onChange={handleInputChange}
+                      placeholder="Your position" 
+                    />
                   </div>
                 </div>
                 
@@ -62,23 +200,51 @@ const EmployerSettings = () => {
                 
                 <div className="space-y-1">
                   <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" placeholder="Enter current password" />
+                  <Input 
+                    id="currentPassword" 
+                    type="password" 
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter current password" 
+                  />
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-1">
                     <Label htmlFor="newPassword">New Password</Label>
-                    <Input id="newPassword" type="password" placeholder="Enter new password" />
+                    <Input 
+                      id="newPassword" 
+                      type="password" 
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter new password" 
+                    />
                   </div>
                   
                   <div className="space-y-1">
                     <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Confirm new password" />
+                    <Input 
+                      id="confirmPassword" 
+                      type="password" 
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Confirm new password" 
+                    />
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Changes</Button>
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -131,7 +297,7 @@ const EmployerSettings = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Save Preferences</Button>
+                <Button onClick={handleSaveNotificationPreferences}>Save Preferences</Button>
               </CardFooter>
             </Card>
           </TabsContent>

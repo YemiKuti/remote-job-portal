@@ -114,9 +114,7 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
     return true;
   } catch (error: any) {
     console.error('Error toggling saved job:', error);
-    toast("Failed to update saved jobs", {
-      variant: "destructive",
-    });
+    toast.error("Failed to update saved jobs");
     return false;
   }
 };

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Application, SavedJob } from '@/types/api';
@@ -186,11 +187,6 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
       .eq('id', userId);
       
     if (updateError) throw updateError;
-    
-    // Also update the user metadata
-    await supabase.auth.updateUser({
-      data: { avatar_url: avatarUrl }
-    });
     
     toast.success("Profile photo updated successfully");
     return avatarUrl;

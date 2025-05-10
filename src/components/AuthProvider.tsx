@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,10 +78,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const refreshSession = async () => {
-    const { data } = await supabase.auth.refreshSession();
-    setSession(data.session);
-    setUser(data.session?.user ?? null);
-    return data.session;
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      return data.session;
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+      return null;
+    }
   };
 
   const contextValue = {

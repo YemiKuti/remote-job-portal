@@ -25,11 +25,12 @@ const AdminSignIn = () => {
     const checkAdmin = async () => {
       if (user && session) {
         try {
-          // Use RPC function to check admin status
-          const { data, error } = await supabase.rpc('is_admin');
+          // Use Edge Function to check admin status
+          const { data, error } = await supabase.functions.invoke('is_admin');
+          
           if (error) throw error;
           
-          if (data === true) {
+          if (data?.isAdmin === true) {
             navigate('/admin');
           }
         } catch (error) {
@@ -67,11 +68,11 @@ const AdminSignIn = () => {
       await refreshSession();
       
       // Verify admin status
-      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin');
+      const { data: adminCheck, error: adminCheckError } = await supabase.functions.invoke('is_admin');
       
       if (adminCheckError) throw adminCheckError;
       
-      if (isAdmin === true) {
+      if (adminCheck?.isAdmin === true) {
         toast({
           title: "Admin access granted",
           description: "Welcome to the admin dashboard.",

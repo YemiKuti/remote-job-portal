@@ -19,15 +19,15 @@ const AdminRoute = () => {
       }
       
       try {
-        // Use the RPC function to check admin status
-        const { data, error } = await supabase.rpc('is_admin');
+        // Use the Edge Function to check admin status
+        const { data, error } = await supabase.functions.invoke('is_admin');
         
         if (error) {
           console.error("Admin check error:", error);
           throw error;
         }
         
-        setIsAdmin(data === true);
+        setIsAdmin(data?.isAdmin === true);
       } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);

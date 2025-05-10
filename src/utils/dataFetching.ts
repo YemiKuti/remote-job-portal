@@ -62,7 +62,7 @@ export const fetchCandidateApplications = async (userId: string) => {
       .from('applications')
       .select(`
         *,
-        job:job_id (
+        job:jobs!job_id (
           title,
           company,
           location
@@ -97,14 +97,14 @@ export const fetchSavedJobs = async (userId: string) => {
       .from('saved_jobs')
       .select(`
         *,
-        job:job_id (*)
+        job:jobs!job_id (*)
       `)
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
 
     if (error) throw error;
     
-    return data;
+    return data as SavedJob[];
   } catch (error: any) {
     console.error('Error fetching saved jobs:', error);
     return [];
@@ -140,9 +140,8 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
       .from('conversations')
       .select(`
         *,
-        employer:employer_id (username, full_name),
-        candidate:candidate_id (username, full_name),
-        company:employer_id (company_name)
+        employer:profiles!employer_id (username, full_name),
+        candidate:profiles!candidate_id (username, full_name)
       `)
       .eq(idField, userId)
       .order('last_message_at', { ascending: false });
@@ -157,7 +156,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
       unread_count: conv.unread_count,
       employer_name: conv.employer?.full_name || conv.employer?.username,
       candidate_name: conv.candidate?.full_name || conv.candidate?.username,
-      company: conv.company?.company_name,
+      company: conv.employer?.company_name,
       last_message: conv.last_message
     }));
   } catch (error: any) {
@@ -173,7 +172,7 @@ export const fetchMessages = async (conversationId: string) => {
       .from('messages')
       .select(`
         *,
-        sender:sender_id (username, full_name)
+        sender:profiles!sender_id (username, full_name)
       `)
       .eq('conversation_id', conversationId)
       .order('sent_at', { ascending: true });
@@ -221,8 +220,8 @@ export const fetchEmployerApplications = async (userId: string) => {
       .from('applications')
       .select(`
         *,
-        job:job_id (*),
-        candidate:user_id (username, full_name)
+        job:jobs!job_id (*),
+        candidate:profiles!user_id (username, full_name)
       `)
       .eq('employer_id', userId)
       .order('applied_date', { ascending: false });

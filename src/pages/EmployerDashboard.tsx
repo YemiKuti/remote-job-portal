@@ -13,8 +13,8 @@ const EmployerDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [applications, setApplications] = useState([]);
-  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalViews: 0,
     totalApplications: 0,
@@ -47,14 +47,15 @@ const EmployerDashboard = () => {
         
         if (applicationsData.length > 0) {
           totalApplications = applicationsData.length;
-          shortlistedCount = applicationsData.filter(app => app.status === 'shortlisted').length;
+          // Use optional chaining to safely access status
+          shortlistedCount = applicationsData.filter(app => app?.status === 'shortlisted').length;
         }
 
         // Update stats
         setStats({
           totalViews,
           totalApplications,
-          activeJobs: jobsData.filter(job => job.status === 'active').length,
+          activeJobs: jobsData.filter(job => job?.status === 'active').length,
           candidatesShortlisted: shortlistedCount
         });
       } catch (error) {

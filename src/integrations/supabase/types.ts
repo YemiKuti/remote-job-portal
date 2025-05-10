@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      applications: {
+        Row: {
+          applied_date: string
+          employer_id: string | null
+          id: string
+          job_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          applied_date?: string
+          employer_id?: string | null
+          id?: string
+          job_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          applied_date?: string
+          employer_id?: string | null
+          id?: string
+          job_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          candidate_id: string
+          employer_id: string
+          id: string
+          last_message: string | null
+          last_message_at: string
+          unread_count: number
+        }
+        Insert: {
+          candidate_id: string
+          employer_id: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string
+          unread_count?: number
+        }
+        Update: {
+          candidate_id?: string
+          employer_id?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string
+          unread_count?: number
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           application_deadline: string | null
@@ -99,6 +153,44 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          id: string
+          read: boolean
+          recipient_id: string
+          sender_id: string
+          sent_at: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          id?: string
+          read?: boolean
+          recipient_id: string
+          sender_id: string
+          sent_at?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          id?: string
+          read?: boolean
+          recipient_id?: string
+          sender_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string
@@ -164,6 +256,27 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      saved_jobs: {
+        Row: {
+          id: string
+          job_id: string
+          saved_date: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          saved_date?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          saved_date?: string
+          user_id?: string
         }
         Relationships: []
       }

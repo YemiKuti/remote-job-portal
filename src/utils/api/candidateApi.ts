@@ -97,7 +97,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       if (error) throw error;
       
       toast({
-        title: "Success",
         description: "Job removed from saved jobs",
       });
     } else {
@@ -113,7 +112,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       if (error) throw error;
       
       toast({
-        title: "Success",
         description: "Job saved successfully",
       });
     }
@@ -122,7 +120,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
   } catch (error: any) {
     console.error('Error toggling saved job:', error);
     toast({
-      title: "Error",
       description: "Failed to update saved jobs",
       variant: "destructive",
     });

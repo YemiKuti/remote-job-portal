@@ -81,6 +81,9 @@ const Footer = () => {
               <li>
                 <Link to="/terms-of-service" className="text-gray-600 hover:text-primary">Terms of Service</Link>
               </li>
+              <li>
+                <a href="/sitemap.xml" target="_blank" className="text-gray-600 hover:text-primary">Sitemap</a>
+              </li>
             </ul>
           </div>
           
@@ -117,6 +120,7 @@ const Footer = () => {
               <Link to="/privacy-policy" className="hover:text-primary">Privacy Policy</Link>
               <Link to="/terms-of-service" className="hover:text-primary">Terms of Service</Link>
               <Link to="/faq" className="hover:text-primary">Cookie Policy</Link>
+              <a href="/sitemap.xml" target="_blank" className="hover:text-primary">Sitemap</a>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./components/AuthProvider";
+import AdminRoute from "./components/AdminRoute";
 import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import JobScraper from "./pages/JobScraper";
@@ -82,17 +83,19 @@ const App = () => {
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-of-service" element={<TermsOfService />} />
                   
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/blog" element={<BlogManagement />} />
-                  <Route path="/admin/blog/create" element={<BlogEditor />} />
-                  <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
-                  <Route path="/admin/users" element={<UsersAdmin />} />
-                  <Route path="/admin/jobs" element={<JobsAdmin />} />
-                  <Route path="/admin/create-job" element={<CreateJob />} />
-                  <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
-                  <Route path="/admin/companies" element={<CompaniesAdmin />} />
-                  <Route path="/admin/settings" element={<SettingsAdmin />} />
+                  {/* Protected Admin Routes */}
+                  <Route element={<AdminRoute />}>
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/blog" element={<BlogManagement />} />
+                    <Route path="/admin/blog/create" element={<BlogEditor />} />
+                    <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
+                    <Route path="/admin/users" element={<UsersAdmin />} />
+                    <Route path="/admin/jobs" element={<JobsAdmin />} />
+                    <Route path="/admin/create-job" element={<CreateJob />} />
+                    <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
+                    <Route path="/admin/companies" element={<CompaniesAdmin />} />
+                    <Route path="/admin/settings" element={<SettingsAdmin />} />
+                  </Route>
                   
                   {/* Candidate Routes */}
                   <Route path="/candidate" element={<CandidateDashboard />} />

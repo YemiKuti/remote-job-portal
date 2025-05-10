@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -124,11 +123,9 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            role: role, // Pass the selected role as a query param
           },
           redirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            role, // Pass the selected role for later use after OAuth callback
-          }
         }
       });
 

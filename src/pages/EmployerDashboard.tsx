@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Eye, Briefcase, BarChart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/api';
+import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/api/employerApi';
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();

@@ -22,20 +22,4 @@ export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
   }
 };
 
-// Fetch employer job listings
-export const fetchEmployerJobs = async (userId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*')
-      .eq('employer_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    
-    return data;
-  } catch (error: any) {
-    console.error('Error fetching employer jobs:', error);
-    return [];
-  }
-};
+// NOTE: Removed the duplicate fetchEmployerJobs function as it's now in employerApi.ts

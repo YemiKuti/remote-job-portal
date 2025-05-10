@@ -41,3 +41,20 @@ export const fetchEmployerJobs = async (userId: string) => {
     return [];
   }
 };
+
+// Update application status
+export const updateApplicationStatus = async (applicationId: string, status: string) => {
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .update({ status })
+      .eq('id', applicationId);
+
+    if (error) throw error;
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error updating application status:', error);
+    return false;
+  }
+};

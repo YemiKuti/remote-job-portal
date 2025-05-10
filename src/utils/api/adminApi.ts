@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Job, Application } from '@/types/api';
+import { Job } from '@/types/api';
 
 // Fetch dashboard stats for admin
 export const fetchAdminStats = async () => {
@@ -14,14 +14,9 @@ export const fetchAdminStats = async () => {
 
     // Get companies count (employers)
     // In a real app, you might have a separate companies table
-    // Here we're using profiles with employer role as a proxy
-    const { count: totalCompanies, error: companiesError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'employer');
+    // For now we're mocking this data
+    const totalCompanies = 12; // Mock data as we don't have company roles in the profile yet
     
-    if (companiesError) throw companiesError;
-
     // Get total jobs count
     const { count: totalJobs, error: jobsError } = await supabase
       .from('jobs')
@@ -96,7 +91,7 @@ export const fetchRecentUsers = async (limit = 3) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, created_at, role')
+      .select('id, username, full_name, avatar_url, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
     
@@ -105,8 +100,8 @@ export const fetchRecentUsers = async (limit = 3) => {
     return data.map(user => ({
       id: user.id,
       name: user.full_name || user.username || 'User',
-      email: user.email || `${user.username}@example.com`, // Email might be in auth.users, not profiles
-      role: user.role || 'candidate',
+      email: `${user.username || 'user'}@example.com`, // Email might be in auth.users, not profiles
+      role: 'candidate', // Default role since we don't have roles in profiles yet
       status: 'active', // Mock status
       joined: user.created_at
     }));
@@ -121,7 +116,7 @@ export const fetchRecentJobs = async (limit = 3) => {
   try {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*')
+      .select('id, title, company, created_at, status')
       .order('created_at', { ascending: false })
       .limit(limit);
     
@@ -139,5 +134,3 @@ export const fetchRecentJobs = async (limit = 3) => {
     return [];
   }
 };
-
-// Add to the index.ts file

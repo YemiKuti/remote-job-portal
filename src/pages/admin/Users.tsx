@@ -34,16 +34,16 @@ const UsersAdmin = () => {
         // Fetch profiles
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, created_at, role');
+          .select('id, username, full_name, avatar_url, created_at');
         
         if (profilesError) throw profilesError;
         
-        // Convert to our user format
+        // Convert to our user format with mock roles for now
         const userData: User[] = (profiles || []).map(profile => ({
           id: profile.id,
           name: profile.full_name || profile.username || 'User',
           email: `${profile.username || 'user'}@example.com`, // Mock email
-          role: profile.role || 'candidate',
+          role: Math.random() > 0.7 ? 'employer' : (Math.random() > 0.5 ? 'candidate' : 'admin'), // Mock roles for UI
           status: 'active', // Mock status
           joined: profile.created_at || new Date().toISOString()
         }));

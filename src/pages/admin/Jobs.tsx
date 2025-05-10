@@ -12,8 +12,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { Job } from "@/types/api";
 
+// Define a simplified job type for the admin page
+interface AdminJob {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  created_at: string;
+  status: string;
+  applications: number;
+}
+
 const JobsAdmin = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<AdminJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();

@@ -31,12 +31,12 @@ const CandidateProfile = () => {
   const [showPhotoDialog, setShowPhotoDialog] = useState(false);
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || '',
-    phone: '',
-    location: '',
-    title: '',
-    experience: '',
-    skills: '',
-    bio: ''
+    phone: user?.user_metadata?.phone || '',
+    location: user?.user_metadata?.location || '',
+    title: user?.user_metadata?.title || '',
+    experience: user?.user_metadata?.experience ? String(user?.user_metadata?.experience) : '',
+    skills: user?.user_metadata?.skills || '',
+    bio: user?.user_metadata?.bio || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +47,8 @@ const CandidateProfile = () => {
       if (!user) return;
       
       try {
+        setIsLoading(true);
+        // Get profile data from the profiles table
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -58,17 +60,18 @@ const CandidateProfile = () => {
           return;
         }
         
-        if (data) {
-          setFormData({
-            fullName: data.full_name || user?.user_metadata?.full_name || '',
-            phone: data.phone || '',
-            location: data.location || '',
-            title: data.title || '',
-            experience: data.experience ? String(data.experience) : '',
-            skills: data.skills || '',
-            bio: data.bio || ''
-          });
-        }
+        // Combine profile data with user metadata for the extended fields
+        const userMetadata = user.user_metadata || {};
+        
+        setFormData({
+          fullName: data?.full_name || user?.user_metadata?.full_name || '',
+          phone: userMetadata.phone || '',
+          location: userMetadata.location || '',
+          title: userMetadata.title || '',
+          experience: userMetadata.experience ? String(userMetadata.experience) : '',
+          skills: userMetadata.skills || '',
+          bio: userMetadata.bio || ''
+        });
       } catch (error) {
         console.error('Error in fetchProfileData:', error);
       } finally {
@@ -151,13 +154,8 @@ const CandidateProfile = () => {
       const success = await updateCandidateProfile(user.id, profileData);
       
       if (success) {
-        // If the name was updated, refresh the session to update user metadata
-        if (formData.fullName !== user.user_metadata?.full_name) {
-          await supabase.auth.updateUser({
-            data: { full_name: formData.fullName }
-          });
-          await refreshSession();
-        }
+        // Refresh the session to update user metadata
+        await refreshSession();
       }
     } catch (error) {
       console.error('Error saving profile:', error);

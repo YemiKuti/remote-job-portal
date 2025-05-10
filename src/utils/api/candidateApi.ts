@@ -130,14 +130,55 @@ export const updateCandidateProfile = async (userId: string, data: {
   experience?: number;
   skills?: string;
   bio?: string;
+  website?: string;
 }) => {
   try {
-    const { error } = await supabase
+    // First, check if these columns exist
+    const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
-      .update(data)
-      .eq('id', userId);
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    
+    // Get only the fields that actually exist in the profiles table
+    const sanitizedData: any = {};
+    
+    // Always include these fields which we know exist in the profiles table
+    if (data.full_name !== undefined) sanitizedData.full_name = data.full_name;
+    if (data.avatar_url !== undefined) sanitizedData.avatar_url = data.avatar_url;
+    if (data.website !== undefined) sanitizedData.website = data.website;
+    
+    // These fields might not exist in some tables, add them conditionally
+    // We'll store them as user metadata for now
+    const userMetadataUpdates: any = {};
+    
+    if (data.phone !== undefined) userMetadataUpdates.phone = data.phone;
+    if (data.location !== undefined) userMetadataUpdates.location = data.location;
+    if (data.title !== undefined) userMetadataUpdates.title = data.title;
+    if (data.experience !== undefined) userMetadataUpdates.experience = data.experience;
+    if (data.skills !== undefined) userMetadataUpdates.skills = data.skills;
+    if (data.bio !== undefined) userMetadataUpdates.bio = data.bio;
+    
+    // Update profiles table with fields that exist
+    if (Object.keys(sanitizedData).length > 0) {
+      const { error } = await supabase
+        .from('profiles')
+        .update(sanitizedData)
+        .eq('id', userId);
+        
+      if (error) throw error;
+    }
+    
+    // Update user metadata with additional fields
+    if (Object.keys(userMetadataUpdates).length > 0) {
+      const { error } = await supabase.auth.updateUser({
+        data: userMetadataUpdates
+      });
       
-    if (error) throw error;
+      if (error) throw error;
+    }
     
     toast.success("Profile updated successfully");
     return true;

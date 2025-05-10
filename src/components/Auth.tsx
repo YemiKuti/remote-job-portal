@@ -8,12 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Facebook, Twitter, User } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('candidate');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -29,6 +39,7 @@ export default function Auth() {
           data: {
             username,
             full_name: fullName,
+            role,
           },
         },
       });
@@ -69,7 +80,15 @@ export default function Auth() {
         description: "Signed in successfully!",
       });
       
-      navigate('/');
+      // Redirect based on user role
+      const userRole = data.user?.user_metadata?.role;
+      if (userRole === 'admin') {
+        navigate('/admin');
+      } else if (userRole === 'employer') {
+        navigate('/employer');
+      } else {
+        navigate('/candidate');
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -78,6 +97,29 @@ export default function Auth() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSocialSignIn = async (provider: 'google' | 'facebook' | 'twitter') => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          redirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || `Failed to sign in with ${provider}`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -121,10 +163,45 @@ export default function Auth() {
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-4">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
+                
+                <div className="w-full">
+                  <Separator className="my-4">
+                    <span className="px-2 text-xs text-gray-500">OR CONTINUE WITH</span>
+                  </Separator>
+                  
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('google')}
+                      className="w-full"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 488 512" className="fill-current">
+                        <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
+                      </svg>
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('facebook')}
+                      className="w-full"
+                    >
+                      <Facebook className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('twitter')}
+                      className="w-full"
+                    >
+                      <Twitter className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
               </CardFooter>
             </form>
           </TabsContent>
@@ -164,6 +241,19 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="signup-role">I am a</Label>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="candidate">Job Seeker</SelectItem>
+                      <SelectItem value="employer">Employer</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input 
                     id="signup-password" 
@@ -175,10 +265,45 @@ export default function Auth() {
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-4">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Signing up...' : 'Sign Up'}
                 </Button>
+                
+                <div className="w-full">
+                  <Separator className="my-4">
+                    <span className="px-2 text-xs text-gray-500">OR SIGN UP WITH</span>
+                  </Separator>
+                  
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('google')}
+                      className="w-full"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 488 512" className="fill-current">
+                        <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
+                      </svg>
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('facebook')}
+                      className="w-full"
+                    >
+                      <Facebook className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => handleSocialSignIn('twitter')}
+                      className="w-full"
+                    >
+                      <Twitter className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
               </CardFooter>
             </form>
           </TabsContent>

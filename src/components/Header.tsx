@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -8,16 +9,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/components/AuthProvider";
+import { LogIn } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  // For testing purposes, we'll simulate a logged-in user
-  const testUser = {
-    user_metadata: {
-      full_name: 'Test User'
-    }
-  };
+  const { user, signOut } = useAuth();
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -46,30 +44,40 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer">
-                <AvatarFallback>{getInitials(testUser.user_metadata?.full_name)}</AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/admin')}>
-                Admin Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/employer')}>
-                Employer Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/candidate')}>
-                Candidate Dashboard
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/')}>
-                Sign Out (Testing)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer">
+                  <AvatarFallback>{getInitials(user.user_metadata?.full_name)}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  Admin Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/employer')}>
+                  Employer Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/candidate')}>
+                  Candidate Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut()}>
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="flex items-center gap-2 bg-job-green hover:bg-job-darkGreen"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </Button>
+          )}
           <Button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden"

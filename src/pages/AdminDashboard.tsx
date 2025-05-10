@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,35 +18,57 @@ import {
   AlertCircle,
   MessageSquare,
   Bell,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
+import { fetchAdminStats, fetchRecentUsers, fetchRecentJobs } from '@/utils/api';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalCompanies: 0,
+    totalJobs: 0,
+    totalRevenue: 0,
+    pendingApprovals: 0,
+    newMessages: 0
+  });
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [recentJobs, setRecentJobs] = useState([]);
   
-  // Mock data for admin dashboard
-  const stats = {
-    totalUsers: 1254,
-    totalCompanies: 87,
-    totalJobs: 342,
-    totalRevenue: 24680,
-    pendingApprovals: 12,
-    newMessages: 8
-  };
-  
-  const recentUsers = [
-    { id: '1', name: 'John Smith', email: 'john@example.com', role: 'candidate', joinDate: '2025-05-01' },
-    { id: '2', name: 'Acme Inc', email: 'hr@acme.com', role: 'employer', joinDate: '2025-04-29' },
-    { id: '3', name: 'Sarah Thompson', email: 'sarah@example.com', role: 'candidate', joinDate: '2025-04-28' },
-  ];
-  
-  const recentJobs = [
-    { id: '1', title: 'Senior Developer', company: 'Tech Corp', postedDate: '2025-05-01', status: 'active' },
-    { id: '2', title: 'Marketing Manager', company: 'Brand Solutions', postedDate: '2025-04-30', status: 'pending' },
-    { id: '3', title: 'UX Designer', company: 'Design Studio', postedDate: '2025-04-28', status: 'active' },
-  ];
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch stats
+        const dashboardStats = await fetchAdminStats();
+        setStats(dashboardStats);
+        
+        // Fetch recent users
+        const users = await fetchRecentUsers(3);
+        setRecentUsers(users);
+        
+        // Fetch recent jobs
+        const jobs = await fetchRecentJobs(3);
+        setRecentJobs(jobs);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDashboardData();
+  }, [toast]);
 
   const handleQuickAction = (action: string) => {
     toast({
@@ -54,6 +76,19 @@ const AdminDashboard = () => {
       description: `${action} action initiated`,
     });
   };
+  
+  if (loading) {
+    return (
+      <DashboardLayout userType="admin">
+        <div className="flex items-center justify-center h-[calc(100vh-160px)]">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-lg font-medium">Loading dashboard data...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   return (
     <DashboardLayout userType="admin">
@@ -142,7 +177,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">+24 this week</p>
+              <p className="text-xs text-muted-foreground">Updated today</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-l-4 border-blue-500">
@@ -152,7 +187,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-              <p className="text-xs text-muted-foreground">+5 this week</p>
+              <p className="text-xs text-muted-foreground">Active employers</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-l-4 border-amber-500">
@@ -162,7 +197,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalJobs}</div>
-              <p className="text-xs text-muted-foreground">+18 this week</p>
+              <p className="text-xs text-muted-foreground">Total job postings</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-l-4 border-purple-500">
@@ -172,7 +207,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${stats.totalRevenue}</div>
-              <p className="text-xs text-muted-foreground">+$1,240 this month</p>
+              <p className="text-xs text-muted-foreground">From featured listings</p>
             </CardContent>
           </Card>
         </div>
@@ -190,20 +225,26 @@ const AdminDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentUsers.map(user => (
-                <div key={user.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {user.email} • {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">View</Button>
-                    <Button size="sm" variant="outline">Edit</Button>
-                  </div>
+              {recentUsers.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground">No recent users found.</p>
                 </div>
-              ))}
+              ) : (
+                recentUsers.map(user => (
+                  <div key={user.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user.email} • {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button size="sm" variant="outline">View</Button>
+                      <Button size="sm" variant="outline">Edit</Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
           
@@ -219,24 +260,30 @@ const AdminDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentJobs.map(job => (
-                <div key={job.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
-                  <div>
-                    <p className="font-medium">{job.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {job.company} • Posted on {new Date(job.postedDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      job.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                    </span>
-                    <Button size="sm" variant="outline">Review</Button>
-                  </div>
+              {recentJobs.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground">No recent job listings found.</p>
                 </div>
-              ))}
+              ) : (
+                recentJobs.map(job => (
+                  <div key={job.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
+                    <div>
+                      <p className="font-medium">{job.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {job.company} • Posted on {new Date(job.postedDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        job.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                      </span>
+                      <Button size="sm" variant="outline">Review</Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>

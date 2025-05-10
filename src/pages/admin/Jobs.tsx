@@ -1,27 +1,19 @@
+
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search, Briefcase, CheckCircle, XCircle, Eye, Plus, Filter } from "lucide-react";
+import { Search, Briefcase, CheckCircle, XCircle, Eye, Plus, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
-
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  created_at: string | null;
-  status: string;
-  applications: number | null;
-}
+import { Job } from "@/types/api";
 
 const JobsAdmin = () => {
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
@@ -30,6 +22,7 @@ const JobsAdmin = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('jobs')
           .select('id, title, company, location, created_at, status, applications')
@@ -140,9 +133,13 @@ const JobsAdmin = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-4">Loading jobs...</div>
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
             ) : filteredJobs.length === 0 ? (
-              <div className="text-center py-4">No jobs found. Try a different search term.</div>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No jobs found. Try a different search term.</p>
+              </div>
             ) : (
               <Table>
                 <TableHeader>

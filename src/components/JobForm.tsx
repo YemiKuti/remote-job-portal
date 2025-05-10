@@ -30,7 +30,7 @@ interface JobFormProps {
 const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
 
   // Initialize the form with react-hook-form
@@ -112,7 +112,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
         ? new Date(values.application_deadline).toISOString()
         : null;
 
-      if (!user) {
+      if (!user || !session) {
         throw new Error("User not authenticated");
       }
 
@@ -137,6 +137,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
         status: values.status,
         application_type: values.application_type,
         application_value: values.application_value,
+        // Always use the current user's ID as the employer_id
         employer_id: user.id
       };
 

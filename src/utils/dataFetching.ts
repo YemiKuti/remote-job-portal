@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -57,33 +56,38 @@ export interface Conversation {
 // Fetch candidate applications
 export const fetchCandidateApplications = async (userId: string) => {
   try {
-    // Get applications with job details using a join
-    const { data, error } = await supabase
+    // Fetch applications first
+    const { data: applications, error: appError } = await supabase
       .from('applications')
-      .select(`
-        *,
-        job:jobs!job_id (
-          title,
-          company,
-          location
-        )
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('applied_date', { ascending: false });
 
-    if (error) throw error;
+    if (appError) throw appError;
 
-    // Format the data for the UI
-    return data.map(app => ({
-      id: app.id,
-      job_id: app.job_id,
-      user_id: app.user_id,
-      status: app.status,
-      applied_date: app.applied_date,
-      position: app.job?.title,
-      company: app.job?.company,
-      location: app.job?.location
-    }));
+    // Fetch job details separately for each application
+    const enhancedApplications: Application[] = [];
+    
+    for (const app of applications) {
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', app.job_id)
+        .single();
+        
+      if (!jobError && jobData) {
+        enhancedApplications.push({
+          ...app,
+          position: jobData.title,
+          company: jobData.company,
+          location: jobData.location
+        });
+      } else {
+        enhancedApplications.push(app);
+      }
+    }
+
+    return enhancedApplications;
   } catch (error: any) {
     console.error('Error fetching applications:', error);
     return [];
@@ -93,18 +97,36 @@ export const fetchCandidateApplications = async (userId: string) => {
 // Fetch saved jobs
 export const fetchSavedJobs = async (userId: string) => {
   try {
-    const { data, error } = await supabase
+    // Get saved_jobs records
+    const { data: savedJobRecords, error: savedJobError } = await supabase
       .from('saved_jobs')
-      .select(`
-        *,
-        job:jobs!job_id (*)
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
 
-    if (error) throw error;
+    if (savedJobError) throw savedJobError;
     
-    return data as SavedJob[];
+    // Fetch job details for each saved job
+    const savedJobs: SavedJob[] = [];
+    
+    for (const savedJob of savedJobRecords) {
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', savedJob.job_id)
+        .single();
+        
+      if (!jobError && jobData) {
+        savedJobs.push({
+          ...savedJob,
+          job: jobData
+        });
+      } else {
+        savedJobs.push(savedJob);
+      }
+    }
+    
+    return savedJobs;
   } catch (error: any) {
     console.error('Error fetching saved jobs:', error);
     return [];
@@ -136,29 +158,42 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
   try {
     const idField = userRole === 'candidate' ? 'candidate_id' : 'employer_id';
     
-    const { data, error } = await supabase
+    // First get conversations
+    const { data: conversations, error: convError } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        employer:profiles!employer_id (username, full_name),
-        candidate:profiles!candidate_id (username, full_name)
-      `)
+      .select('*')
       .eq(idField, userId)
       .order('last_message_at', { ascending: false });
 
-    if (error) throw error;
+    if (convError) throw convError;
     
-    return data.map(conv => ({
-      id: conv.id,
-      candidate_id: conv.candidate_id,
-      employer_id: conv.employer_id,
-      last_message_at: conv.last_message_at,
-      unread_count: conv.unread_count,
-      employer_name: conv.employer?.full_name || conv.employer?.username,
-      candidate_name: conv.candidate?.full_name || conv.candidate?.username,
-      company: conv.employer?.company_name,
-      last_message: conv.last_message
-    }));
+    // Then get user profiles for each conversation
+    const enhancedConversations: Conversation[] = [];
+    
+    for (const conv of conversations) {
+      // Get employer profile
+      const { data: employerProfile, error: empError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', conv.employer_id)
+        .single();
+        
+      // Get candidate profile
+      const { data: candidateProfile, error: candError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', conv.candidate_id)
+        .single();
+        
+      enhancedConversations.push({
+        ...conv,
+        employer_name: employerProfile && !empError ? employerProfile.full_name || employerProfile.username : 'Employer',
+        candidate_name: candidateProfile && !candError ? candidateProfile.full_name || candidateProfile.username : 'Candidate',
+        company: employerProfile && !empError ? employerProfile.company_name : undefined,
+      });
+    }
+    
+    return enhancedConversations;
   } catch (error: any) {
     console.error('Error fetching conversations:', error);
     return [];
@@ -168,27 +203,32 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
 // Fetch messages for a conversation
 export const fetchMessages = async (conversationId: string) => {
   try {
-    const { data, error } = await supabase
+    // Get messages
+    const { data: messages, error: msgError } = await supabase
       .from('messages')
-      .select(`
-        *,
-        sender:profiles!sender_id (username, full_name)
-      `)
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('sent_at', { ascending: true });
 
-    if (error) throw error;
+    if (msgError) throw msgError;
     
-    return data.map(msg => ({
-      id: msg.id,
-      conversation_id: msg.conversation_id,
-      sender_id: msg.sender_id,
-      recipient_id: msg.recipient_id,
-      content: msg.content,
-      sent_at: msg.sent_at,
-      read: msg.read,
-      sender_name: msg.sender?.full_name || msg.sender?.username
-    }));
+    // Get sender profile for each message
+    const enhancedMessages: Message[] = [];
+    
+    for (const msg of messages) {
+      const { data: senderProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', msg.sender_id)
+        .single();
+        
+      enhancedMessages.push({
+        ...msg,
+        sender_name: senderProfile && !profileError ? senderProfile.full_name || senderProfile.username : 'User'
+      });
+    }
+    
+    return enhancedMessages;
   } catch (error: any) {
     console.error('Error fetching messages:', error);
     return [];

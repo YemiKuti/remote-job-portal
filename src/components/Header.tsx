@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/AuthProvider";
-import { LogIn } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -44,7 +43,7 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex items-center space-x-4">
-          {user ? (
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="cursor-pointer">
@@ -69,14 +68,6 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button 
-              onClick={() => navigate('/auth')} 
-              className="flex items-center gap-2 bg-job-green hover:bg-job-darkGreen"
-            >
-              <LogIn className="h-4 w-4" />
-              Sign In
-            </Button>
           )}
           <Button
             onClick={() => setIsMenuOpen(!isMenuOpen)}

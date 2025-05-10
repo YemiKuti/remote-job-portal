@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Search, Filter, Briefcase, MapPin, Calendar, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { fetchSavedJobs, toggleSaveJob, SavedJob } from '@/utils/dataFetching';
+import { fetchSavedJobs, toggleSaveJob } from '@/utils/api/candidateApi';
+import { SavedJob } from '@/types/api';
 import { useAuth } from '@/components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 

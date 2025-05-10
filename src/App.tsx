@@ -23,6 +23,7 @@ import SettingsAdmin from "./pages/admin/Settings";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
 import SignIn from "./pages/SignIn";
+import AdminSignIn from "./pages/AdminSignIn";
 import AuthPage from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Account from "./pages/Account";
@@ -72,6 +73,7 @@ const App = () => {
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
                   <Route path="/signin" element={<SignIn />} />
+                  <Route path="/admin-signin" element={<AdminSignIn />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/account" element={<Account />} />

@@ -1,7 +1,7 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate, Link } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Building, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
@@ -54,15 +54,13 @@ const SignIn = () => {
                   >
                     <Building className="mr-2" /> Employer
                   </Button>
-                  
-                  <Button 
-                    onClick={() => handleRoleSelection("admin")} 
-                    className="bg-gray-800 hover:bg-gray-900 h-16"
-                  >
-                    <ShieldCheck className="mr-2" /> Administrator
-                  </Button>
                 </div>
               </CardContent>
+              <CardFooter className="flex justify-center">
+                <Link to="/admin-signin" className="text-sm text-gray-500 hover:text-gray-700">
+                  Administrator Access
+                </Link>
+              </CardFooter>
             </Card>
           </div>
         </div>

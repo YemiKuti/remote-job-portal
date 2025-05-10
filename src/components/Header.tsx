@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -8,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/AuthProvider";
 import {
@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogIn, User, Building, Facebook, Twitter } from "lucide-react";
+import { LogIn, User, Building, Facebook, Twitter, ShieldCheck } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -132,6 +132,13 @@ export default function Header() {
                         >
                           <Building className="h-5 w-5" />
                           Continue as an Employer
+                        </Button>
+                        <Button 
+                          onClick={() => navigate("/admin-signin")}
+                          className="bg-gray-800 hover:bg-gray-900 flex items-center gap-2 h-12"
+                        >
+                          <ShieldCheck className="h-5 w-5" />
+                          Administrator Access
                         </Button>
                       </div>
                       <div className="relative">

@@ -28,7 +28,13 @@ const AdminRoute = () => {
       
       try {
         // Use the Edge Function to check admin status
-        const response = await supabase.functions.invoke('is_admin');
+        const response = await supabase.functions.invoke('is_admin', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        });
+        
+        console.log("Admin check response:", response);
         
         if (response.error) {
           console.error("Admin check error:", response.error);
@@ -39,6 +45,7 @@ const AdminRoute = () => {
             variant: "destructive",
           });
           setIsAdmin(false);
+          setLoading(false);
           return;
         }
         
@@ -59,7 +66,7 @@ const AdminRoute = () => {
             variant: "destructive",
           });
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);
         setError(error.message || "An unknown error occurred");

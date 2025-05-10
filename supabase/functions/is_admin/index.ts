@@ -31,6 +31,8 @@ serve(async (req) => {
       }
     )
 
+    console.log("Authentication headers:", req.headers.get('Authorization'));
+    
     // Get the session of the user who invoked the function
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
     
@@ -42,7 +44,7 @@ serve(async (req) => {
         isAdmin: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
+        status: 200, // Return 200 status even for errors to avoid the non-2xx error
       })
     }
 
@@ -50,11 +52,11 @@ serve(async (req) => {
       console.error("No session found");
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Unauthorized', 
+        error: 'No session found', 
         isAdmin: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
+        status: 200, // Return 200 status even for errors
       })
     }
 
@@ -81,13 +83,20 @@ serve(async (req) => {
         success: true,
         isAdmin: isAdmin,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
     )
   } catch (error) {
     console.error("Error in is_admin function:", error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: error.message || "Unknown error",
+      isAdmin: false 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: 200, // Return 200 even for errors to avoid the non-2xx error
     })
   }
 })

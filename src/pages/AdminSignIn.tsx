@@ -31,27 +31,50 @@ const AdminSignIn = () => {
       setCheckingAdmin(true);
       try {
         console.log("Checking if user is already admin:", user.email);
-        // Use Edge Function to check admin status
-        const { data, error } = await supabase.functions.invoke('is_admin');
+        
+        // Use Edge Function to check admin status with explicit authorization
+        const { data, error } = await supabase.functions.invoke('is_admin', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        });
+        
+        console.log("Admin check response:", data, error);
         
         if (error) {
           console.error("Admin check error:", error);
+          toast({
+            title: "Error checking admin status",
+            description: error.message,
+            variant: "destructive",
+          });
           return;
         }
         
         if (data?.isAdmin === true) {
           console.log("User is admin, redirecting to admin dashboard");
           navigate('/admin');
+        } else if (data?.isAdmin === false) {
+          toast({
+            title: "Admin access denied",
+            description: "You do not have administrator privileges.",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error("Error checking admin status:", error);
+        toast({
+          title: "Error",
+          description: "Failed to verify admin status.",
+          variant: "destructive",
+        });
       } finally {
         setCheckingAdmin(false);
       }
     };
     
     checkAdmin();
-  }, [user, session, navigate]);
+  }, [user, session, navigate, toast]);
 
   const handleAdminSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,10 +106,21 @@ const AdminSignIn = () => {
       // Refresh session to ensure we have the latest token
       await refreshSession();
       
+      const currentSession = await supabase.auth.getSession();
+      const accessToken = currentSession?.data?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("Failed to get access token after login");
+      }
+      
       console.log("Session refreshed, checking admin status");
       
-      // Verify admin status
-      const { data: adminCheck, error: adminCheckError } = await supabase.functions.invoke('is_admin');
+      // Verify admin status with explicit authorization header
+      const { data: adminCheck, error: adminCheckError } = await supabase.functions.invoke('is_admin', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
       
       console.log("Admin check response:", adminCheck);
       

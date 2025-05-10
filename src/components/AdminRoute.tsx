@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const AdminRoute = () => {
   const { user, session } = useAuth();
@@ -12,6 +13,7 @@ const AdminRoute = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const checkAdminStatus = async () => {

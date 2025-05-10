@@ -189,7 +189,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
         ...conv,
         employer_name: employerProfile && !empError ? employerProfile.full_name || employerProfile.username : 'Employer',
         candidate_name: candidateProfile && !candError ? candidateProfile.full_name || candidateProfile.username : 'Candidate',
-        company: employerProfile && !empError ? employerProfile.company_name : undefined,
+        company: employerProfile && !empError ? employerProfile.username : undefined, // Changed from company_name to username
       });
     }
     

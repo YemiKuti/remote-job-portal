@@ -19,23 +19,34 @@ const AdminSignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
 
   // Redirect if already authenticated and is admin
   useEffect(() => {
     const checkAdmin = async () => {
-      if (user && session) {
-        try {
-          // Use Edge Function to check admin status
-          const { data, error } = await supabase.functions.invoke('is_admin');
-          
-          if (error) throw error;
-          
-          if (data?.isAdmin === true) {
-            navigate('/admin');
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
+      if (!user || !session) {
+        return;
+      }
+      
+      setCheckingAdmin(true);
+      try {
+        console.log("Checking if user is already admin:", user.email);
+        // Use Edge Function to check admin status
+        const { data, error } = await supabase.functions.invoke('is_admin');
+        
+        if (error) {
+          console.error("Admin check error:", error);
+          return;
         }
+        
+        if (data?.isAdmin === true) {
+          console.log("User is admin, redirecting to admin dashboard");
+          navigate('/admin');
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      } finally {
+        setCheckingAdmin(false);
       }
     };
     
@@ -57,20 +68,32 @@ const AdminSignIn = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // First attempt regular sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (error) throw error;
+      if (authError) {
+        throw authError;
+      }
+      
+      console.log("Successfully signed in, refreshing session");
       
       // Refresh session to ensure we have the latest token
       await refreshSession();
       
+      console.log("Session refreshed, checking admin status");
+      
       // Verify admin status
       const { data: adminCheck, error: adminCheckError } = await supabase.functions.invoke('is_admin');
       
-      if (adminCheckError) throw adminCheckError;
+      console.log("Admin check response:", adminCheck);
+      
+      if (adminCheckError) {
+        console.error("Admin check error:", adminCheckError);
+        throw adminCheckError;
+      }
       
       if (adminCheck?.isAdmin === true) {
         toast({
@@ -123,7 +146,7 @@ const AdminSignIn = () => {
                       placeholder="admin@example.com" 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
+                      disabled={isLoading || checkingAdmin}
                     />
                   </div>
                   <div className="space-y-2">
@@ -134,18 +157,23 @@ const AdminSignIn = () => {
                       placeholder="•••••••••" 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      disabled={isLoading}
+                      disabled={isLoading || checkingAdmin}
                     />
                   </div>
                   <Button 
                     type="submit" 
                     className="w-full bg-gray-800 hover:bg-gray-900"
-                    disabled={isLoading}
+                    disabled={isLoading || checkingAdmin}
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Verifying...
+                      </>
+                    ) : checkingAdmin ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Checking admin status...
                       </>
                     ) : (
                       "Sign in as Administrator"

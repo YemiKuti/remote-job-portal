@@ -3,7 +3,19 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.1'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders
+    })
+  }
+
   try {
     // Initialize the Supabase client with the Auth context of the requesting user
     const supabaseClient = createClient(
@@ -29,7 +41,7 @@ serve(async (req) => {
         error: 'Unauthorized', 
         isAdmin: false 
       }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       })
     }
@@ -41,7 +53,7 @@ serve(async (req) => {
         error: 'Unauthorized', 
         isAdmin: false 
       }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       })
     }
@@ -69,12 +81,12 @@ serve(async (req) => {
         success: true,
         isAdmin: isAdmin,
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error("Error in is_admin function:", error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
   }

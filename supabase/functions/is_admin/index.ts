@@ -17,6 +17,20 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    console.log("Authorization header received:", authHeader ? "Present" : "Missing");
+    
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing authorization header', 
+        isAdmin: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200, // Return 200 status with error payload
+      })
+    }
+
     // Initialize the Supabase client with the Auth context of the requesting user
     const supabaseClient = createClient(
       // Supabase API URL - env var injected by default when deployed
@@ -26,12 +40,10 @@ serve(async (req) => {
       // Create client with Auth context of the user that called the function
       { 
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     )
-
-    console.log("Authentication headers:", req.headers.get('Authorization'));
     
     // Get the session of the user who invoked the function
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
@@ -40,28 +52,28 @@ serve(async (req) => {
       console.error("Session error:", sessionError);
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Unauthorized', 
+        error: 'Session error: ' + sessionError.message, 
         isAdmin: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 status even for errors to avoid the non-2xx error
+        status: 200,
       })
     }
 
     if (!session) {
-      console.error("No session found");
+      console.error("No session found with the provided authorization");
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'No session found', 
+        error: 'No valid session found with the provided authorization', 
         isAdmin: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 status even for errors
+        status: 200,
       })
     }
 
-    const user = session.user
-    console.log("User authenticated:", user.email);
+    const user = session.user;
+    console.log("User authenticated:", user.id, user.email);
     
     // Call the database function to check if the user has admin role
     const { data: roleData, error: roleError } = await supabaseClient
@@ -71,7 +83,7 @@ serve(async (req) => {
       console.error("Error checking admin role:", roleError);
       return new Response(JSON.stringify({ 
         success: false, 
-        error: roleError.message, 
+        error: 'Error checking admin role: ' + roleError.message, 
         isAdmin: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,11 +108,11 @@ serve(async (req) => {
     console.error("Error in is_admin function:", error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message || "Unknown error",
+      error: 'Unhandled error: ' + (error.message || "Unknown error"),
       isAdmin: false 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200, // Return 200 even for errors to avoid the non-2xx error
+      status: 200,
     })
   }
 })

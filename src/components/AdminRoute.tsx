@@ -28,20 +28,20 @@ const AdminRoute = () => {
       
       try {
         // Use the Edge Function to check admin status
-        const response = await supabase.functions.invoke('is_admin', {
+        const { data, error } = await supabase.functions.invoke('is_admin', {
           headers: {
             Authorization: `Bearer ${session.access_token}`
           }
         });
         
-        console.log("Admin check response:", response);
+        console.log("Admin check response:", data, error);
         
-        if (response.error) {
-          console.error("Admin check error:", response.error);
-          setError(response.error.message || "Failed to check admin status");
+        if (error) {
+          console.error("Admin check error:", error);
+          setError(error.message || "Failed to check admin status");
           toast({
             title: "Admin check failed",
-            description: `Error: ${response.error.message}`,
+            description: `Error: ${error.message}`,
             variant: "destructive",
           });
           setIsAdmin(false);
@@ -49,8 +49,8 @@ const AdminRoute = () => {
           return;
         }
         
-        const adminStatus = response.data?.isAdmin === true;
-        console.log("Admin status response:", response.data, "Is admin:", adminStatus);
+        const adminStatus = data?.isAdmin === true;
+        console.log("Admin status result:", adminStatus);
         
         setIsAdmin(adminStatus);
         

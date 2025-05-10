@@ -4,12 +4,14 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Briefcase, Building, Star } from 'lucide-react';
+import { Search, Briefcase, Building, Star, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchCandidateApplications, fetchSavedJobs, fetchRecommendedJobs } from '@/utils/dataFetching';
+import { useNavigate } from 'react-router-dom';
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userApplications, setUserApplications] = useState([]);
   const [userSavedJobs, setUserSavedJobs] = useState([]);
@@ -27,60 +29,25 @@ const CandidateDashboard = () => {
 
       setLoading(true);
       try {
-        // Fetch user applications (simulated with jobs data)
-        const { data: applications } = await supabase
-          .from('jobs')
-          .select('*')
-          .limit(3);
-          
-        // Fetch saved jobs (simulated)
-        const { data: savedJobs } = await supabase
-          .from('jobs')
-          .select('*')
-          .limit(2);
+        // Fetch user applications
+        const applications = await fetchCandidateApplications(user.id);
+        setUserApplications(applications);
         
-        // Fetch recommended jobs based on skills (simulated)
-        const { data: recommended } = await supabase
-          .from('jobs')
-          .select('*')
-          .limit(3);
+        // Fetch saved jobs
+        const savedJobs = await fetchSavedJobs(user.id);
+        setUserSavedJobs(savedJobs);
+        
+        // Fetch recommended jobs
+        const recommended = await fetchRecommendedJobs(user.id);
+        setRecommendedJobs(recommended);
 
-        // Update state with real data
-        if (applications) {
-          setUserApplications(applications.map(job => ({
-            id: job.id,
-            position: job.title,
-            company: job.company,
-            date: job.created_at,
-            status: Math.random() > 0.5 ? 'pending' : (Math.random() > 0.5 ? 'reviewed' : 'rejected')
-          })));
-          
-          setStats(prev => ({
-            ...prev, 
-            totalApplications: applications.length,
-            profileViews: Math.floor(Math.random() * 50) + 10
-          }));
-        }
-        
-        if (savedJobs) {
-          setUserSavedJobs(savedJobs.map(job => ({
-            id: job.id,
-            position: job.title,
-            company: job.company,
-            location: job.location,
-            savedDate: job.created_at
-          })));
-          
-          setStats(prev => ({
-            ...prev, 
-            savedJobs: savedJobs.length,
-            followedCompanies: Math.floor(Math.random() * 8) + 1
-          }));
-        }
-        
-        if (recommended) {
-          setRecommendedJobs(recommended);
-        }
+        // Update stats
+        setStats({
+          profileViews: Math.floor(Math.random() * 50) + 10, // Mock data for now
+          totalApplications: applications.length,
+          savedJobs: savedJobs.length,
+          followedCompanies: Math.floor(Math.random() * 5) // Mock data for now
+        });
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
@@ -96,8 +63,8 @@ const CandidateDashboard = () => {
       <DashboardLayout userType="candidate">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-job-green mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+            <Loader2 className="animate-spin h-12 w-12 mx-auto text-primary" />
+            <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -109,9 +76,9 @@ const CandidateDashboard = () => {
       <div className="grid grid-cols-1 gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">
-            Welcome back, {user?.user_metadata?.full_name || 'Job Seeker'}!
+            Welcome back, {user?.user_metadata?.full_name || user?.user_metadata?.username || 'Job Seeker'}!
           </h1>
-          <Button className="bg-job-green hover:bg-job-darkGreen">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/jobs')}>
             Find New Jobs
           </Button>
         </div>
@@ -134,7 +101,9 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalApplications}</div>
-              <p className="text-xs text-muted-foreground">+2 this week</p>
+              <p className="text-xs text-muted-foreground">
+                {stats.totalApplications > 0 ? `${stats.totalApplications} total applications` : 'No applications yet'}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -144,7 +113,9 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.savedJobs}</div>
-              <p className="text-xs text-muted-foreground">Save jobs for later</p>
+              <p className="text-xs text-muted-foreground">
+                {stats.savedJobs > 0 ? `${stats.savedJobs} jobs saved` : 'No saved jobs'}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -167,18 +138,20 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {userApplications.length > 0 ? (
-                userApplications.map(app => (
+                userApplications.slice(0, 3).map(app => (
                   <div key={app.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
                     <div>
-                      <p className="font-medium">{app.position}</p>
+                      <p className="font-medium">{app.position || "Position"}</p>
                       <p className="text-sm text-muted-foreground">
-                        {app.company} • Applied on {new Date(app.date).toLocaleDateString()}
+                        {app.company} • Applied on {new Date(app.applied_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                         app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         app.status === 'reviewed' ? 'bg-blue-100 text-blue-800' : 
+                        app.status === 'interview' ? 'bg-purple-100 text-purple-800' :
+                        app.status === 'offer' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'
                       }`}>
                         {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
@@ -189,11 +162,13 @@ const CandidateDashboard = () => {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground">You haven't applied to any jobs yet.</p>
-                  <Button variant="outline" className="mt-2">Browse Jobs</Button>
+                  <Button variant="outline" className="mt-2" onClick={() => navigate('/jobs')}>Browse Jobs</Button>
                 </div>
               )}
               {userApplications.length > 0 && (
-                <Button variant="outline" className="w-full">View All Applications</Button>
+                <Button variant="outline" className="w-full" onClick={() => navigate('/candidate/applications')}>
+                  View All Applications
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -205,26 +180,39 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {userSavedJobs.length > 0 ? (
-                userSavedJobs.map(job => (
-                  <div key={job.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
+                userSavedJobs.slice(0, 3).map(savedJob => (
+                  <div key={savedJob.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
                     <div>
-                      <p className="font-medium">{job.position}</p>
-                      <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
+                      <p className="font-medium">{savedJob.job?.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {savedJob.job?.company} • {savedJob.job?.location}
+                      </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">Apply</Button>
-                      <Button variant="ghost" size="sm">Remove</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/jobs/${savedJob.job_id}`)}
+                      >
+                        Apply
+                      </Button>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground">You haven't saved any jobs yet.</p>
-                  <Button variant="outline" className="mt-2">Find Jobs</Button>
+                  <Button variant="outline" className="mt-2" onClick={() => navigate('/jobs')}>Find Jobs</Button>
                 </div>
               )}
               {userSavedJobs.length > 0 && (
-                <Button variant="outline" className="w-full">View All Saved Jobs</Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/candidate/saved-jobs')}
+                >
+                  View All Saved Jobs
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -258,7 +246,7 @@ const CandidateDashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button>Apply Now</Button>
+                        <Button onClick={() => navigate(`/jobs/${job.id}`)}>Apply Now</Button>
                         <Button variant="outline">Save</Button>
                       </div>
                     </div>

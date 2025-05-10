@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,94 +7,82 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from '@/components/ui/separator';
-import { Search, Send } from 'lucide-react';
-
-// Mock data for conversations
-const conversations = [
-  { 
-    id: 1, 
-    name: 'Sarah Johnson', 
-    company: 'Tech Solutions Ltd', 
-    avatar: '/placeholder.svg',
-    lastMessage: 'Thanks for your application! We would like to schedule an interview.',
-    time: '10:45 AM',
-    unread: true
-  },
-  { 
-    id: 2, 
-    name: 'Michael Wong', 
-    company: 'Creative Designs', 
-    avatar: '/placeholder.svg',
-    lastMessage: 'Could you provide more details about your experience with React?',
-    time: 'Yesterday',
-    unread: false
-  },
-  { 
-    id: 3, 
-    name: 'Priya Sharma', 
-    company: 'DataSystems', 
-    avatar: '/placeholder.svg',
-    lastMessage: 'Your resume looks great. Are you available for a call next week?',
-    time: 'May 1',
-    unread: false
-  },
-  { 
-    id: 4, 
-    name: 'John Okafor', 
-    company: 'CloudTech Africa', 
-    avatar: '/placeholder.svg',
-    lastMessage: 'We are reviewing your application and will get back to you soon.',
-    time: 'Apr 28',
-    unread: false
-  }
-];
-
-// Mock messages for a conversation
-const messages = [
-  {
-    id: 1,
-    sender: 'Sarah Johnson',
-    content: 'Hello! Thanks for your application to the Frontend Developer position at Tech Solutions.',
-    time: '10:30 AM',
-    isSender: false,
-    avatar: '/placeholder.svg'
-  },
-  {
-    id: 2,
-    sender: 'Me',
-    content: 'Thank you for considering my application! I am very interested in the position.',
-    time: '10:32 AM',
-    isSender: true,
-    avatar: '/placeholder.svg'
-  },
-  {
-    id: 3,
-    sender: 'Sarah Johnson',
-    content: 'We are impressed with your portfolio and experience. Would you be available for an interview this Thursday or Friday?',
-    time: '10:40 AM',
-    isSender: false,
-    avatar: '/placeholder.svg'
-  },
-  {
-    id: 4,
-    sender: 'Me',
-    content: 'I would be available this Friday afternoon. What time works best for you?',
-    time: '10:43 AM',
-    isSender: true,
-    avatar: '/placeholder.svg'
-  },
-  {
-    id: 5,
-    sender: 'Sarah Johnson',
-    content: 'Great! How about 2:00 PM (EAT) on Friday? We can do a video call via Zoom.',
-    time: '10:45 AM',
-    isSender: false,
-    avatar: '/placeholder.svg'
-  },
-];
+import { Search, Send, Loader2 } from 'lucide-react';
+import { fetchConversations, fetchMessages, Message, Conversation } from '@/utils/dataFetching';
+import { useAuth } from '@/components/AuthProvider';
 
 const CandidateMessages = () => {
-  const [activeConversation, setActiveConversation] = React.useState(conversations[0]);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      const convs = await fetchConversations(user.id, 'candidate');
+      setConversations(convs);
+      
+      if (convs.length > 0) {
+        setActiveConversation(convs[0]);
+        const msgs = await fetchMessages(convs[0].id);
+        setMessages(msgs);
+      }
+      
+      setLoading(false);
+    };
+    
+    loadConversations();
+  }, [user]);
+  
+  const handleConversationClick = async (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    const msgs = await fetchMessages(conversation.id);
+    setMessages(msgs);
+  };
+  
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !activeConversation || !user) return;
+    
+    // In a real app, you would save this to the database
+    const message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: activeConversation.id,
+      sender_id: user.id,
+      recipient_id: activeConversation.employer_id,
+      content: newMessage,
+      sent_at: new Date().toISOString(),
+      read: false,
+      sender_name: user.user_metadata?.full_name || user.user_metadata?.username || 'Me'
+    };
+    
+    setMessages([...messages, message]);
+    setNewMessage('');
+    
+    // In a real app, you would save the message to the database here
+  };
+  
+  const filteredConversations = conversations.filter(conv => {
+    const employerName = conv.employer_name?.toLowerCase() || '';
+    const company = conv.company?.toLowerCase() || '';
+    const searchTermLower = searchTerm.toLowerCase();
+    return employerName.includes(searchTermLower) || company.includes(searchTermLower);
+  });
+  
+  if (loading) {
+    return (
+      <DashboardLayout userType="candidate">
+        <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   return (
     <DashboardLayout userType="candidate">
@@ -109,46 +97,53 @@ const CandidateMessages = () => {
                   <Input
                     placeholder="Search messages"
                     className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
               <ScrollArea className="flex-grow">
                 <div className="space-y-0">
-                  {conversations.map((conversation) => (
-                    <React.Fragment key={conversation.id}>
-                      <div 
-                        className={`p-3 flex items-start cursor-pointer hover:bg-gray-100 ${activeConversation?.id === conversation.id ? 'bg-gray-100' : ''}`}
-                        onClick={() => setActiveConversation(conversation)}
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.avatar} />
-                          <AvatarFallback>{conversation.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="ml-3 flex-1 overflow-hidden">
-                          <div className="flex items-baseline justify-between">
-                            <div className="font-medium truncate max-w-[120px]">
-                              {conversation.name}
+                  {filteredConversations.length > 0 ? (
+                    filteredConversations.map((conversation) => (
+                      <React.Fragment key={conversation.id}>
+                        <div 
+                          className={`p-3 flex items-start cursor-pointer hover:bg-gray-100 ${activeConversation?.id === conversation.id ? 'bg-gray-100' : ''}`}
+                          onClick={() => handleConversationClick(conversation)}
+                        >
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{conversation.employer_name?.[0] || 'E'}</AvatarFallback>
+                          </Avatar>
+                          <div className="ml-3 flex-1 overflow-hidden">
+                            <div className="flex items-baseline justify-between">
+                              <div className="font-medium truncate max-w-[120px]">
+                                {conversation.employer_name || 'Employer'}
+                              </div>
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {new Date(conversation.last_message_at).toLocaleDateString()}
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              {conversation.time}
+                            <div className="text-sm text-muted-foreground truncate">
+                              {conversation.company || 'Company'}
                             </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate">
-                            {conversation.company}
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm truncate max-w-[180px]">
-                              {conversation.lastMessage}
+                            <div className="flex justify-between items-center">
+                              <div className="text-sm truncate max-w-[180px]">
+                                {conversation.last_message || 'No messages yet'}
+                              </div>
+                              {conversation.unread_count > 0 && (
+                                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              )}
                             </div>
-                            {conversation.unread && (
-                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                            )}
                           </div>
                         </div>
-                      </div>
-                      <Separator />
-                    </React.Fragment>
-                  ))}
+                        <Separator />
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No conversations found
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
@@ -161,53 +156,69 @@ const CandidateMessages = () => {
                 {/* Header */}
                 <div className="p-3 border-b flex items-center">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={activeConversation.avatar} />
-                    <AvatarFallback>{activeConversation.name[0]}</AvatarFallback>
+                    <AvatarFallback>{activeConversation.employer_name?.[0] || 'E'}</AvatarFallback>
                   </Avatar>
                   <div className="ml-3">
-                    <div className="font-medium">{activeConversation.name}</div>
-                    <div className="text-sm text-muted-foreground">{activeConversation.company}</div>
+                    <div className="font-medium">{activeConversation.employer_name || 'Employer'}</div>
+                    <div className="text-sm text-muted-foreground">{activeConversation.company || 'Company'}</div>
                   </div>
                 </div>
                 
                 {/* Messages area */}
                 <ScrollArea className="flex-grow p-4">
                   <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div 
-                        key={message.id}
-                        className={`flex ${message.isSender ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`flex gap-2 max-w-[70%] ${message.isSender ? 'flex-row-reverse' : ''}`}>
-                          {!message.isSender && (
-                            <Avatar className="h-8 w-8 mt-1">
-                              <AvatarImage src={message.avatar} />
-                              <AvatarFallback>{message.sender[0]}</AvatarFallback>
-                            </Avatar>
-                          )}
-                          <div>
-                            <div 
-                              className={`rounded-lg px-4 py-2 inline-block ${
-                                message.isSender ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                              }`}
-                            >
-                              {message.content}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {message.time}
+                    {messages.length > 0 ? (
+                      messages.map((message) => (
+                        <div 
+                          key={message.id}
+                          className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`flex gap-2 max-w-[70%] ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                            {message.sender_id !== user?.id && (
+                              <Avatar className="h-8 w-8 mt-1">
+                                <AvatarFallback>{message.sender_name?.[0] || 'S'}</AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div>
+                              <div 
+                                className={`rounded-lg px-4 py-2 inline-block ${
+                                  message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                }`}
+                              >
+                                {message.content}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(message.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
                             </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center mt-8">
+                        <p className="text-muted-foreground">No messages yet.</p>
+                        <p className="text-muted-foreground text-sm mt-1">Start the conversation!</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </ScrollArea>
                 
                 {/* Message input */}
                 <div className="p-3 border-t">
                   <div className="flex gap-2">
-                    <Input placeholder="Type your message..." className="flex-1" />
-                    <Button size="icon">
+                    <Input 
+                      placeholder="Type your message..." 
+                      className="flex-1" 
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                    <Button size="icon" onClick={handleSendMessage}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>

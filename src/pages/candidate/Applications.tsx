@@ -1,58 +1,33 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building, Calendar, FileText } from 'lucide-react';
-
-// Mock data
-const applications = [
-  { 
-    id: 1, 
-    position: 'Frontend Developer', 
-    company: 'Tech Solutions Ltd', 
-    location: 'Nairobi, Kenya', 
-    date: '2025-04-28', 
-    status: 'pending' 
-  },
-  { 
-    id: 2, 
-    position: 'UX Designer', 
-    company: 'Creative Designs', 
-    location: 'Lagos, Nigeria', 
-    date: '2025-04-25', 
-    status: 'reviewed' 
-  },
-  { 
-    id: 3, 
-    position: 'Product Manager', 
-    company: 'InnovateAfrica', 
-    location: 'Cape Town, South Africa', 
-    date: '2025-04-20', 
-    status: 'rejected' 
-  },
-  { 
-    id: 4, 
-    position: 'Backend Engineer', 
-    company: 'DataSystems', 
-    location: 'Remote', 
-    date: '2025-04-15', 
-    status: 'interview' 
-  },
-  { 
-    id: 5, 
-    position: 'DevOps Engineer', 
-    company: 'CloudTech Africa', 
-    location: 'Accra, Ghana', 
-    date: '2025-04-12', 
-    status: 'offer' 
-  }
-];
+import { Building, Calendar, FileText, Loader2 } from 'lucide-react';
+import { fetchCandidateApplications, Application } from '@/utils/dataFetching';
+import { useAuth } from '@/components/AuthProvider';
 
 const CandidateApplications = () => {
+  const { user } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadApplications = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      const apps = await fetchCandidateApplications(user.id);
+      setApplications(apps);
+      setLoading(false);
+    };
+    
+    loadApplications();
+  }, [user]);
+  
   const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
     reviewed: 'bg-blue-100 text-blue-800',
@@ -67,6 +42,61 @@ const CandidateApplications = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const getFilteredApplications = (status?: string) => {
+    if (!status || status === 'all') return applications;
+    return applications.filter(app => app.status === status);
+  };
+  
+  const renderApplications = (apps: Application[]) => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    
+    if (apps.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No applications found</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-6">
+        {apps.map((app) => (
+          <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
+            <div className="space-y-1">
+              <h3 className="font-medium">{app.position || "Position"}</h3>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Building className="mr-1 h-4 w-4" />
+                <span>{app.company || "Company"}</span>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Calendar className="mr-1 h-4 w-4" />
+                <span>Applied on {formatDate(app.applied_date)}</span>
+              </div>
+              <div className="mt-2">
+                <Badge className={statusColors[app.status as keyof typeof statusColors]}>
+                  {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4 sm:mt-0">
+              <Button variant="outline" size="sm" className="flex items-center">
+                <FileText className="mr-1 h-4 w-4" />
+                View Details
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
   
   return (
@@ -98,35 +128,7 @@ const CandidateApplications = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {applications.map((app) => (
-                    <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
-                      <div className="space-y-1">
-                        <h3 className="font-medium">{app.position}</h3>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Building className="mr-1 h-4 w-4" />
-                          <span>{app.company}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="mr-1 h-4 w-4" />
-                          <span>Applied on {formatDate(app.date)}</span>
-                        </div>
-                        <div className="mt-2">
-                          <Badge className={statusColors[app.status as keyof typeof statusColors]}>
-                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2 mt-4 sm:mt-0">
-                        <Button variant="outline" size="sm" className="flex items-center">
-                          <FileText className="mr-1 h-4 w-4" />
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {renderApplications(applications)}
               </CardContent>
             </Card>
           </TabsContent>
@@ -140,37 +142,11 @@ const CandidateApplications = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {applications
-                    .filter(app => app.status === 'pending')
-                    .map((app) => (
-                      <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
-                        <div className="space-y-1">
-                          <h3 className="font-medium">{app.position}</h3>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Building className="mr-1 h-4 w-4" />
-                            <span>{app.company}</span>
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="mr-1 h-4 w-4" />
-                            <span>Applied on {formatDate(app.date)}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2 mt-4 sm:mt-0">
-                          <Button variant="outline" size="sm" className="flex items-center">
-                            <FileText className="mr-1 h-4 w-4" />
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                {renderApplications(getFilteredApplications('pending'))}
               </CardContent>
             </Card>
           </TabsContent>
           
-          {/* Similar structure for other tabs */}
           <TabsContent value="reviewed">
             <Card className="mt-6">
               <CardHeader>
@@ -178,37 +154,7 @@ const CandidateApplications = () => {
                 <CardDescription>Applications that have been reviewed</CardDescription>
               </CardHeader>
               <CardContent>
-                {applications.filter(app => app.status === 'reviewed').length > 0 ? (
-                  <div className="space-y-6">
-                    {applications
-                      .filter(app => app.status === 'reviewed')
-                      .map((app) => (
-                        <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
-                          {/* Similar structure as above */}
-                          <div className="space-y-1">
-                            <h3 className="font-medium">{app.position}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Building className="mr-1 h-4 w-4" />
-                              <span>{app.company}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="mr-1 h-4 w-4" />
-                              <span>Applied on {formatDate(app.date)}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 mt-4 sm:mt-0">
-                            <Button variant="outline" size="sm" className="flex items-center">
-                              <FileText className="mr-1 h-4 w-4" />
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-muted-foreground">No reviewed applications yet</p>
-                )}
+                {renderApplications(getFilteredApplications('reviewed'))}
               </CardContent>
             </Card>
           </TabsContent>
@@ -220,37 +166,7 @@ const CandidateApplications = () => {
                 <CardDescription>Applications in the interview process</CardDescription>
               </CardHeader>
               <CardContent>
-                {applications.filter(app => app.status === 'interview').length > 0 ? (
-                  <div className="space-y-6">
-                    {applications
-                      .filter(app => app.status === 'interview')
-                      .map((app) => (
-                        <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
-                          {/* Similar structure as above */}
-                          <div className="space-y-1">
-                            <h3 className="font-medium">{app.position}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Building className="mr-1 h-4 w-4" />
-                              <span>{app.company}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="mr-1 h-4 w-4" />
-                              <span>Applied on {formatDate(app.date)}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 mt-4 sm:mt-0">
-                            <Button variant="outline" size="sm" className="flex items-center">
-                              <FileText className="mr-1 h-4 w-4" />
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-muted-foreground">No interview stage applications yet</p>
-                )}
+                {renderApplications(getFilteredApplications('interview'))}
               </CardContent>
             </Card>
           </TabsContent>
@@ -262,37 +178,7 @@ const CandidateApplications = () => {
                 <CardDescription>Applications with job offers</CardDescription>
               </CardHeader>
               <CardContent>
-                {applications.filter(app => app.status === 'offer').length > 0 ? (
-                  <div className="space-y-6">
-                    {applications
-                      .filter(app => app.status === 'offer')
-                      .map((app) => (
-                        <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
-                          {/* Similar structure as above */}
-                          <div className="space-y-1">
-                            <h3 className="font-medium">{app.position}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Building className="mr-1 h-4 w-4" />
-                              <span>{app.company}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="mr-1 h-4 w-4" />
-                              <span>Applied on {formatDate(app.date)}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 mt-4 sm:mt-0">
-                            <Button variant="outline" size="sm" className="flex items-center">
-                              <FileText className="mr-1 h-4 w-4" />
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-muted-foreground">No job offers yet</p>
-                )}
+                {renderApplications(getFilteredApplications('offer'))}
               </CardContent>
             </Card>
           </TabsContent>

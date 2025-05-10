@@ -19,10 +19,15 @@ const AdminRoute = () => {
       }
       
       try {
+        // Use the RPC function to check admin status
         const { data, error } = await supabase.rpc('is_admin');
-        if (error) throw error;
         
-        setIsAdmin(data);
+        if (error) {
+          console.error("Admin check error:", error);
+          throw error;
+        }
+        
+        setIsAdmin(data === true);
       } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);

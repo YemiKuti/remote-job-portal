@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,23 +8,24 @@ import { Label } from "@/components/ui/label";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 
 const AdminSignIn = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, session } = useAuth();
+  const { user, session, refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already authenticated and is admin
-  React.useEffect(() => {
+  useEffect(() => {
     const checkAdmin = async () => {
       if (user && session) {
         try {
+          // Use RPC function to check admin status
           const { data, error } = await supabase.rpc('is_admin');
           if (error) throw error;
           
@@ -61,6 +62,9 @@ const AdminSignIn = () => {
       });
       
       if (error) throw error;
+      
+      // Refresh session to ensure we have the latest token
+      await refreshSession();
       
       // Verify admin status
       const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin');

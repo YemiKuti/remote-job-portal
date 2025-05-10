@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +18,30 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
-export default function Auth() {
+interface AuthProps {
+  initialRole?: string;
+  initialProvider?: string | null;
+}
+
+export default function Auth({ initialRole = 'candidate', initialProvider = null }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('candidate');
+  const [role, setRole] = useState(initialRole);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // If initialRole changes, update the role state
+    setRole(initialRole);
+    
+    // If initialProvider is provided, trigger social sign-in
+    if (initialProvider) {
+      handleSocialSignIn(initialProvider as 'google' | 'facebook' | 'twitter');
+    }
+  }, [initialRole, initialProvider]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +126,9 @@ export default function Auth() {
             prompt: 'consent',
           },
           redirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            role, // Pass the selected role for later use after OAuth callback
+          }
         }
       });
 
@@ -129,10 +148,11 @@ export default function Auth() {
         <CardHeader>
           <CardTitle>Account Access</CardTitle>
           <CardDescription>
-            Sign in to your account or create a new one
+            {activeTab === 'signin' ? 'Sign in as a ' : 'Sign up as a '} 
+            <span className="font-medium capitalize">{role}</span>
           </CardDescription>
         </CardHeader>
-        <Tabs defaultValue="signin">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -243,13 +263,12 @@ export default function Auth() {
                 <div className="space-y-2">
                   <Label htmlFor="signup-role">I am a</Label>
                   <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger>
+                    <SelectTrigger id="signup-role">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="candidate">Job Seeker</SelectItem>
                       <SelectItem value="employer">Employer</SelectItem>
-                      <SelectItem value="admin">Administrator</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

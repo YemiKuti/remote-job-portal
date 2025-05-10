@@ -23,6 +23,7 @@ serve(async (req) => {
     const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
     
     if (sessionError) {
+      console.error("Session error:", sessionError);
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Unauthorized', 
@@ -34,6 +35,7 @@ serve(async (req) => {
     }
 
     if (!session) {
+      console.error("No session found");
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Unauthorized', 
@@ -46,8 +48,21 @@ serve(async (req) => {
 
     const user = session.user
     
+    // Log the user metadata to debug
+    console.log("User metadata:", JSON.stringify(user.user_metadata));
+    console.log("User email:", user.email);
+    
+    // Check if user email is yemikuti@gmail.com - direct fix for this user
+    const isYemiKuti = user.email === 'yemikuti@gmail.com';
+    
     // Check if user has the is_admin flag in their metadata
-    const isAdmin = user.user_metadata?.is_admin === true || user.user_metadata?.is_admin === 'true'
+    const isAdminFromMetadata = user.user_metadata?.is_admin === true || 
+                               user.user_metadata?.is_admin === 'true';
+    
+    // Grant admin access to yemikuti@gmail.com regardless of metadata
+    const isAdmin = isYemiKuti || isAdminFromMetadata;
+    
+    console.log(`Admin access result: ${isAdmin} (yemikuti check: ${isYemiKuti}, metadata check: ${isAdminFromMetadata})`);
     
     return new Response(
       JSON.stringify({
@@ -57,6 +72,7 @@ serve(async (req) => {
       { headers: { 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error("Error in is_admin function:", error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { 'Content-Type': 'application/json' },
       status: 500,

@@ -4,19 +4,24 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminRoute = () => {
   const { user, session } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user || !session) {
+        console.log("No user or session, denying admin access");
         setIsAdmin(false);
         setLoading(false);
         return;
       }
+      
+      console.log("Checking admin status for user:", user.email);
       
       try {
         // Use the Edge Function to check admin status
@@ -24,20 +29,40 @@ const AdminRoute = () => {
         
         if (error) {
           console.error("Admin check error:", error);
+          toast({
+            title: "Admin check failed",
+            description: `Error: ${error.message}`,
+            variant: "destructive",
+          });
           throw error;
         }
         
-        setIsAdmin(data?.isAdmin === true);
+        const adminStatus = data?.isAdmin === true;
+        console.log("Admin status response:", data, "Is admin:", adminStatus);
+        
+        setIsAdmin(adminStatus);
+        
+        if (adminStatus) {
+          toast({
+            title: "Admin access granted",
+            description: `Welcome, ${user.email}`,
+          });
+        }
       } catch (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);
+        toast({
+          title: "Admin access denied",
+          description: "There was an error verifying your admin privileges.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     
     checkAdminStatus();
-  }, [user, session]);
+  }, [user, session, toast]);
   
   if (loading) {
     return (

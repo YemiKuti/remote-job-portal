@@ -61,22 +61,26 @@ serve(async (req) => {
     }
 
     const user = session.user
+    console.log("User authenticated:", user.email);
     
-    // Log the user metadata to debug
-    console.log("User metadata:", JSON.stringify(user.user_metadata));
-    console.log("User email:", user.email);
+    // Call the database function to check if the user has admin role
+    const { data: roleData, error: roleError } = await supabaseClient
+      .rpc('is_admin')
     
-    // Check if user email is yemikuti@gmail.com - direct fix for this user
-    const isYemiKuti = user.email === 'yemikuti@gmail.com';
+    if (roleError) {
+      console.error("Error checking admin role:", roleError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: roleError.message, 
+        isAdmin: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
     
-    // Check if user has the is_admin flag in their metadata
-    const isAdminFromMetadata = user.user_metadata?.is_admin === true || 
-                               user.user_metadata?.is_admin === 'true';
-    
-    // Grant admin access to yemikuti@gmail.com regardless of metadata
-    const isAdmin = isYemiKuti || isAdminFromMetadata;
-    
-    console.log(`Admin access result: ${isAdmin} (yemikuti check: ${isYemiKuti}, metadata check: ${isAdminFromMetadata})`);
+    const isAdmin = Boolean(roleData);
+    console.log(`Admin access result for ${user.email}: ${isAdmin}`);
     
     return new Response(
       JSON.stringify({

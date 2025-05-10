@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { Application, SavedJob } from '@/types/api';
 
 // Fetch candidate applications
@@ -127,5 +126,77 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       variant: "destructive",
     });
     return false;
+  }
+};
+
+// Update candidate profile
+export const updateCandidateProfile = async (userId: string, data: { 
+  full_name?: string;
+  phone?: string;
+  location?: string;
+  avatar_url?: string;
+  title?: string;
+  experience?: number;
+  skills?: string;
+  bio?: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', userId);
+      
+    if (error) throw error;
+    
+    toast.success("Profile updated successfully");
+    return true;
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    toast.error("Failed to update profile");
+    return false;
+  }
+};
+
+// Upload profile photo
+export const uploadProfilePhoto = async (userId: string, file: File) => {
+  try {
+    // Create a unique file path
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+    
+    // Upload the file to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(filePath, file);
+      
+    if (uploadError) throw uploadError;
+    
+    // Get the public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('profiles')
+      .getPublicUrl(filePath);
+      
+    const avatarUrl = publicUrlData.publicUrl;
+    
+    // Update the user's profile with the new avatar URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', userId);
+      
+    if (updateError) throw updateError;
+    
+    // Also update the user metadata
+    await supabase.auth.updateUser({
+      data: { avatar_url: avatarUrl }
+    });
+    
+    toast.success("Profile photo updated successfully");
+    return avatarUrl;
+  } catch (error: any) {
+    console.error('Error uploading profile photo:', error);
+    toast.error("Failed to upload profile photo");
+    return null;
   }
 };

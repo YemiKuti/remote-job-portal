@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Application, SavedJob } from '@/types/api';
@@ -96,9 +95,7 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
         
       if (error) throw error;
       
-      toast({
-        description: "Job removed from saved jobs",
-      });
+      toast("Job removed from saved jobs");
     } else {
       // Add to saved jobs
       const { error } = await supabase
@@ -111,16 +108,13 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
         
       if (error) throw error;
       
-      toast({
-        description: "Job saved successfully",
-      });
+      toast("Job saved successfully");
     }
     
     return true;
   } catch (error: any) {
     console.error('Error toggling saved job:', error);
-    toast({
-      description: "Failed to update saved jobs",
+    toast("Failed to update saved jobs", {
       variant: "destructive",
     });
     return false;

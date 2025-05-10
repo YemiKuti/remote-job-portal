@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // Fetch candidate applications for an employer
 export const fetchEmployerApplications = async (userId: string) => {
@@ -24,29 +24,20 @@ export const fetchEmployerApplications = async (userId: string) => {
   }
 };
 
-// Update application status
-export const updateApplicationStatus = async (applicationId: string, status: string) => {
+// Fetch jobs created by an employer
+export const fetchEmployerJobs = async (userId: string) => {
   try {
-    const { error } = await supabase
-      .from('applications')
-      .update({ status })
-      .eq('id', applicationId);
-
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('employer_id', userId)
+      .order('created_at', { ascending: false });
+      
     if (error) throw error;
     
-    toast({
-      title: "Success",
-      description: "Application status updated",
-    });
-    
-    return true;
+    return data;
   } catch (error: any) {
-    console.error('Error updating application status:', error);
-    toast({
-      title: "Error",
-      description: "Failed to update application status",
-      variant: "destructive",
-    });
-    return false;
+    console.error('Error fetching employer jobs:', error);
+    return [];
   }
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Eye, Briefcase, BarChart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/dataFetching';
+import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/api';
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();

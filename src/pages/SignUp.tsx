@@ -65,45 +65,57 @@ const SignUp = () => {
     navigate('/auth?tab=signup');
   };
 
+  // Use uploaded image for the carousel
   const carouselImages = [
-    "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=1200",
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200",
-    "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200"
+    "/lovable-uploads/c43fc430-313e-4f02-ba27-9d711bc13a89.png"
   ];
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Image carousel */}
-      <div className="hidden md:block w-1/2 bg-gray-100">
-        <div className="h-full">
-          <Carousel className="h-full" autoplay interval={5000}>
-            <CarouselContent className="h-full">
-              {carouselImages.map((image, index) => (
-                <CarouselItem key={index} className="h-full">
-                  <AspectRatio ratio={16 / 9} className="h-full">
-                    <img 
-                      src={image} 
-                      alt={`Slide ${index + 1}`} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </AspectRatio>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+      {/* Left side - Logo and image carousel */}
+      <div className="w-1/2 bg-gray-100 flex flex-col">
+        {/* Logo area */}
+        <div className="p-8">
+          <img 
+            src="/lovable-uploads/c4d7de31-b98f-412a-8012-86446fdffd7f.png" 
+            alt="Brand Logo" 
+            className="h-8" 
+          />
         </div>
-      </div>
-
-      {/* Right side - Signup content */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-10">
+        
+        {/* Image carousel */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1">
+            <Carousel className="h-full" autoplay interval={5000}>
+              <CarouselContent className="h-full">
+                {carouselImages.map((image, index) => (
+                  <CarouselItem key={index} className="h-full">
+                    <AspectRatio ratio={16 / 9} className="h-full">
+                      <img 
+                        src={image} 
+                        alt={`Slide ${index + 1}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </AspectRatio>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+          
+          {/* Welcome text under carousel */}
+          <div className="text-center p-8">
             <h1 className="text-3xl font-bold text-[#26282B] mb-3 font-helvetica">
               Welcome, you're starting your new career journey here!
             </h1>
             <p className="text-gray-600 font-helvetica">Upload your CV for a quick start.</p>
           </div>
+        </div>
+      </div>
 
+      {/* Right side - Signup form */}
+      <div className="w-1/2 flex items-center justify-center p-8">
+        <div className="max-w-md w-full">
           <div 
             className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center ${
               isDragging ? "border-[#007A55] bg-green-50" : "border-gray-300"
@@ -134,7 +146,7 @@ const SignUp = () => {
 
           <Button 
             onClick={handleUpload}
-            className="w-full bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
+            className="w-[220px] mx-auto block bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
           >
             <Upload className="mr-2 h-5 w-5" />
             Upload
@@ -149,7 +161,7 @@ const SignUp = () => {
           <Button 
             variant="outline" 
             onClick={handleLinkedInSignUp}
-            className="w-full mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
+            className="w-[220px] mx-auto block mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
           >
             <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
             Continue with LinkedIn
@@ -158,7 +170,7 @@ const SignUp = () => {
           <Button 
             variant="outline" 
             onClick={handleEmailSignUp}
-            className="w-full mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
+            className="w-[220px] mx-auto block mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
           >
             <img src="/lovable-uploads/b725dadd-2089-4320-94b3-9bd8af324d78.png" alt="Email" className="h-5 w-5 mr-2" />
             Sign up with email

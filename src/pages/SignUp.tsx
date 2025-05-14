@@ -72,48 +72,7 @@ const SignUp = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Logo and image carousel */}
-      <div className="w-1/2 bg-gray-100 flex flex-col">
-        {/* Logo area */}
-        <div className="p-8">
-          <img 
-            src="/lovable-uploads/bff03cc3-67ae-4b19-b5b5-06a97c28c61a.png" 
-            alt="Brand Logo" 
-            className="h-8" 
-          />
-        </div>
-        
-        {/* Image carousel */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1">
-            <Carousel className="h-full" autoplay interval={5000}>
-              <CarouselContent className="h-full">
-                {carouselImages.map((image, index) => (
-                  <CarouselItem key={index} className="h-full">
-                    <AspectRatio ratio={16 / 9} className="h-full">
-                      <img 
-                        src={image} 
-                        alt={`Slide ${index + 1}`} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </AspectRatio>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          </div>
-          
-          {/* Welcome text under carousel */}
-          <div className="text-center p-8">
-            <h1 className="text-3xl font-bold text-[#26282B] mb-3 font-helvetica">
-              Welcome, you're starting your new career journey here!
-            </h1>
-            <p className="text-gray-600 font-helvetica">Upload your CV for a quick start.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Form placeholder (to be replaced later) */}
+      {/* Left side - Form */}
       <div className="w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md w-full">
           <div 
@@ -184,6 +143,47 @@ const SignUp = () => {
 
           <div className="text-xs text-gray-500 text-center mt-8 font-helvetica">
             By signing up, you are creating an account and agree to our Terms and Privacy Policy
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Logo and image carousel */}
+      <div className="w-1/2 bg-gray-100 flex flex-col">
+        {/* Logo area */}
+        <div className="p-8">
+          <img 
+            src="/lovable-uploads/bff03cc3-67ae-4b19-b5b5-06a97c28c61a.png" 
+            alt="Brand Logo" 
+            className="h-8" 
+          />
+        </div>
+        
+        {/* Image carousel */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1">
+            <Carousel className="h-full" autoplay interval={5000}>
+              <CarouselContent className="h-full">
+                {carouselImages.map((image, index) => (
+                  <CarouselItem key={index} className="h-full">
+                    <AspectRatio ratio={16 / 9} className="h-full">
+                      <img 
+                        src={image} 
+                        alt={`Slide ${index + 1}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </AspectRatio>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+          
+          {/* Welcome text under carousel */}
+          <div className="text-center p-8">
+            <h1 className="text-3xl font-bold text-[#26282B] mb-3 font-helvetica">
+              Welcome, you're starting your new career journey here!
+            </h1>
+            <p className="text-gray-600 font-helvetica">Upload your CV for a quick start.</p>
           </div>
         </div>
       </div>

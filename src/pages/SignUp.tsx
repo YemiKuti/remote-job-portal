@@ -72,10 +72,20 @@ const SignUp = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Form with background */}
-      <div className="w-1/2 bg-gray-100 flex flex-col">
+      {/* Left side - Form with background image */}
+      <div 
+        className="w-1/2 flex flex-col relative" 
+        style={{
+          backgroundImage: "url('/lovable-uploads/26716900-7aba-41c0-9563-22b7ea705d25.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Semi-transparent overlay to improve text readability */}
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        
         {/* Logo area */}
-        <div className="p-8">
+        <div className="p-8 relative z-10">
           <img 
             src="/lovable-uploads/bff03cc3-67ae-4b19-b5b5-06a97c28c61a.png" 
             alt="Brand Logo" 
@@ -83,8 +93,8 @@ const SignUp = () => {
           />
         </div>
         
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-md w-full">
+        <div className="flex-1 flex items-center justify-center p-8 relative z-10">
+          <div className="max-w-md w-full bg-white/90 p-8 rounded-lg shadow-lg">
             <div 
               className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center ${
                 isDragging ? "border-[#007A55] bg-green-50" : "border-gray-300"
@@ -158,8 +168,8 @@ const SignUp = () => {
         </div>
       </div>
 
-      {/* Right side - Just the image carousel */}
-      <div className="w-1/2 flex flex-col">
+      {/* Right side - White background with image carousel */}
+      <div className="w-1/2 flex flex-col bg-white">
         {/* Image carousel */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1">

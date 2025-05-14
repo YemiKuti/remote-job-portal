@@ -72,82 +72,7 @@ const SignUp = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Form */}
-      <div className="w-1/2 flex items-center justify-center p-8">
-        <div className="max-w-md w-full">
-          <div 
-            className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center ${
-              isDragging ? "border-[#007A55] bg-green-50" : "border-gray-300"
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <div className="mb-4 flex justify-center">
-              <div className="bg-blue-100 p-4 rounded-full">
-                <Upload className="h-6 w-6 text-blue-500" />
-              </div>
-            </div>
-            <p className="mb-2 text-sm font-helvetica">Drop your file here or <label htmlFor="cv-upload" className="text-[#3F64DE] cursor-pointer">choose file</label></p>
-            <p className="text-xs text-gray-500 font-helvetica">Max 10MB per file</p>
-            <input 
-              type="file"
-              className="hidden"
-              id="cv-upload"
-              onChange={handleFileChange}
-            />
-            {file && (
-              <div className="mt-4 text-sm text-[#007A55] font-helvetica">
-                Selected: {file.name}
-              </div>
-            )}
-          </div>
-
-          <Button 
-            onClick={handleUpload}
-            className="w-[220px] mx-auto block bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
-          >
-            <Upload className="mr-2 h-5 w-5" />
-            Upload
-          </Button>
-
-          <div className="text-center mb-6 flex items-center">
-            <div className="flex-grow h-px bg-gray-200"></div>
-            <span className="px-4 text-sm text-gray-500 font-helvetica">or</span>
-            <div className="flex-grow h-px bg-gray-200"></div>
-          </div>
-
-          <Button 
-            variant="outline" 
-            onClick={handleLinkedInSignUp}
-            className="w-[220px] mx-auto block mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
-          >
-            <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
-            Continue with LinkedIn
-          </Button>
-
-          <Button 
-            variant="outline" 
-            onClick={handleEmailSignUp}
-            className="w-[220px] mx-auto block mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
-          >
-            <img src="/lovable-uploads/b725dadd-2089-4320-94b3-9bd8af324d78.png" alt="Email" className="h-5 w-5 mr-2" />
-            Sign up with email
-          </Button>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600 font-helvetica">
-              Already have an account? <Link to="/auth" className="text-[#007A55] font-medium">click here to login</Link>
-            </p>
-          </div>
-
-          <div className="text-xs text-gray-500 text-center mt-8 font-helvetica">
-            By signing up, you are creating an account and agree to our Terms and Privacy Policy
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Logo and image carousel */}
+      {/* Left side - Form with background */}
       <div className="w-1/2 bg-gray-100 flex flex-col">
         {/* Logo area */}
         <div className="p-8">
@@ -158,6 +83,83 @@ const SignUp = () => {
           />
         </div>
         
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md w-full">
+            <div 
+              className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center ${
+                isDragging ? "border-[#007A55] bg-green-50" : "border-gray-300"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="mb-4 flex justify-center">
+                <div className="bg-blue-100 p-4 rounded-full">
+                  <Upload className="h-6 w-6 text-blue-500" />
+                </div>
+              </div>
+              <p className="mb-2 text-sm font-helvetica">Drop your file here or <label htmlFor="cv-upload" className="text-[#3F64DE] cursor-pointer">choose file</label></p>
+              <p className="text-xs text-gray-500 font-helvetica">Max 10MB per file</p>
+              <input 
+                type="file"
+                className="hidden"
+                id="cv-upload"
+                onChange={handleFileChange}
+              />
+              {file && (
+                <div className="mt-4 text-sm text-[#007A55] font-helvetica">
+                  Selected: {file.name}
+                </div>
+              )}
+            </div>
+
+            <Button 
+              onClick={handleUpload}
+              className="w-[220px] mx-auto block bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
+            >
+              <Upload className="mr-2 h-5 w-5" />
+              Upload
+            </Button>
+
+            <div className="text-center mb-6 flex items-center">
+              <div className="flex-grow h-px bg-gray-200"></div>
+              <span className="px-4 text-sm text-gray-500 font-helvetica">or</span>
+              <div className="flex-grow h-px bg-gray-200"></div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              onClick={handleLinkedInSignUp}
+              className="w-[220px] mx-auto block mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
+            >
+              <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
+              Continue with LinkedIn
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={handleEmailSignUp}
+              className="w-[220px] mx-auto block mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
+            >
+              <img src="/lovable-uploads/b725dadd-2089-4320-94b3-9bd8af324d78.png" alt="Email" className="h-5 w-5 mr-2" />
+              Sign up with email
+            </Button>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-helvetica">
+                Already have an account? <Link to="/auth" className="text-[#007A55] font-medium">click here to login</Link>
+              </p>
+            </div>
+
+            <div className="text-xs text-gray-500 text-center mt-8 font-helvetica">
+              By signing up, you are creating an account and agree to our Terms and Privacy Policy
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Just the image carousel */}
+      <div className="w-1/2 flex flex-col">
         {/* Image carousel */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1">

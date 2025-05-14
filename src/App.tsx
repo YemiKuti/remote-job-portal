@@ -24,6 +24,7 @@ import SettingsAdmin from "./pages/admin/Settings";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
 import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 import AdminSignIn from "./pages/AdminSignIn";
 import AuthPage from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -74,6 +75,7 @@ const App = () => {
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
                   <Route path="/signin" element={<SignIn />} />
+                  <Route path="/signup" element={<SignUp />} />
                   <Route path="/admin-signin" element={<AdminSignIn />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/profile" element={<Profile />} />

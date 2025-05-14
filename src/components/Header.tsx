@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -40,6 +41,10 @@ export default function Header() {
   const handleSocialSignIn = (provider: string) => {
     setIsAuthDialogOpen(false);
     navigate(`/auth?provider=${provider}`);
+  };
+
+  const handleSignUp = () => {
+    navigate('/signup');
   };
 
   return (
@@ -215,7 +220,7 @@ export default function Header() {
                 </DialogContent>
               </Dialog>
               
-              <Button onClick={() => { setIsAuthDialogOpen(true); }} className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
+              <Button onClick={handleSignUp} className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
                 Sign Up
               </Button>
@@ -272,7 +277,7 @@ export default function Header() {
                 <Button 
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setIsAuthDialogOpen(true);
+                    navigate('/signup');
                   }}
                   className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2 justify-start"
                 >

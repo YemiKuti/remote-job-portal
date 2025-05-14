@@ -67,7 +67,7 @@ const SignUp = () => {
 
   // Use uploaded image for the carousel
   const carouselImages = [
-    "/lovable-uploads/c43fc430-313e-4f02-ba27-9d711bc13a89.png"
+    "/lovable-uploads/e5694a2a-74ac-4d8c-b3dd-3625fbec54c0.png"
   ];
 
   return (
@@ -77,7 +77,7 @@ const SignUp = () => {
         {/* Logo area */}
         <div className="p-8">
           <img 
-            src="/lovable-uploads/c4d7de31-b98f-412a-8012-86446fdffd7f.png" 
+            src="/lovable-uploads/bff03cc3-67ae-4b19-b5b5-06a97c28c61a.png" 
             alt="Brand Logo" 
             className="h-8" 
           />
@@ -113,7 +113,7 @@ const SignUp = () => {
         </div>
       </div>
 
-      {/* Right side - Signup form */}
+      {/* Right side - Form placeholder (to be replaced later) */}
       <div className="w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md w-full">
           <div 
@@ -126,7 +126,7 @@ const SignUp = () => {
           >
             <div className="mb-4 flex justify-center">
               <div className="bg-blue-100 p-4 rounded-full">
-                <img src="/lovable-uploads/77ec5693-71e9-4039-ac60-b716a0aa1f51.png" alt="Upload Icon" className="w-6 h-6" />
+                <Upload className="h-6 w-6 text-blue-500" />
               </div>
             </div>
             <p className="mb-2 text-sm font-helvetica">Drop your file here or <label htmlFor="cv-upload" className="text-[#3F64DE] cursor-pointer">choose file</label></p>

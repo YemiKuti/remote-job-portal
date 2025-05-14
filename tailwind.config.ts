@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				helvetica: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -63,13 +67,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				job: {
-					green: '#16a34a',
-					lightGreen: '#22c55e',
-					darkGreen: '#15803d',
-					hover: '#dcfce7',
-					blue: '#2563eb',
-					lightBlue: '#3b82f6',
-					darkBlue: '#1e40af'
+					green: '#007A55',
+					lightGreen: '#00A671',
+					darkGreen: '#00694A',
+					hover: '#E6F5F0',
+					blue: '#3F64DE',
+					lightBlue: '#5A7BE2',
+					darkBlue: '#2A4BC8'
 				}
 			},
 			borderRadius: {

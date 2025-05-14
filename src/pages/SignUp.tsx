@@ -1,11 +1,15 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { UserPlus, Upload, Linkedin } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -38,13 +42,11 @@ const SignUp = () => {
 
   const handleUpload = () => {
     if (file) {
-      // In a real application, you would upload the file to your server here
       toast({
         title: "CV Uploaded",
         description: `Successfully uploaded ${file.name}`,
       });
       
-      // After successful upload, navigate to the registration form
       navigate('/auth?role=candidate');
     } else {
       toast({
@@ -63,21 +65,48 @@ const SignUp = () => {
     navigate('/auth?tab=signup');
   };
 
+  const carouselImages = [
+    "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=1200",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200",
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200"
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex-1 bg-gray-50 flex items-center justify-center py-12">
-        <div className="max-w-md mx-auto w-full px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">
+    <div className="flex min-h-screen">
+      {/* Left side - Image carousel */}
+      <div className="hidden md:block w-1/2 bg-gray-100">
+        <div className="h-full">
+          <Carousel className="h-full" autoplay interval={5000}>
+            <CarouselContent className="h-full">
+              {carouselImages.map((image, index) => (
+                <CarouselItem key={index} className="h-full">
+                  <AspectRatio ratio={16 / 9} className="h-full">
+                    <img 
+                      src={image} 
+                      alt={`Slide ${index + 1}`} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </AspectRatio>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+      </div>
+
+      {/* Right side - Signup content */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-[#26282B] mb-3 font-helvetica">
               Welcome, you're starting your new career journey here!
             </h1>
-            <p className="text-gray-600">Upload your CV for a quick start.</p>
+            <p className="text-gray-600 font-helvetica">Upload your CV for a quick start.</p>
           </div>
 
           <div 
-            className={`border-2 border-dashed rounded-lg p-6 mb-4 text-center ${
-              isDragging ? "border-job-green bg-green-50" : "border-gray-300"
+            className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center ${
+              isDragging ? "border-[#007A55] bg-green-50" : "border-gray-300"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -85,24 +114,19 @@ const SignUp = () => {
           >
             <div className="mb-4 flex justify-center">
               <div className="bg-blue-100 p-4 rounded-full">
-                <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V8.414l-4-4H4zm0 2h8v2h2v-0.586L8.414 6H4v0z" clipRule="evenodd" />
-                </svg>
+                <img src="/lovable-uploads/77ec5693-71e9-4039-ac60-b716a0aa1f51.png" alt="Upload Icon" className="w-6 h-6" />
               </div>
             </div>
-            <p className="mb-2 text-sm">Drop your file here or <span className="text-blue-500 cursor-pointer">choose file</span></p>
-            <p className="text-xs text-gray-500">Max 10MB per file</p>
+            <p className="mb-2 text-sm font-helvetica">Drop your file here or <label htmlFor="cv-upload" className="text-[#3F64DE] cursor-pointer">choose file</label></p>
+            <p className="text-xs text-gray-500 font-helvetica">Max 10MB per file</p>
             <input 
               type="file"
               className="hidden"
               id="cv-upload"
               onChange={handleFileChange}
             />
-            <label htmlFor="cv-upload" className="cursor-pointer">
-              <span className="sr-only">Choose file</span>
-            </label>
             {file && (
-              <div className="mt-4 text-sm text-job-green">
+              <div className="mt-4 text-sm text-[#007A55] font-helvetica">
                 Selected: {file.name}
               </div>
             )}
@@ -110,46 +134,47 @@ const SignUp = () => {
 
           <Button 
             onClick={handleUpload}
-            className="w-full bg-job-green hover:bg-job-darkGreen mb-4 h-12"
+            className="w-full bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
           >
             <Upload className="mr-2 h-5 w-5" />
             Upload
           </Button>
 
-          <div className="text-center mb-4">or</div>
+          <div className="text-center mb-6 flex items-center">
+            <div className="flex-grow h-px bg-gray-200"></div>
+            <span className="px-4 text-sm text-gray-500 font-helvetica">or</span>
+            <div className="flex-grow h-px bg-gray-200"></div>
+          </div>
 
           <Button 
             variant="outline" 
             onClick={handleLinkedInSignUp}
-            className="w-full mb-4 flex items-center justify-center h-12 border-gray-300"
+            className="w-full mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="#0077B5">
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.454C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
-            </svg>
+            <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
             Continue with LinkedIn
           </Button>
 
           <Button 
             variant="outline" 
             onClick={handleEmailSignUp}
-            className="w-full mb-6 flex items-center justify-center h-12 border-gray-300"
+            className="w-full mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
           >
-            <UserPlus className="mr-2 h-5 w-5" />
+            <img src="/lovable-uploads/b725dadd-2089-4320-94b3-9bd8af324d78.png" alt="Email" className="h-5 w-5 mr-2" />
             Sign up with email
           </Button>
 
           <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account? <Link to="/auth" className="text-job-green font-medium">click here to login</Link>
+            <p className="text-sm text-gray-600 font-helvetica">
+              Already have an account? <Link to="/auth" className="text-[#007A55] font-medium">click here to login</Link>
             </p>
           </div>
 
-          <div className="text-xs text-gray-500 text-center mt-8">
+          <div className="text-xs text-gray-500 text-center mt-8 font-helvetica">
             By signing up, you are creating an account and agree to our Terms and Privacy Policy
           </div>
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 };

@@ -73,9 +73,28 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
   .job-card {
     @apply border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300;
   }
+}
+
+/* Add carousel autoplay functionality */
+.carousel {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.carousel-content {
+  display: flex;
+  transition: transform 0.5s ease;
+  height: 100%;
+}
+
+.carousel-item {
+  flex: 0 0 100%;
+  height: 100%;
 }

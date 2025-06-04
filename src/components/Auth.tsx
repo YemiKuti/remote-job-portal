@@ -1,21 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Facebook, Twitter, User } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { passwordSchema, emailSchema, sanitizeInput, checkRateLimit } from "@/utils/security";
+import { SecureInput } from "@/components/security/SecureInput";
 
 interface AuthProps {
   initialRole?: string;
@@ -23,80 +18,128 @@ interface AuthProps {
 }
 
 export default function Auth({ initialRole = 'candidate', initialProvider = null }: AuthProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState(initialRole);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('signin');
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("signin");
+  const [selectedRole, setSelectedRole] = useState(initialRole);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [rateLimited, setRateLimited] = useState(false);
 
   useEffect(() => {
-    // If initialRole changes, update the role state
-    setRole(initialRole);
-    
-    // If initialProvider is provided, trigger social sign-in
-    if (initialProvider) {
-      handleSocialSignIn(initialProvider as 'google' | 'facebook' | 'twitter');
+    if (initialProvider === 'linkedin_oidc') {
+      handleLinkedInAuth();
     }
-  }, [initialRole, initialProvider]);
+  }, [initialProvider]);
+
+  const validateInputs = (isSignUp: boolean = false): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    try {
+      emailSchema.parse(email);
+    } catch (error: any) {
+      errors.email = error.errors[0]?.message || "Invalid email";
+    }
+
+    if (isSignUp) {
+      try {
+        passwordSchema.parse(password);
+      } catch (error: any) {
+        errors.password = error.errors[0]?.message || "Invalid password";
+      }
+
+      if (password !== confirmPassword) {
+        errors.confirmPassword = "Passwords do not match";
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    const rateLimitKey = `signup_${email}`;
+    if (!checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000)) {
+      setRateLimited(true);
+      toast.error("Too many sign-up attempts. Please try again later.");
+      return;
+    }
+
+    if (!validateInputs(true)) {
+      return;
+    }
+
+    setIsLoading(true);
     
     try {
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedPassword = sanitizeInput(password);
+      
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: sanitizedEmail,
+        password: sanitizedPassword,
         options: {
           data: {
-            username,
-            full_name: fullName,
-            role,
+            role: selectedRole,
           },
         },
       });
 
       if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Signed up successfully! Please check your email for confirmation.",
-      });
-      
-      navigate('/');
+
+      if (data.user && !data.session) {
+        toast.success("Check your email for the confirmation link!");
+      } else {
+        toast.success("Account created successfully!");
+        navigate("/");
+      }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred during sign up",
-        variant: "destructive",
-      });
+      console.error("Error signing up:", error);
+      toast.error("Failed to create account. Please try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    const rateLimitKey = `signin_${email}`;
+    if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
+      setRateLimited(true);
+      toast.error("Too many sign-in attempts. Please try again in 15 minutes.");
+      return;
+    }
+
+    if (!validateInputs(false)) {
+      return;
+    }
+
+    setIsLoading(true);
     
     try {
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedPassword = sanitizeInput(password);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: sanitizedEmail,
+        password: sanitizedPassword,
       });
 
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Signed in successfully!",
-      });
-      
-      // Redirect based on user role
+      if (error) {
+        // Generic error message to prevent user enumeration
+        toast.error("Invalid credentials. Please check your email and password.");
+        return;
+      }
+
       const userRole = data.user?.user_metadata?.role;
+      toast.success("Signed in successfully!");
+      
+      // Navigate based on role
       if (userRole === 'admin') {
         navigate('/admin');
       } else if (userRole === 'employer') {
@@ -105,225 +148,196 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
         navigate('/candidate');
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred during sign in",
-        variant: "destructive",
-      });
+      console.error("Error signing in:", error);
+      toast.error("Authentication failed. Please try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSocialSignIn = async (provider: 'google' | 'facebook' | 'twitter') => {
+  const handleLinkedInAuth = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'linkedin_oidc',
         options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            role: role, // Pass the selected role as a query param
-          },
-          redirectTo: `${window.location.origin}/auth/callback`,
-        }
+          redirectTo: `${window.location.origin}/auth?role=${selectedRole}`,
+        },
       });
-
+      
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || `Failed to sign in with ${provider}`,
-        variant: "destructive",
-      });
+      console.error("Error with LinkedIn auth:", error);
+      toast.error("LinkedIn authentication failed. Please try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-[80vh] px-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Account Access</CardTitle>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
           <CardDescription>
-            {activeTab === 'signin' ? 'Sign in as a ' : 'Sign up as a '} 
-            <span className="font-medium capitalize">{role}</span>
+            Sign in to your account or create a new one
           </CardDescription>
         </CardHeader>
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          <TabsContent value="signin">
-            <form onSubmit={handleSignIn}>
-              <CardContent className="space-y-4 pt-4">
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input 
-                    id="signin-email" 
-                    type="email" 
-                    placeholder="Email"
+                  <Label htmlFor="email">Email</Label>
+                  <SecureInput
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    onSecureChange={setEmail}
+                    disabled={isLoading || rateLimited}
+                    className={validationErrors.email ? "border-red-500" : ""}
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500">{validationErrors.email}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input 
-                    id="signin-password" 
-                    type="password" 
-                    placeholder="Password"
+                  <Label htmlFor="password">Password</Label>
+                  <SecureInput
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onSecureChange={setPassword}
+                    disabled={isLoading || rateLimited}
                   />
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || rateLimited}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
-                
-                <div className="w-full">
-                  <Separator className="my-4">
-                    <span className="px-2 text-xs text-gray-500">OR CONTINUE WITH</span>
-                  </Separator>
-                  
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('google')}
-                      className="w-full"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 488 512" className="fill-current">
-                        <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
-                      </svg>
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('facebook')}
-                      className="w-full"
-                    >
-                      <Facebook className="h-5 w-5" />
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('twitter')}
-                      className="w-full"
-                    >
-                      <Twitter className="h-5 w-5" />
-                    </Button>
-                  </div>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="role">I am a</Label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                    disabled={isLoading || rateLimited}
+                  >
+                    <option value="candidate">Job Seeker</option>
+                    <option value="employer">Employer</option>
+                  </select>
                 </div>
-              </CardFooter>
-            </form>
-          </TabsContent>
-          <TabsContent value="signup">
-            <form onSubmit={handleSignUp}>
-              <CardContent className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input 
-                    id="signup-email" 
-                    type="email" 
-                    placeholder="Email"
+                  <SecureInput
+                    id="signup-email"
+                    type="email"
+                    placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    onSecureChange={setEmail}
+                    disabled={isLoading || rateLimited}
+                    className={validationErrors.email ? "border-red-500" : ""}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input 
-                    id="signup-username" 
-                    type="text" 
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-fullname">Full Name</Label>
-                  <Input 
-                    id="signup-fullname" 
-                    type="text" 
-                    placeholder="Full Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">I am a</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger id="signup-role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="candidate">Job Seeker</SelectItem>
-                      <SelectItem value="employer">Employer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500">{validationErrors.email}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input 
-                    id="signup-password" 
-                    type="password" 
-                    placeholder="Password"
+                  <SecureInput
+                    id="signup-password"
+                    type="password"
+                    placeholder="Create a strong password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onSecureChange={setPassword}
+                    disabled={isLoading || rateLimited}
+                    className={validationErrors.password ? "border-red-500" : ""}
                   />
+                  {validationErrors.password && (
+                    <p className="text-sm text-red-500">{validationErrors.password}</p>
+                  )}
+                  <p className="text-xs text-gray-600">
+                    Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                  </p>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing up...' : 'Sign Up'}
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <SecureInput
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onSecureChange={setConfirmPassword}
+                    disabled={isLoading || rateLimited}
+                    className={validationErrors.confirmPassword ? "border-red-500" : ""}
+                  />
+                  {validationErrors.confirmPassword && (
+                    <p className="text-sm text-red-500">{validationErrors.confirmPassword}</p>
+                  )}
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || rateLimited}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
-                
-                <div className="w-full">
-                  <Separator className="my-4">
-                    <span className="px-2 text-xs text-gray-500">OR SIGN UP WITH</span>
-                  </Separator>
-                  
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('google')}
-                      className="w-full"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 488 512" className="fill-current">
-                        <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
-                      </svg>
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('facebook')}
-                      className="w-full"
-                    >
-                      <Facebook className="h-5 w-5" />
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => handleSocialSignIn('twitter')}
-                      className="w-full"
-                    >
-                      <Twitter className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
+              </form>
+            </TabsContent>
+          </Tabs>
+
+          {rateLimited && (
+            <div className="mt-4 text-center text-sm text-red-500">
+              Too many attempts. Please wait before trying again.
+            </div>
+          )}
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleLinkedInAuth}
+              disabled={isLoading || rateLimited}
+              className="w-full mt-4"
+            >
+              <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
+              Continue with LinkedIn
+            </Button>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );

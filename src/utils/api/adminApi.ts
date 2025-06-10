@@ -341,9 +341,28 @@ export const updateAdminJob = async (jobId: string, jobData: any): Promise<strin
   
   try {
     const { error } = await supabase
-      .from('jobs')
-      .update({ ...jobData, updated_at: new Date().toISOString() })
-      .eq('id', jobId);
+      .rpc('admin_update_job', {
+        job_id: jobId,
+        job_title: jobData.title,
+        job_company: jobData.company,
+        job_location: jobData.location,
+        job_description: jobData.description,
+        job_requirements: jobData.requirements,
+        job_employment_type: jobData.employment_type,
+        job_experience_level: jobData.experience_level,
+        job_salary_min: jobData.salary_min,
+        job_salary_max: jobData.salary_max,
+        job_salary_currency: jobData.salary_currency,
+        job_tech_stack: jobData.tech_stack,
+        job_visa_sponsorship: jobData.visa_sponsorship,
+        job_remote: jobData.remote,
+        job_company_size: jobData.company_size,
+        job_application_deadline: jobData.application_deadline,
+        job_logo: jobData.logo,
+        job_status: jobData.status,
+        job_application_type: jobData.application_type,
+        job_application_value: jobData.application_value
+      });
     
     if (error) {
       console.error('Error updating admin job:', error);

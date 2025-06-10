@@ -3,17 +3,19 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AccountSettings } from './AccountSettings';
 import { ApplicationSettings } from './ApplicationSettings';
-import { PrivacySettings } from './PrivacySettings';
 import { ApiSettings } from './ApiSettings';
+import { PrivacySettings } from './PrivacySettings';
+import SecurityDashboard from '../SecurityDashboard';
 
-export function SettingsTabs() {
+export const SettingsTabs = () => {
   return (
-    <Tabs defaultValue="account">
-      <TabsList className="mb-6">
+    <Tabs defaultValue="account" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="account">Account</TabsTrigger>
         <TabsTrigger value="application">Application</TabsTrigger>
-        <TabsTrigger value="privacy">Privacy</TabsTrigger>
         <TabsTrigger value="api">API</TabsTrigger>
+        <TabsTrigger value="privacy">Privacy</TabsTrigger>
+        <TabsTrigger value="security">Security</TabsTrigger>
       </TabsList>
       
       <TabsContent value="account">
@@ -24,13 +26,17 @@ export function SettingsTabs() {
         <ApplicationSettings />
       </TabsContent>
       
+      <TabsContent value="api">
+        <ApiSettings />
+      </TabsContent>
+      
       <TabsContent value="privacy">
         <PrivacySettings />
       </TabsContent>
       
-      <TabsContent value="api">
-        <ApiSettings />
+      <TabsContent value="security">
+        <SecurityDashboard />
       </TabsContent>
     </Tabs>
   );
-}
+};

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { checkRateLimit } from '@/utils/security';
+import { logSecurityEvent } from '@/utils/securityLogger';
 import { toast } from 'sonner';
 
 interface SecureAuthState {
@@ -10,6 +11,7 @@ interface SecureAuthState {
   adminVerified: boolean;
   loginAttempts: number;
   accountLocked: boolean;
+  lastActivity: Date | null;
 }
 
 export const useSecureAuth = () => {
@@ -18,10 +20,11 @@ export const useSecureAuth = () => {
     isAdmin: false,
     adminVerified: false,
     loginAttempts: 0,
-    accountLocked: false
+    accountLocked: false,
+    lastActivity: null
   });
 
-  // Verify admin status using direct database call first, then Edge function as fallback
+  // Enhanced admin verification with security logging
   const verifyAdminStatus = async () => {
     if (!user || !session) {
       setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
@@ -29,13 +32,38 @@ export const useSecureAuth = () => {
     }
 
     try {
+      // Log admin verification attempt
+      await logSecurityEvent({
+        event_type: 'admin_action',
+        user_id: user.id,
+        details: { action: 'admin_verification_attempt' },
+        severity: 'medium'
+      });
+
       // First try direct database call
       const { data: directResult, error: directError } = await supabase
         .rpc('is_admin');
 
       if (!directError && directResult === true) {
         console.log('Admin status verified via direct database call');
-        setSecureState(prev => ({ ...prev, isAdmin: true, adminVerified: true }));
+        
+        // Log successful admin verification
+        await logSecurityEvent({
+          event_type: 'admin_login',
+          user_id: user.id,
+          details: { 
+            verification_method: 'direct_database',
+            email: user.email 
+          },
+          severity: 'high'
+        });
+
+        setSecureState(prev => ({ 
+          ...prev, 
+          isAdmin: true, 
+          adminVerified: true,
+          lastActivity: new Date()
+        }));
         return true;
       }
 
@@ -49,15 +77,55 @@ export const useSecureAuth = () => {
 
       if (error) {
         console.error('Admin verification error:', error);
+        
+        await logSecurityEvent({
+          event_type: 'failed_login',
+          user_id: user.id,
+          details: { 
+            reason: 'admin_verification_failed',
+            error: error.message 
+          },
+          severity: 'medium'
+        });
+
         setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
         return false;
       }
 
       const isAdmin = data?.isAdmin === true;
-      setSecureState(prev => ({ ...prev, isAdmin, adminVerified: true }));
+      
+      if (isAdmin) {
+        await logSecurityEvent({
+          event_type: 'admin_login',
+          user_id: user.id,
+          details: { 
+            verification_method: 'edge_function',
+            email: user.email 
+          },
+          severity: 'high'
+        });
+      }
+
+      setSecureState(prev => ({ 
+        ...prev, 
+        isAdmin, 
+        adminVerified: true,
+        lastActivity: new Date()
+      }));
       return isAdmin;
     } catch (error) {
       console.error('Admin verification failed:', error);
+      
+      await logSecurityEvent({
+        event_type: 'failed_login',
+        user_id: user?.id,
+        details: { 
+          reason: 'admin_verification_exception',
+          error: error.message 
+        },
+        severity: 'high'
+      });
+
       setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
       return false;
     }
@@ -66,8 +134,20 @@ export const useSecureAuth = () => {
   const secureSignIn = async (email: string, password: string) => {
     const rateLimitKey = `login_${email}`;
     
+    // Enhanced rate limiting with security logging
     if (!checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
       setSecureState(prev => ({ ...prev, accountLocked: true }));
+      
+      await logSecurityEvent({
+        event_type: 'suspicious_activity',
+        details: { 
+          reason: 'rate_limit_exceeded',
+          email,
+          attempts: 5 
+        },
+        severity: 'high'
+      });
+      
       toast.error("Too many login attempts. Please try again in 15 minutes.");
       return { error: "Rate limit exceeded" };
     }
@@ -84,13 +164,39 @@ export const useSecureAuth = () => {
           loginAttempts: prev.loginAttempts + 1 
         }));
         
+        await logSecurityEvent({
+          event_type: 'failed_login',
+          details: { 
+            email,
+            reason: error.message,
+            attempt_number: secureState.loginAttempts + 1
+          },
+          severity: 'medium'
+        });
+        
         // Generic error message to prevent user enumeration
         toast.error("Invalid credentials. Please try again.");
         return { error: "Authentication failed" };
       }
 
       // Reset login attempts on successful login
-      setSecureState(prev => ({ ...prev, loginAttempts: 0, accountLocked: false }));
+      setSecureState(prev => ({ 
+        ...prev, 
+        loginAttempts: 0, 
+        accountLocked: false,
+        lastActivity: new Date()
+      }));
+      
+      // Log successful login
+      await logSecurityEvent({
+        event_type: 'admin_login',
+        user_id: data.user?.id,
+        details: { 
+          email,
+          login_method: 'password'
+        },
+        severity: 'medium'
+      });
       
       // Verify admin status after successful login
       setTimeout(() => {
@@ -100,19 +206,68 @@ export const useSecureAuth = () => {
       return { data, error: null };
     } catch (error) {
       console.error('Sign in error:', error);
+      
+      await logSecurityEvent({
+        event_type: 'failed_login',
+        details: { 
+          email,
+          reason: 'exception_during_login',
+          error: error.message
+        },
+        severity: 'high'
+      });
+      
       return { error: "Authentication failed" };
     }
   };
 
+  // Session monitoring for security
   useEffect(() => {
     if (user && session) {
       verifyAdminStatus();
+      
+      // Update last activity
+      setSecureState(prev => ({ ...prev, lastActivity: new Date() }));
+      
+      // Set up session monitoring
+      const activityInterval = setInterval(() => {
+        const now = new Date();
+        const lastActivity = secureState.lastActivity;
+        
+        if (lastActivity && (now.getTime() - lastActivity.getTime()) > 30 * 60 * 1000) {
+          // Session timeout after 30 minutes of inactivity
+          toast.warning("Session expired due to inactivity");
+          supabase.auth.signOut();
+        }
+      }, 60000); // Check every minute
+
+      return () => clearInterval(activityInterval);
     }
   }, [user, session]);
+
+  // Track user activity
+  const updateActivity = () => {
+    setSecureState(prev => ({ ...prev, lastActivity: new Date() }));
+  };
+
+  useEffect(() => {
+    // Add activity listeners
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, true);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivity, true);
+      });
+    };
+  }, []);
 
   return {
     ...secureState,
     verifyAdminStatus,
-    secureSignIn
+    secureSignIn,
+    updateActivity
   };
 };

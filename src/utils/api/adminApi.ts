@@ -1,52 +1,77 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Job } from '@/types/api';
+import { logSecurityEvent } from '@/utils/securityLogger';
 
-// Fetch dashboard stats for admin
+// Fetch dashboard stats for admin using secure functions
 export const fetchAdminStats = async () => {
   try {
-    // Get total users count
-    const { count: totalUsers, error: usersError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-    
-    if (usersError) throw usersError;
+    // Log data access
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_admin_stats' },
+      severity: 'low'
+    });
 
-    // Get companies count (employers)
-    // In a real app, you might have a separate companies table
-    // For now we're mocking this data
-    const totalCompanies = 12; // Mock data as we don't have company roles in the profile yet
+    // Get total users count using secure function
+    const { data: totalUsers, error: usersError } = await supabase
+      .rpc('get_admin_user_count');
     
+    if (usersError) {
+      console.error('Error fetching user count:', usersError);
+      throw usersError;
+    }
+
     // Get total jobs count
     const { count: totalJobs, error: jobsError } = await supabase
       .from('jobs')
       .select('*', { count: 'exact', head: true });
     
-    if (jobsError) throw jobsError;
+    if (jobsError) {
+      console.error('Error fetching jobs count:', jobsError);
+      throw jobsError;
+    }
 
     // Get pending jobs count
     const { count: pendingApprovals, error: pendingError } = await supabase
       .from('jobs')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending');
+      .in('status', ['pending', 'draft']);
     
-    if (pendingError) throw pendingError;
+    if (pendingError) {
+      console.error('Error fetching pending jobs:', pendingError);
+      throw pendingError;
+    }
 
-    // Get recent revenue (mock data as this would typically come from a payment provider)
-    // In a real app, you would fetch this from your payment processor
+    // Get companies count (unique employers from jobs)
+    const { data: companies, error: companiesError } = await supabase
+      .from('jobs')
+      .select('company')
+      .not('company', 'is', null);
+    
+    if (companiesError) {
+      console.error('Error fetching companies:', companiesError);
+      throw companiesError;
+    }
+
+    const uniqueCompanies = new Set(companies?.map(job => job.company)).size;
+
+    // Calculate revenue (mock data based on featured jobs)
     const totalRevenue = await calculateTotalRevenue();
 
-    // Get new messages (unread messages count)
+    // Get new messages count
     const { count: newMessages, error: messagesError } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('read', false);
     
-    if (messagesError) throw messagesError;
+    if (messagesError) {
+      console.error('Error fetching messages count:', messagesError);
+      // Don't throw, just log and continue
+    }
 
     return {
       totalUsers: totalUsers || 0,
-      totalCompanies: totalCompanies || 0,
+      totalCompanies: uniqueCompanies || 0,
       totalJobs: totalJobs || 0,
       pendingApprovals: pendingApprovals || 0,
       totalRevenue,
@@ -54,7 +79,18 @@ export const fetchAdminStats = async () => {
     };
   } catch (error: any) {
     console.error('Error fetching admin stats:', error);
-    // Return default values in case of error
+    
+    // Log the error as a security event
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_admin_stats_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+
+    // Return safe defaults
     return {
       totalUsers: 0,
       totalCompanies: 0,
@@ -66,14 +102,12 @@ export const fetchAdminStats = async () => {
   }
 };
 
-// Mock function to calculate revenue (would be replaced by real payment data)
+// Calculate revenue from featured jobs
 const calculateTotalRevenue = async () => {
   try {
-    // This would typically come from your payment provider API
-    // For now, we'll calculate based on featured job listings as an example
     const { data: featuredJobs, error } = await supabase
       .from('jobs')
-      .select('*')
+      .select('id')
       .eq('is_featured', true);
     
     if (error) throw error;
@@ -86,27 +120,43 @@ const calculateTotalRevenue = async () => {
   }
 };
 
-// Fetch recent users for admin dashboard
+// Fetch recent users using secure function
 export const fetchRecentUsers = async (limit = 3) => {
   try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_recent_users', limit },
+      severity: 'low'
+    });
+
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, avatar_url, created_at')
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .rpc('get_admin_user_details', { limit_count: limit });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching recent users:', error);
+      throw error;
+    }
     
     return data.map(user => ({
       id: user.id,
-      name: user.full_name || user.username || 'User',
-      email: `${user.username || 'user'}@example.com`, // Email might be in auth.users, not profiles
-      role: 'candidate', // Default role since we don't have roles in profiles yet
+      name: user.email?.split('@')[0] || 'User', // Use email prefix as name
+      email: user.email || 'No email',
+      role: user.role || 'user',
       status: 'active', // Mock status
       joined: user.created_at
     }));
   } catch (error: any) {
     console.error('Error fetching recent users:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_recent_users_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
     return [];
   }
 };
@@ -114,13 +164,22 @@ export const fetchRecentUsers = async (limit = 3) => {
 // Fetch recent jobs for admin dashboard
 export const fetchRecentJobs = async (limit = 3) => {
   try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_recent_jobs', limit },
+      severity: 'low'
+    });
+
     const { data, error } = await supabase
       .from('jobs')
       .select('id, title, company, created_at, status')
       .order('created_at', { ascending: false })
       .limit(limit);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching recent jobs:', error);
+      throw error;
+    }
     
     return data.map(job => ({
       id: job.id,
@@ -131,6 +190,121 @@ export const fetchRecentJobs = async (limit = 3) => {
     }));
   } catch (error: any) {
     console.error('Error fetching recent jobs:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_recent_jobs_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
     return [];
+  }
+};
+
+// New function to manage user roles (admin only)
+export const updateUserRole = async (userId: string, newRole: 'admin' | 'user' | 'employer') => {
+  try {
+    await logSecurityEvent({
+      event_type: 'role_change',
+      details: { target_user: userId, new_role: newRole },
+      severity: 'high'
+    });
+
+    // Remove existing role
+    await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    // Add new role if not 'user' (default)
+    if (newRole !== 'user') {
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (error) throw error;
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating user role:', error);
+    
+    await logSecurityEvent({
+      event_type: 'role_change',
+      details: { 
+        target_user: userId,
+        new_role: newRole,
+        error: error.message,
+        failed: true
+      },
+      severity: 'critical'
+    });
+    
+    return { success: false, error: error.message };
+  }
+};
+
+// New function to get detailed user information (admin only)
+export const fetchUserDetails = async (userId: string) => {
+  try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_user_details', target_user: userId },
+      severity: 'medium'
+    });
+
+    // Get user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) throw profileError;
+
+    // Get user role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    // Get user applications count
+    const { count: applicationsCount } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Get user's jobs if they're an employer
+    const { count: jobsCount } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('employer_id', userId);
+
+    return {
+      profile,
+      role: roleData?.role || 'user',
+      stats: {
+        applications: applicationsCount || 0,
+        jobs: jobsCount || 0
+      }
+    };
+  } catch (error: any) {
+    console.error('Error fetching user details:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_user_details_failed',
+        target_user: userId,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
   }
 };

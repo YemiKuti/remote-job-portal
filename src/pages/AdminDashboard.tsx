@@ -432,5 +432,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-</edits_to_apply>

@@ -383,8 +383,22 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_user: {
+        Args: {
+          user_email: string
+          user_password: string
+          user_full_name?: string
+          user_username?: string
+          user_role?: string
+        }
+        Returns: string
+      }
       admin_delete_company: {
         Args: { company_id: string }
+        Returns: boolean
+      }
+      admin_delete_user: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
       admin_update_company: {
@@ -408,6 +422,10 @@ export type Database = {
       }
       admin_update_job_status: {
         Args: { job_id: string; new_status: string }
+        Returns: boolean
+      }
+      admin_update_user_role: {
+        Args: { target_user_id: string; new_role: string }
         Returns: boolean
       }
       get_admin_companies: {
@@ -452,6 +470,20 @@ export type Database = {
           employer_id: string
           is_featured: boolean
           views: number
+        }[]
+      }
+      get_admin_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          username: string
+          full_name: string
+          avatar_url: string
+          role: string
+          status: string
+          created_at: string
+          last_sign_in_at: string
         }[]
       }
       get_current_user_role: {

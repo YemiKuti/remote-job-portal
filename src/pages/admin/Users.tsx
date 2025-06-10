@@ -1,68 +1,27 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UserPlus, Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Edit, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  joined: string;
-}
+import { useUsersManagement } from "@/hooks/admin/useUsersManagement";
+import AddUserDialog from "@/components/admin/users/AddUserDialog";
 
 const UsersAdmin = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const { toast } = useToast();
+  const {
+    users,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    handleCreateUser,
+    handleUpdateUserRole,
+    handleDeleteUser
+  } = useUsersManagement();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch profiles
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url, created_at');
-        
-        if (profilesError) throw profilesError;
-        
-        // Convert to our user format with mock roles for now
-        const userData: User[] = (profiles || []).map(profile => ({
-          id: profile.id,
-          name: profile.full_name || profile.username || 'User',
-          email: `${profile.username || 'user'}@example.com`, // Mock email
-          role: Math.random() > 0.7 ? 'employer' : (Math.random() > 0.5 ? 'candidate' : 'admin'), // Mock roles for UI
-          status: 'active', // Mock status
-          joined: profile.created_at || new Date().toISOString()
-        }));
-        
-        setUsers(userData);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load users. Please try again.',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUsers();
-  }, [toast]);
+  const [activeTab, setActiveTab] = React.useState('all');
 
   const filteredUsers = users.filter(user => {
     // Apply role filter
@@ -70,16 +29,68 @@ const UsersAdmin = () => {
       return false;
     }
     
-    // Apply search filter
-    if (searchTerm.trim() !== '') {
-      return (
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
     return true;
   });
+
+  const UserTable = ({ users }: { users: typeof filteredUsers }) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Joined</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users.map((user) => (
+          <TableRow key={user.id}>
+            <TableCell className="font-medium">
+              {user.full_name || user.username || 'User'}
+            </TableCell>
+            <TableCell>{user.email}</TableCell>
+            <TableCell>
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                user.role === 'candidate' 
+                  ? 'bg-green-100 text-green-800'
+                  : user.role === 'employer' 
+                    ? 'bg-blue-100 text-blue-800' 
+                    : user.role === 'admin'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-gray-100 text-gray-800'
+              }`}>
+                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                user.status === 'active' 
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+              </span>
+            </TableCell>
+            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="sm">
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => handleDeleteUser(user.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <DashboardLayout userType="admin">
@@ -89,10 +100,7 @@ const UsersAdmin = () => {
             <h1 className="text-2xl font-bold">User Management</h1>
             <p className="text-muted-foreground">Manage all users in the system</p>
           </div>
-          <Button className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            <span>Add User</span>
-          </Button>
+          <AddUserDialog onCreateUser={handleCreateUser} />
         </div>
 
         <div className="flex items-center gap-4">
@@ -115,6 +123,7 @@ const UsersAdmin = () => {
             <TabsTrigger value="employer">Employers</TabsTrigger>
             <TabsTrigger value="admin">Admins</TabsTrigger>
           </TabsList>
+          
           <TabsContent value="all" className="mt-4">
             <Card>
               <CardHeader className="pb-2">
@@ -131,55 +140,12 @@ const UsersAdmin = () => {
                     <p className="text-muted-foreground">No users found matching the criteria.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              user.role === 'candidate' 
-                                ? 'bg-green-100 text-green-800'
-                                : user.role === 'employer' 
-                                  ? 'bg-blue-100 text-blue-800' 
-                                  : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              user.status === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(user.joined).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <UserTable users={filteredUsers} />
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="candidate" className="mt-4">
             <Card>
               <CardHeader className="pb-2">
@@ -196,43 +162,12 @@ const UsersAdmin = () => {
                     <p className="text-muted-foreground">No candidate users found.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              user.status === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(user.joined).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <UserTable users={filteredUsers} />
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="employer" className="mt-4">
             <Card>
               <CardHeader className="pb-2">
@@ -249,43 +184,12 @@ const UsersAdmin = () => {
                     <p className="text-muted-foreground">No employer users found.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              user.status === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(user.joined).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <UserTable users={filteredUsers} />
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="admin" className="mt-4">
             <Card>
               <CardHeader className="pb-2">
@@ -302,39 +206,7 @@ const UsersAdmin = () => {
                     <p className="text-muted-foreground">No admin users found.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              user.status === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(user.joined).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">View</Button>
-                            <Button variant="ghost" size="sm">Edit</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <UserTable users={filteredUsers} />
                 )}
               </CardContent>
             </Card>

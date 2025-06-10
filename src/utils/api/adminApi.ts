@@ -579,3 +579,217 @@ export const deleteCompany = async (companyId: string): Promise<boolean> => {
     throw error;
   }
 };
+
+// User management interfaces
+export interface AdminUser {
+  id: string;
+  email: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
+  role: string;
+  status: string;
+  created_at: string;
+  last_sign_in_at?: string;
+}
+
+export interface CreateUserData {
+  email: string;
+  password: string;
+  full_name?: string;
+  username?: string;
+  role: 'admin' | 'employer' | 'candidate' | 'user';
+}
+
+// Fetch all users using admin function
+export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_admin_users' },
+      severity: 'low'
+    });
+
+    const { data, error } = await supabase.rpc('get_admin_users');
+    
+    if (error) {
+      console.error('Error fetching admin users:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching admin users:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_admin_users_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
+    throw error;
+  }
+};
+
+// Create new user using admin function
+export const createAdminUser = async (userData: CreateUserData): Promise<string> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'create_user', user_email: userData.email, role: userData.role },
+      severity: 'high'
+    });
+
+    // First create the user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.full_name,
+          username: userData.username
+        }
+      }
+    });
+
+    if (authError) {
+      console.error('Error creating auth user:', authError);
+      throw authError;
+    }
+
+    if (!authData.user) {
+      throw new Error('User creation failed - no user returned');
+    }
+
+    // Update the profile with additional data
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        username: userData.username,
+        full_name: userData.full_name
+      })
+      .eq('id', authData.user.id);
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError);
+    }
+
+    // Assign role if not default 'user'
+    if (userData.role !== 'user') {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: userData.role
+        });
+
+      if (roleError) {
+        console.error('Error assigning role:', roleError);
+      }
+    }
+
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'create_user_success',
+        user_email: userData.email,
+        user_id: authData.user.id,
+        role: userData.role
+      },
+      severity: 'high'
+    });
+
+    return authData.user.id;
+  } catch (error: any) {
+    console.error('Error creating admin user:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'create_user_failed',
+        user_email: userData.email,
+        error: error.message 
+      },
+      severity: 'critical'
+    });
+    
+    throw error;
+  }
+};
+
+// Update user role using admin function
+export const updateAdminUserRole = async (userId: string, newRole: string): Promise<boolean> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'update_user_role', target_user_id: userId, new_role: newRole },
+      severity: 'high'
+    });
+
+    const { data, error } = await supabase.rpc('admin_update_user_role', {
+      target_user_id: userId,
+      new_role: newRole
+    });
+    
+    if (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error updating user role:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'update_user_role_failed',
+        target_user_id: userId,
+        new_role: newRole,
+        error: error.message 
+      },
+      severity: 'critical'
+    });
+    
+    throw error;
+  }
+};
+
+// Delete user using admin function
+export const deleteAdminUser = async (userId: string): Promise<boolean> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'delete_user', target_user_id: userId },
+      severity: 'critical'
+    });
+
+    const { data, error } = await supabase.rpc('admin_delete_user', {
+      target_user_id: userId
+    });
+    
+    if (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error deleting user:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'delete_user_failed',
+        target_user_id: userId,
+        error: error.message 
+      },
+      severity: 'critical'
+    });
+    
+    throw error;
+  }
+};

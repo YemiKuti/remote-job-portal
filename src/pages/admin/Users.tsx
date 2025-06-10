@@ -4,21 +4,24 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Edit, Trash2 } from "lucide-react";
+import { Search, Loader2, Edit, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUsersManagement } from "@/hooks/admin/useUsersManagement";
 import AddUserDialog from "@/components/admin/users/AddUserDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const UsersAdmin = () => {
   const {
     users,
     loading,
+    error,
     searchTerm,
     setSearchTerm,
     handleCreateUser,
     handleUpdateUserRole,
-    handleDeleteUser
+    handleDeleteUser,
+    retryLoadUsers
   } = useUsersManagement();
 
   const [activeTab, setActiveTab] = React.useState('all');
@@ -103,6 +106,25 @@ const UsersAdmin = () => {
           <AddUserDialog onCreateUser={handleCreateUser} />
         </div>
 
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={retryLoadUsers}
+                disabled={loading}
+                className="ml-4"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -134,6 +156,15 @@ const UsersAdmin = () => {
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">Failed to load users</p>
+                    <Button onClick={retryLoadUsers} variant="outline">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Try Again
+                    </Button>
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="text-center py-8">

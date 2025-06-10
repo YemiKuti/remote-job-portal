@@ -604,12 +604,37 @@ export interface CreateUserData {
 // Fetch all users using admin function
 export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
   try {
+    // First check authentication status
+    console.log('Checking authentication status before fetching users...');
+    
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) {
+      throw new Error('No authenticated session found. Please log in again.');
+    }
+
+    console.log('Session found, user ID:', session.session.user.id);
+
+    // Check admin status
+    const { data: authStatus, error: authError } = await supabase.rpc('get_current_user_auth_status');
+    
+    if (authError) {
+      console.error('Error checking auth status:', authError);
+      throw new Error('Failed to verify authentication status');
+    }
+
+    console.log('Auth status:', authStatus);
+
+    if (!authStatus?.[0]?.is_admin) {
+      throw new Error('Admin privileges required to access user data');
+    }
+
     await logSecurityEvent({
       event_type: 'data_access',
       details: { action: 'fetch_admin_users' },
       severity: 'low'
     });
 
+    console.log('Calling get_admin_users function...');
     const { data, error } = await supabase.rpc('get_admin_users');
     
     if (error) {
@@ -617,9 +642,10 @@ export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
       throw error;
     }
     
+    console.log('Successfully fetched users:', data?.length || 0, 'users');
     return data || [];
   } catch (error: any) {
-    console.error('Error fetching admin users:', error);
+    console.error('Error in fetchAdminUsers:', error);
     
     await logSecurityEvent({
       event_type: 'data_access',

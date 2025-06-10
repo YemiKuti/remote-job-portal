@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Create client for admin operations (with service role)
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
@@ -43,31 +44,52 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Verify the user is an admin
+    // Create client for user verification (with user token)
+    const supabaseUser = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Verify the user is authenticated and get their details
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('No authorization header')
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser(token)
 
     if (authError || !user) {
+      console.error('[ADMIN-USER-MANAGEMENT] Auth error:', authError)
       throw new Error('Invalid authentication')
     }
 
-    // Check if user is admin using the existing function
-    const { data: isAdmin, error: adminError } = await supabaseClient
-      .rpc('is_current_user_admin')
+    console.log('[ADMIN-USER-MANAGEMENT] Authenticated user:', user.id)
 
-    if (adminError) {
-      console.error('[ADMIN-USER-MANAGEMENT] Admin check error:', adminError)
+    // Check if user is admin using a direct query with the service role client
+    const { data: userRoles, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+
+    if (roleError) {
+      console.error('[ADMIN-USER-MANAGEMENT] Role check error:', roleError)
       throw new Error('Failed to verify admin privileges')
     }
 
-    if (!isAdmin) {
+    if (!userRoles || userRoles.length === 0) {
+      console.error('[ADMIN-USER-MANAGEMENT] User is not admin:', user.id)
       throw new Error('Admin privileges required')
     }
+
+    console.log('[ADMIN-USER-MANAGEMENT] Admin verified:', user.id)
 
     const { action, ...data } = await req.json()
 
@@ -83,7 +105,7 @@ Deno.serve(async (req) => {
         }
 
         // Create user in auth.users using admin API
-        const { data: authUser, error: createError } = await supabaseClient.auth.admin.createUser({
+        const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email,
           password,
           email_confirm: true // Auto-confirm email
@@ -99,7 +121,7 @@ Deno.serve(async (req) => {
         }
 
         // Create profile record
-        const { error: profileError } = await supabaseClient
+        const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .insert({
             id: authUser.user.id,
@@ -111,13 +133,13 @@ Deno.serve(async (req) => {
         if (profileError) {
           console.error('[ADMIN-USER-MANAGEMENT] Profile creation error:', profileError)
           // Clean up auth user if profile creation fails
-          await supabaseClient.auth.admin.deleteUser(authUser.user.id)
+          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
           throw new Error(`Failed to create profile: ${profileError.message}`)
         }
 
         // Assign role if not default 'user'
         if (role !== 'user') {
-          const { error: roleError } = await supabaseClient
+          const { error: roleError } = await supabaseAdmin
             .from('user_roles')
             .insert({
               user_id: authUser.user.id,
@@ -127,8 +149,8 @@ Deno.serve(async (req) => {
           if (roleError) {
             console.error('[ADMIN-USER-MANAGEMENT] Role assignment error:', roleError)
             // Clean up on role assignment failure
-            await supabaseClient.from('profiles').delete().eq('id', authUser.user.id)
-            await supabaseClient.auth.admin.deleteUser(authUser.user.id)
+            await supabaseAdmin.from('profiles').delete().eq('id', authUser.user.id)
+            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
             throw new Error(`Failed to assign role: ${roleError.message}`)
           }
         }
@@ -150,7 +172,7 @@ Deno.serve(async (req) => {
           if (username !== undefined) updateData.username = username
           updateData.updated_at = new Date().toISOString()
 
-          const { error: profileError } = await supabaseClient
+          const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .update(updateData)
             .eq('id', user_id)
@@ -168,14 +190,14 @@ Deno.serve(async (req) => {
           }
 
           // Remove existing role
-          await supabaseClient
+          await supabaseAdmin
             .from('user_roles')
             .delete()
             .eq('user_id', user_id)
 
           // Add new role if not default 'user'
           if (role !== 'user') {
-            const { error: roleError } = await supabaseClient
+            const { error: roleError } = await supabaseAdmin
               .from('user_roles')
               .insert({
                 user_id: user_id,
@@ -205,19 +227,19 @@ Deno.serve(async (req) => {
         }
 
         // Delete user roles
-        await supabaseClient
+        await supabaseAdmin
           .from('user_roles')
           .delete()
           .eq('user_id', user_id)
 
         // Delete profile
-        await supabaseClient
+        await supabaseAdmin
           .from('profiles')
           .delete()
           .eq('id', user_id)
 
         // Delete auth user
-        const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(user_id)
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
 
         if (deleteError) {
           console.error('[ADMIN-USER-MANAGEMENT] Auth user deletion error:', deleteError)

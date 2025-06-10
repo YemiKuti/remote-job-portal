@@ -306,6 +306,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_job_status: {
+        Args: { job_id: string; new_status: string }
+        Returns: boolean
+      }
+      get_admin_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          company: string
+          location: string
+          created_at: string
+          status: string
+          applications: number
+          description: string
+          requirements: string[]
+          salary_min: number
+          salary_max: number
+          employment_type: string
+          experience_level: string
+          tech_stack: string[]
+          employer_id: string
+          is_featured: boolean
+          views: number
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

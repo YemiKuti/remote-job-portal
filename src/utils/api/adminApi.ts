@@ -116,6 +116,77 @@ const calculateTotalRevenue = async () => {
   }
 };
 
+// Fetch all jobs using admin function
+export const fetchAdminJobs = async () => {
+  try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_admin_jobs' },
+      severity: 'low'
+    });
+
+    const { data, error } = await supabase.rpc('get_admin_jobs');
+    
+    if (error) {
+      console.error('Error fetching admin jobs:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching admin jobs:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_admin_jobs_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
+    throw error;
+  }
+};
+
+// Update job status using admin function
+export const updateJobStatus = async (jobId: string, newStatus: string) => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'update_job_status', job_id: jobId, new_status: newStatus },
+      severity: 'medium'
+    });
+
+    const { data, error } = await supabase.rpc('admin_update_job_status', {
+      job_id: jobId,
+      new_status: newStatus
+    });
+    
+    if (error) {
+      console.error('Error updating job status:', error);
+      throw error;
+    }
+    
+    return { success: data };
+  } catch (error: any) {
+    console.error('Error updating job status:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'update_job_status_failed',
+        job_id: jobId,
+        new_status: newStatus,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
 // Fetch recent users using profiles table
 export const fetchRecentUsers = async (limit = 3) => {
   try {

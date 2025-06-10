@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { fetchAdminJobs, updateJobStatus } from "@/utils/api/adminApi";
 
 interface AdminJob {
   id: string;
@@ -20,19 +20,17 @@ export const useJobsManagement = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const loadJobs = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('id, title, company, location, created_at, status, applications')
-          .order('created_at', { ascending: false });
+        console.log('Loading admin jobs...');
         
-        if (error) throw error;
+        const data = await fetchAdminJobs();
+        console.log('Admin jobs loaded:', data);
         
         setJobs(data || []);
       } catch (error) {
-        console.error('Error fetching jobs:', error);
+        console.error('Error fetching admin jobs:', error);
         toast({
           title: 'Error',
           description: 'Failed to load jobs. Please try again.',
@@ -43,41 +41,42 @@ export const useJobsManagement = () => {
       }
     };
     
-    fetchJobs();
+    loadJobs();
   }, [toast]);
 
   const handleJobAction = async (jobId: string, action: string) => {
     try {
-      let updateData: { status?: string } = {};
+      let newStatus = '';
       let successMessage = '';
       
       if (action === 'approve') {
-        updateData.status = 'active';
+        newStatus = 'active';
         successMessage = 'Job approved and published';
       } else if (action === 'reject') {
-        updateData.status = 'draft';
+        newStatus = 'draft';
         successMessage = 'Job rejected and moved to draft';
       }
       
-      if (Object.keys(updateData).length > 0) {
-        const { error } = await supabase
-          .from('jobs')
-          .update(updateData)
-          .eq('id', jobId);
+      if (newStatus) {
+        console.log(`Updating job ${jobId} status to ${newStatus}`);
         
-        if (error) throw error;
+        const result = await updateJobStatus(jobId, newStatus);
         
-        // Update local state
-        setJobs(jobs.map(job => 
-          job.id === jobId 
-            ? { ...job, ...updateData } 
-            : job
-        ));
-        
-        toast({
-          title: 'Success',
-          description: successMessage,
-        });
+        if (result.success) {
+          // Update local state
+          setJobs(jobs.map(job => 
+            job.id === jobId 
+              ? { ...job, status: newStatus } 
+              : job
+          ));
+          
+          toast({
+            title: 'Success',
+            description: successMessage,
+          });
+        } else {
+          throw new Error('Update failed');
+        }
       }
     } catch (error) {
       console.error(`Error performing action ${action}:`, error);

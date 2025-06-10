@@ -536,7 +536,7 @@ export const fetchRecentUsers = async (limit: number = 5): Promise<any[]> => {
       id: user.id,
       name: user.full_name || user.username || 'Unknown User',
       email: 'N/A', // Email not available in profiles table
-      role: user.user_roles?.[0]?.role || 'user'
+      role: user.user_roles && user.user_roles.length > 0 ? user.user_roles[0].role : 'user'
     }));
     
     console.log('Recent users fetched successfully:', transformedData);

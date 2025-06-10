@@ -267,39 +267,13 @@ export const fetchAdminJob = async (jobId: string) => {
   }
 };
 
-// Fetch all jobs for admin
+// Fetch all jobs for admin using the database function
 export const fetchAdminJobs = async (): Promise<AdminJob[]> => {
   console.log('Fetching admin jobs...');
   
   try {
     const { data, error } = await supabase
-      .from('jobs')
-      .select(`
-        id,
-        title,
-        company,
-        location,
-        created_at,
-        status,
-        applications,
-        employer_id,
-        description,
-        requirements,
-        salary_min,
-        salary_max,
-        salary_currency,
-        employment_type,
-        experience_level,
-        tech_stack,
-        visa_sponsorship,
-        remote,
-        company_size,
-        application_deadline,
-        logo,
-        application_type,
-        application_value
-      `)
-      .order('created_at', { ascending: false });
+      .rpc('get_admin_jobs');
     
     if (error) {
       console.error('Error fetching admin jobs:', error);

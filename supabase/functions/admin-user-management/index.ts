@@ -56,11 +56,16 @@ Deno.serve(async (req) => {
       throw new Error('Invalid authentication')
     }
 
-    // Check if user is admin
+    // Check if user is admin using the existing function
     const { data: isAdmin, error: adminError } = await supabaseClient
       .rpc('is_current_user_admin')
 
-    if (adminError || !isAdmin) {
+    if (adminError) {
+      console.error('[ADMIN-USER-MANAGEMENT] Admin check error:', adminError)
+      throw new Error('Failed to verify admin privileges')
+    }
+
+    if (!isAdmin) {
       throw new Error('Admin privileges required')
     }
 

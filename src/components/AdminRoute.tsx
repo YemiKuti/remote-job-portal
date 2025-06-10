@@ -25,19 +25,38 @@ const AdminRoute = () => {
       }
       
       console.log("Checking admin status for user:", user.email);
+      console.log("Session access token:", session.access_token ? "Present" : "Missing");
       
       try {
-        // Use the Edge Function to check admin status
+        // First try using the database function directly
+        const { data: directCheck, error: directError } = await supabase
+          .rpc('is_admin');
+        
+        console.log("Direct admin check response:", directCheck, directError);
+        
+        if (!directError && directCheck === true) {
+          console.log("Admin status confirmed via direct database call");
+          setIsAdmin(true);
+          toast({
+            title: "Admin access granted",
+            description: `Welcome, ${user.email}`,
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback to Edge Function if direct call fails
+        console.log("Trying Edge Function as fallback...");
         const { data, error } = await supabase.functions.invoke('is_admin', {
           headers: {
             Authorization: `Bearer ${session.access_token}`
           }
         });
         
-        console.log("Admin check response:", data, error);
+        console.log("Edge Function admin check response:", data, error);
         
         if (error) {
-          console.error("Admin check error:", error);
+          console.error("Edge Function admin check error:", error);
           setError(error.message || "Failed to check admin status");
           toast({
             title: "Admin check failed",
@@ -50,7 +69,7 @@ const AdminRoute = () => {
         }
         
         const adminStatus = data?.isAdmin === true;
-        console.log("Admin status result:", adminStatus);
+        console.log("Final admin status result:", adminStatus);
         
         setIsAdmin(adminStatus);
         

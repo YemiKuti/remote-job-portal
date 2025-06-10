@@ -21,7 +21,7 @@ export const useSecureAuth = () => {
     accountLocked: false
   });
 
-  // Verify admin status using the database function
+  // Verify admin status using direct database call first, then Edge function as fallback
   const verifyAdminStatus = async () => {
     if (!user || !session) {
       setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
@@ -29,6 +29,18 @@ export const useSecureAuth = () => {
     }
 
     try {
+      // First try direct database call
+      const { data: directResult, error: directError } = await supabase
+        .rpc('is_admin');
+
+      if (!directError && directResult === true) {
+        console.log('Admin status verified via direct database call');
+        setSecureState(prev => ({ ...prev, isAdmin: true, adminVerified: true }));
+        return true;
+      }
+
+      // Fallback to Edge Function
+      console.log('Using Edge Function as fallback for admin verification');
       const { data, error } = await supabase.functions.invoke('is_admin', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -79,6 +91,12 @@ export const useSecureAuth = () => {
 
       // Reset login attempts on successful login
       setSecureState(prev => ({ ...prev, loginAttempts: 0, accountLocked: false }));
+      
+      // Verify admin status after successful login
+      setTimeout(() => {
+        verifyAdminStatus();
+      }, 1000);
+      
       return { data, error: null };
     } catch (error) {
       console.error('Sign in error:', error);

@@ -18,7 +18,7 @@ interface JobData {
 interface JobsTableProps {
   jobs: JobData[];
   loading: boolean;
-  onJobAction: (jobId: string, action: string) => Promise<void>;
+  onJobAction: () => void;
 }
 
 export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
@@ -64,8 +64,7 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
             <TableCell>{job.applications || 0}</TableCell>
             <TableCell className="text-right">
               <JobActions 
-                jobId={job.id} 
-                status={job.status}
+                job={job}
                 onJobAction={onJobAction}
               />
             </TableCell>

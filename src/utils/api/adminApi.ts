@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
@@ -129,27 +128,29 @@ export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
   }
 };
 
-// Create a new user (admin function)
+// Create a new user using the Edge Function
 export const createAdminUser = async (userData: CreateUserData): Promise<string | null> => {
   console.log('Creating admin user:', userData);
   
   try {
-    const { data, error } = await supabase
-      .rpc('admin_create_user', {
-        user_email: userData.email,
-        user_password: userData.password,
-        user_full_name: userData.full_name || null,
-        user_username: userData.username || null,
-        user_role: userData.role
-      });
+    const { data, error } = await supabase.functions.invoke('admin-user-management', {
+      body: {
+        action: 'create',
+        ...userData
+      }
+    });
     
     if (error) {
       console.error('Error creating admin user:', error);
       throw new Error(`Failed to create user: ${error.message}`);
     }
     
-    console.log('Admin user created successfully:', data);
-    return data;
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to create user');
+    }
+    
+    console.log('Admin user created successfully:', data.user_id);
+    return data.user_id;
   } catch (error: any) {
     console.error('Error in createAdminUser:', error);
     throw new Error(error.message || 'Failed to create user');
@@ -161,19 +162,25 @@ export const updateAdminUserRole = async (userId: string, newRole: string): Prom
   console.log('Updating user role:', userId, newRole);
   
   try {
-    const { data, error } = await supabase
-      .rpc('admin_update_user_role', {
-        target_user_id: userId,
-        new_role: newRole
-      });
+    const { data, error } = await supabase.functions.invoke('admin-user-management', {
+      body: {
+        action: 'update',
+        user_id: userId,
+        role: newRole
+      }
+    });
     
     if (error) {
       console.error('Error updating user role:', error);
       throw new Error(`Failed to update user role: ${error.message}`);
     }
     
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update user role');
+    }
+    
     console.log('User role updated successfully:', data);
-    return data;
+    return true;
   } catch (error: any) {
     console.error('Error in updateAdminUserRole:', error);
     throw new Error(error.message || 'Failed to update user role');
@@ -185,24 +192,21 @@ export const updateAdminUser = async (userId: string, userData: UpdateUserData):
   console.log('Updating user profile:', userId, userData);
   
   try {
-    // Update profile information
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        full_name: userData.full_name,
-        username: userData.username,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
+    const { data, error } = await supabase.functions.invoke('admin-user-management', {
+      body: {
+        action: 'update',
+        user_id: userId,
+        ...userData
+      }
+    });
     
-    if (profileError) {
-      console.error('Error updating profile:', profileError);
-      throw new Error(`Failed to update profile: ${profileError.message}`);
+    if (error) {
+      console.error('Error updating user:', error);
+      throw new Error(`Failed to update user: ${error.message}`);
     }
     
-    // Update role if it's different
-    if (userData.role) {
-      await updateAdminUserRole(userId, userData.role);
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update user');
     }
     
     console.log('User updated successfully');
@@ -218,18 +222,24 @@ export const deleteAdminUser = async (userId: string): Promise<boolean> => {
   console.log('Deleting user:', userId);
   
   try {
-    const { data, error } = await supabase
-      .rpc('admin_delete_user', {
-        target_user_id: userId
-      });
+    const { data, error } = await supabase.functions.invoke('admin-user-management', {
+      body: {
+        action: 'delete',
+        user_id: userId
+      }
+    });
     
     if (error) {
       console.error('Error deleting user:', error);
       throw new Error(`Failed to delete user: ${error.message}`);
     }
     
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete user');
+    }
+    
     console.log('User deleted successfully:', data);
-    return data;
+    return true;
   } catch (error: any) {
     console.error('Error in deleteAdminUser:', error);
     throw new Error(error.message || 'Failed to delete user');
@@ -509,35 +519,28 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
   }
 };
 
-// Fetch recent users
+// Fetch recent users using get_admin_users function and limiting results
 export const fetchRecentUsers = async (limit: number = 5): Promise<any[]> => {
   console.log('Fetching recent users...');
   
   try {
     const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        full_name,
-        username,
-        created_at,
-        user_roles(role)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .rpc('get_admin_users');
     
     if (error) {
       console.error('Error fetching recent users:', error);
       throw new Error(`Failed to fetch recent users: ${error.message}`);
     }
     
-    // Transform the data to match expected format
-    const transformedData = (data || []).map(user => ({
-      id: user.id,
-      name: user.full_name || user.username || 'Unknown User',
-      email: 'N/A', // Email not available in profiles table
-      role: user.user_roles && user.user_roles.length > 0 ? user.user_roles[0].role : 'user'
-    }));
+    // Transform and limit the data to match expected format
+    const transformedData = (data || [])
+      .slice(0, limit)
+      .map((user: any) => ({
+        id: user.id,
+        name: user.full_name || user.username || 'Unknown User',
+        email: user.email || 'N/A',
+        role: user.role || 'user'
+      }));
     
     console.log('Recent users fetched successfully:', transformedData);
     return transformedData;

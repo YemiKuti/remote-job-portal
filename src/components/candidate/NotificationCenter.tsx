@@ -42,8 +42,14 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Cast the data to ensure proper typing
+      const typedData = (data || []).map(item => ({
+        ...item,
+        type: item.type as 'application_update' | 'new_message' | 'job_recommendation' | 'profile_view'
+      }));
+
+      setNotifications(typedData);
+      setUnreadCount(typedData.filter(n => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to load notifications');
@@ -64,7 +70,10 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
+          const newNotification = {
+            ...payload.new,
+            type: payload.new.type as 'application_update' | 'new_message' | 'job_recommendation' | 'profile_view'
+          } as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           

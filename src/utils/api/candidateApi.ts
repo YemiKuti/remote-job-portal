@@ -144,55 +144,15 @@ export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
       return data || [];
     }
 
-    // Get user skills and preferences from metadata
-    const userMetadata = userProfile?.user_metadata || {};
-    const userSkills = userMetadata.skills ? userMetadata.skills.toLowerCase().split(',').map((s: string) => s.trim()) : [];
-    const userLocation = userMetadata.location || '';
-
-    // Build recommendation query
-    let query = supabase
+    // For now, just return recent active jobs since user_metadata is not available in profiles
+    const { data: recommendedJobs, error } = await supabase
       .from('jobs')
       .select('*')
-      .eq('status', 'active');
-
-    // If user has skills, try to match them with job tech stack
-    if (userSkills.length > 0) {
-      // This is a simple text matching - in production you'd want more sophisticated matching
-      const skillsPattern = userSkills.join('|');
-      query = query.or(`tech_stack.cs.{${userSkills.join(',')}}`, `title.ilike.%${userSkills[0]}%`);
-    }
-
-    // Add location preference if available
-    if (userLocation) {
-      query = query.or(`location.ilike.%${userLocation}%`, `remote.eq.true`);
-    }
-
-    const { data: recommendedJobs, error } = await query
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-
-    // If we don't get enough recommendations, fill with recent jobs
-    if (!recommendedJobs || recommendedJobs.length < limit) {
-      const remaining = limit - (recommendedJobs?.length || 0);
-      const { data: recentJobs, error: recentError } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(remaining);
-
-      if (!recentError && recentJobs) {
-        const combined = [...(recommendedJobs || []), ...recentJobs];
-        // Remove duplicates
-        const uniqueJobs = combined.filter((job, index, self) => 
-          index === self.findIndex(j => j.id === job.id)
-        );
-        return uniqueJobs.slice(0, limit);
-      }
-    }
-
     return recommendedJobs || [];
   } catch (error: any) {
     console.error('Error fetching recommended jobs:', error);
@@ -243,14 +203,9 @@ export const applyToJob = async (userId: string, jobId: string, employerId?: str
 
     if (error) throw error;
 
-    // Update job application count
-    const { error: updateError } = await supabase.rpc('increment_job_applications', {
-      job_id: jobId
-    });
-
-    if (updateError) {
-      console.warn('Failed to update job application count:', updateError);
-    }
+    // Note: Since increment_job_applications function doesn't exist,
+    // we'll skip this step for now
+    console.log('Application created successfully');
 
     toast.success("Application submitted successfully!");
     return true;

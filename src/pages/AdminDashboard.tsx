@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -105,19 +104,6 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button 
-                variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2" 
-                onClick={() => handleQuickAction("Approve Jobs")}
-              >
-                <Briefcase className="h-6 w-6 text-amber-500" />
-                <span>Approve Jobs</span>
-                {stats.pendingApprovals > 0 && (
-                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                    {stats.pendingApprovals}
-                  </span>
-                )}
-              </Button>
               <Button 
                 variant="outline" 
                 className="flex flex-col h-24 items-center justify-center gap-2"
@@ -459,3 +445,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+</edits_to_apply>

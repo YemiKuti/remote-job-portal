@@ -61,7 +61,7 @@ const SecurityDashboard = () => {
     };
     
     return (
-      <Badge className={colors[severity] || colors.medium}>
+      <Badge className={colors[severity as keyof typeof colors] || colors.medium}>
         {severity.toUpperCase()}
       </Badge>
     );
@@ -145,7 +145,7 @@ const SecurityDashboard = () => {
       <Card>
         <CardHeader>
           <CardTitle>Recent Security Events</CardTitle>
-          <CardDescription>Latest security activities and alerts</CardDescription>
+          <CardDescription>Latest security activities and alerts (stored locally)</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -182,7 +182,7 @@ const SecurityDashboard = () => {
                       {log.details ? JSON.stringify(log.details).substring(0, 50) + '...' : 'No details'}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date().toLocaleString()}
+                      {(log as any).timestamp ? new Date((log as any).timestamp).toLocaleString() : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}

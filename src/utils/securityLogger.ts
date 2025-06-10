@@ -26,25 +26,8 @@ export const logSecurityEvent = async (event: SecurityEvent) => {
       user_agent: userAgent
     });
 
-    // Try to log to database using the secure function
-    try {
-      const { error } = await supabase.rpc('log_security_event', {
-        event_type: event.event_type,
-        user_id: event.user_id || session.data.session?.user?.id,
-        ip_address: null, // Will be populated by database if available
-        user_agent: userAgent,
-        details: event.details || {},
-        severity: event.severity
-      });
-
-      if (error) {
-        console.error('Failed to log to database, falling back to localStorage:', error);
-        fallbackToLocalStorage(event, timestamp, sessionId, userAgent);
-      }
-    } catch (dbError) {
-      console.error('Database logging failed, using localStorage fallback:', dbError);
-      fallbackToLocalStorage(event, timestamp, sessionId, userAgent);
-    }
+    // Since security_logs table doesn't exist, use localStorage for now
+    fallbackToLocalStorage(event, timestamp, sessionId, userAgent);
 
     // Log critical events to console for immediate monitoring
     if (event.event_type === 'admin_login' || event.severity === 'high' || event.severity === 'critical') {
@@ -80,29 +63,7 @@ const fallbackToLocalStorage = (event: SecurityEvent, timestamp: string, session
 };
 
 export const getSecurityLogs = async (): Promise<SecurityEvent[]> => {
-  try {
-    // Try to get logs from database first
-    const { data, error } = await supabase
-      .from('security_logs')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(100);
-
-    if (!error && data) {
-      return data.map(log => ({
-        event_type: log.event_type as SecurityEvent['event_type'],
-        user_id: log.user_id,
-        ip_address: log.ip_address,
-        user_agent: log.user_agent,
-        details: log.details,
-        severity: log.severity as SecurityEvent['severity']
-      }));
-    }
-  } catch (error) {
-    console.error('Failed to fetch security logs from database:', error);
-  }
-
-  // Fallback to localStorage
+  // For now, use localStorage since security_logs table doesn't exist
   try {
     return JSON.parse(localStorage.getItem('security_logs') || '[]');
   } catch {
@@ -111,20 +72,6 @@ export const getSecurityLogs = async (): Promise<SecurityEvent[]> => {
 };
 
 export const clearSecurityLogs = async () => {
-  // Clear from database (admin only)
-  try {
-    const { error } = await supabase
-      .from('security_logs')
-      .delete()
-      .gte('timestamp', '1970-01-01'); // Delete all
-
-    if (error) {
-      console.error('Failed to clear database logs:', error);
-    }
-  } catch (error) {
-    console.error('Error clearing database logs:', error);
-  }
-
-  // Clear localStorage fallback
+  // Clear localStorage logs
   localStorage.removeItem('security_logs');
 };

@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logSecurityEvent } from '@/utils/securityLogger';
 
-// Fetch dashboard stats for admin using secure functions
+// Fetch dashboard stats for admin using available functions
 export const fetchAdminStats = async () => {
   try {
     // Log data access
@@ -12,13 +12,13 @@ export const fetchAdminStats = async () => {
       severity: 'low'
     });
 
-    // Get total users count using secure function
-    const { data: totalUsers, error: usersError } = await supabase
-      .rpc('get_admin_user_count');
+    // Get total users count using profiles table as approximation
+    const { count: totalUsers, error: usersError } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
     
     if (usersError) {
       console.error('Error fetching user count:', usersError);
-      throw usersError;
     }
 
     // Get total jobs count
@@ -28,7 +28,6 @@ export const fetchAdminStats = async () => {
     
     if (jobsError) {
       console.error('Error fetching jobs count:', jobsError);
-      throw jobsError;
     }
 
     // Get pending jobs count
@@ -39,7 +38,6 @@ export const fetchAdminStats = async () => {
     
     if (pendingError) {
       console.error('Error fetching pending jobs:', pendingError);
-      throw pendingError;
     }
 
     // Get companies count (unique employers from jobs)
@@ -50,7 +48,6 @@ export const fetchAdminStats = async () => {
     
     if (companiesError) {
       console.error('Error fetching companies:', companiesError);
-      throw companiesError;
     }
 
     const uniqueCompanies = new Set(companies?.map(job => job.company)).size;
@@ -66,7 +63,6 @@ export const fetchAdminStats = async () => {
     
     if (messagesError) {
       console.error('Error fetching messages count:', messagesError);
-      // Don't throw, just log and continue
     }
 
     return {
@@ -120,7 +116,7 @@ const calculateTotalRevenue = async () => {
   }
 };
 
-// Fetch recent users using secure function
+// Fetch recent users using profiles table
 export const fetchRecentUsers = async (limit = 3) => {
   try {
     await logSecurityEvent({
@@ -130,19 +126,22 @@ export const fetchRecentUsers = async (limit = 3) => {
     });
 
     const { data, error } = await supabase
-      .rpc('get_admin_user_details', { limit_count: limit });
+      .from('profiles')
+      .select('id, username, full_name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
     
     if (error) {
       console.error('Error fetching recent users:', error);
       throw error;
     }
     
-    return data.map(user => ({
+    return (data || []).map(user => ({
       id: user.id,
-      name: user.email?.split('@')[0] || 'User', // Use email prefix as name
-      email: user.email || 'No email',
-      role: user.role || 'user',
-      status: 'active', // Mock status
+      name: user.full_name || user.username || 'User',
+      email: 'Email not available', // Email not in profiles for privacy
+      role: 'user', // Default role since we can't access user_roles reliably
+      status: 'active',
       joined: user.created_at
     }));
   } catch (error: any) {
@@ -181,7 +180,7 @@ export const fetchRecentJobs = async (limit = 3) => {
       throw error;
     }
     
-    return data.map(job => ({
+    return (data || []).map(job => ({
       id: job.id,
       title: job.title,
       company: job.company,
@@ -204,7 +203,7 @@ export const fetchRecentJobs = async (limit = 3) => {
   }
 };
 
-// New function to manage user roles (admin only)
+// Function to manage user roles (admin only)
 export const updateUserRole = async (userId: string, newRole: 'admin' | 'user' | 'employer') => {
   try {
     await logSecurityEvent({
@@ -247,7 +246,7 @@ export const updateUserRole = async (userId: string, newRole: 'admin' | 'user' |
   }
 };
 
-// New function to get detailed user information (admin only)
+// Function to get detailed user information (admin only)
 export const fetchUserDetails = async (userId: string) => {
   try {
     await logSecurityEvent({

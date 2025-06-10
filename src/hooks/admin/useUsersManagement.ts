@@ -1,12 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   fetchAdminUsers, 
   createAdminUser, 
+  updateAdminUser,
   updateAdminUserRole, 
   deleteAdminUser, 
   AdminUser, 
-  CreateUserData 
+  CreateUserData,
+  UpdateUserData 
 } from "@/utils/api/adminApi";
 
 export const useUsersManagement = () => {
@@ -16,66 +19,43 @@ export const useUsersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Loading admin users...');
+      
+      const data = await fetchAdminUsers();
+      console.log('Admin users loaded:', data);
+      
+      setUsers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching admin users:', error);
+      const errorMessage = error.message || 'Failed to load users. Please try again.';
+      setError(errorMessage);
+      
+      toast({
+        title: 'Error Loading Users',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('Loading admin users...');
-        
-        const data = await fetchAdminUsers();
-        console.log('Admin users loaded:', data);
-        
-        setUsers(data || []);
-      } catch (error: any) {
-        console.error('Error fetching admin users:', error);
-        const errorMessage = error.message || 'Failed to load users. Please try again.';
-        setError(errorMessage);
-        
-        toast({
-          title: 'Error Loading Users',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadUsers();
   }, [toast]);
 
   const retryLoadUsers = async () => {
-    const loadUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('Retrying to load admin users...');
-        
-        const data = await fetchAdminUsers();
-        console.log('Admin users loaded on retry:', data);
-        
-        setUsers(data || []);
-        toast({
-          title: 'Success',
-          description: 'Users loaded successfully',
-        });
-      } catch (error: any) {
-        console.error('Error fetching admin users on retry:', error);
-        const errorMessage = error.message || 'Failed to load users. Please try again.';
-        setError(errorMessage);
-        
-        toast({
-          title: 'Error Loading Users',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     await loadUsers();
+    if (!error) {
+      toast({
+        title: 'Success',
+        description: 'Users loaded successfully',
+      });
+    }
   };
 
   const handleCreateUser = async (userData: CreateUserData) => {
@@ -86,8 +66,7 @@ export const useUsersManagement = () => {
       
       if (newUserId) {
         // Reload users to get the latest data
-        const updatedUsers = await fetchAdminUsers();
-        setUsers(updatedUsers);
+        await loadUsers();
         
         toast({
           title: 'Success',
@@ -98,11 +77,41 @@ export const useUsersManagement = () => {
       }
       
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create user. Please try again.',
+        description: error.message || 'Failed to create user. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const handleUpdateUser = async (userId: string, userData: UpdateUserData) => {
+    try {
+      console.log('Updating user:', userId, userData);
+      
+      const success = await updateAdminUser(userId, userData);
+      
+      if (success) {
+        // Reload users to get the latest data
+        await loadUsers();
+        
+        toast({
+          title: 'Success',
+          description: 'User updated successfully',
+        });
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update user. Please try again.',
         variant: 'destructive',
       });
       return false;
@@ -132,11 +141,11 @@ export const useUsersManagement = () => {
       }
       
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user role:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update user role. Please try again.',
+        description: error.message || 'Failed to update user role. Please try again.',
         variant: 'destructive',
       });
       return false;
@@ -162,11 +171,11 @@ export const useUsersManagement = () => {
       }
       
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete user. Please try again.',
+        description: error.message || 'Failed to delete user. Please try again.',
         variant: 'destructive',
       });
       return false;
@@ -188,6 +197,7 @@ export const useUsersManagement = () => {
     searchTerm,
     setSearchTerm,
     handleCreateUser,
+    handleUpdateUser,
     handleUpdateUserRole,
     handleDeleteUser,
     retryLoadUsers

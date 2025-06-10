@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUsersManagement } from "@/hooks/admin/useUsersManagement";
 import AddUserDialog from "@/components/admin/users/AddUserDialog";
+import EditUserDialog from "@/components/admin/users/EditUserDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AdminUser } from "@/utils/api/adminApi";
 
 const UsersAdmin = () => {
   const {
@@ -19,12 +21,14 @@ const UsersAdmin = () => {
     searchTerm,
     setSearchTerm,
     handleCreateUser,
-    handleUpdateUserRole,
+    handleUpdateUser,
     handleDeleteUser,
     retryLoadUsers
   } = useUsersManagement();
 
   const [activeTab, setActiveTab] = React.useState('all');
+  const [editingUser, setEditingUser] = React.useState<AdminUser | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
 
   const filteredUsers = users.filter(user => {
     // Apply role filter
@@ -34,6 +38,17 @@ const UsersAdmin = () => {
     
     return true;
   });
+
+  const handleEditUser = (user: AdminUser) => {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async (userId: string) => {
+    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      await handleDeleteUser(userId);
+    }
+  };
 
   const UserTable = ({ users }: { users: typeof filteredUsers }) => (
     <Table>
@@ -78,13 +93,17 @@ const UsersAdmin = () => {
             </TableCell>
             <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => handleEditUser(user)}
+              >
                 <Edit className="h-4 w-4" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => handleDeleteUser(user.id)}
+                onClick={() => handleDeleteConfirm(user.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -135,114 +154,63 @@ const UsersAdmin = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">Filters</Button>
         </div>
 
         <Tabs defaultValue="all" onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all">All Users</TabsTrigger>
-            <TabsTrigger value="candidate">Candidates</TabsTrigger>
-            <TabsTrigger value="employer">Employers</TabsTrigger>
-            <TabsTrigger value="admin">Admins</TabsTrigger>
+            <TabsTrigger value="all">All Users ({users.length})</TabsTrigger>
+            <TabsTrigger value="candidate">Candidates ({users.filter(u => u.role === 'candidate').length})</TabsTrigger>
+            <TabsTrigger value="employer">Employers ({users.filter(u => u.role === 'employer').length})</TabsTrigger>
+            <TabsTrigger value="admin">Admins ({users.filter(u => u.role === 'admin').length})</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all" className="mt-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>All Users</CardTitle>
-                <CardDescription>Showing all users registered in the system</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : error ? (
-                  <div className="text-center py-8">
-                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-4">Failed to load users</p>
-                    <Button onClick={retryLoadUsers} variant="outline">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Try Again
-                    </Button>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No users found matching the criteria.</p>
-                  </div>
-                ) : (
-                  <UserTable users={filteredUsers} />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="candidate" className="mt-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Candidate Users</CardTitle>
-                <CardDescription>Showing all users with candidate role</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No candidate users found.</p>
-                  </div>
-                ) : (
-                  <UserTable users={filteredUsers} />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="employer" className="mt-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Employer Users</CardTitle>
-                <CardDescription>Showing all users with employer role</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No employer users found.</p>
-                  </div>
-                ) : (
-                  <UserTable users={filteredUsers} />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="admin" className="mt-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Admin Users</CardTitle>
-                <CardDescription>Showing all users with admin role</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No admin users found.</p>
-                  </div>
-                ) : (
-                  <UserTable users={filteredUsers} />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {['all', 'candidate', 'employer', 'admin'].map(tabValue => (
+            <TabsContent key={tabValue} value={tabValue} className="mt-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>
+                    {tabValue === 'all' ? 'All Users' : 
+                     tabValue.charAt(0).toUpperCase() + tabValue.slice(1) + ' Users'}
+                  </CardTitle>
+                  <CardDescription>
+                    {tabValue === 'all' 
+                      ? 'Showing all users registered in the system'
+                      : `Showing all users with ${tabValue} role`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-8">
+                      <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">Failed to load users</p>
+                      <Button onClick={retryLoadUsers} variant="outline">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Try Again
+                      </Button>
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No users found matching the criteria.</p>
+                    </div>
+                  ) : (
+                    <UserTable users={filteredUsers} />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
         </Tabs>
+
+        <EditUserDialog
+          user={editingUser}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onUpdateUser={handleUpdateUser}
+        />
       </div>
     </DashboardLayout>
   );

@@ -564,6 +564,15 @@ export type Database = {
           last_sign_in_at: string
         }[]
       }
+      get_current_user_auth_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          is_authenticated: boolean
+          is_admin: boolean
+          email: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -323,5 +323,3 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
-
-</edits_to_apply>

@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Save, ArrowLeft, Loader2, X } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 interface BlogPost {
   id: string;
@@ -21,6 +22,7 @@ interface BlogPost {
   content: string;
   slug: string | null;
   excerpt: string | null;
+  featured_image: string | null;
   meta_title: string | null;
   meta_description: string | null;
   created_at: string;
@@ -48,6 +50,7 @@ const BlogEditor = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [featuredImage, setFeaturedImage] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [isPublished, setIsPublished] = useState(false);
@@ -109,6 +112,7 @@ const BlogEditor = () => {
         setTitle(data.title);
         setContent(data.content);
         setExcerpt(data.excerpt || '');
+        setFeaturedImage(data.featured_image);
         setMetaTitle(data.meta_title || '');
         setMetaDescription(data.meta_description || '');
         setIsPublished(data.is_published);
@@ -164,6 +168,7 @@ const BlogEditor = () => {
         title,
         content,
         excerpt: excerpt || null,
+        featured_image: featuredImage,
         meta_title: metaTitle || null,
         meta_description: metaDescription || null,
         user_id: user.id,
@@ -383,6 +388,20 @@ const BlogEditor = () => {
           </div>
 
           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Featured Image</CardTitle>
+                <CardDescription>Upload a cover image for your blog post</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImageUpload
+                  value={featuredImage}
+                  onChange={setFeaturedImage}
+                  disabled={isSaving}
+                />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Category & Tags</CardTitle>

@@ -10,6 +10,7 @@ interface BlogCardProps {
     id: string;
     title: string;
     content: string;
+    featured_image?: string | null;
     created_at: string;
     updated_at: string;
     profiles: {
@@ -47,6 +48,17 @@ const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
   return (
     <Link to={`/blog/${post.id}`} className="group block h-full">
       <Card className="h-full border overflow-hidden hover:border-primary/50 hover:shadow-md transition-all duration-300">
+        {post.featured_image && (
+          <div className="aspect-video w-full overflow-hidden">
+            <img 
+              src={post.featured_image} 
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+          </div>
+        )}
+        
         <CardContent className="flex flex-col h-full p-5">
           {post.category && (
             <div className="mb-2">

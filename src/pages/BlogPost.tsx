@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -34,7 +35,8 @@ const BlogPost = () => {
           .select(`
             id, 
             title, 
-            content, 
+            content,
+            featured_image,
             created_at, 
             updated_at, 
             user_id,
@@ -250,12 +252,22 @@ const BlogPost = () => {
       
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <Link to="/blog" className="inline-flex items-center text-gray-600 hover:text-primary mb-6">
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to all articles
           </Link>
           
           <article>
+            {post.featured_image && (
+              <div className="mb-8">
+                <img 
+                  src={post.featured_image} 
+                  alt={post.title}
+                  className="w-full h-64 md:h-96 object-cover rounded-lg"
+                />
+              </div>
+            )}
+
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">{post.title}</h1>
             
             <div className="flex flex-wrap items-center gap-4 text-gray-600 text-sm mb-6">

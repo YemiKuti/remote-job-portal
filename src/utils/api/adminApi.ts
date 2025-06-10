@@ -929,3 +929,39 @@ export const deleteAdminUser = async (userId: string): Promise<boolean> => {
     throw error;
   }
 };
+
+// Fetch job details using admin function
+export const fetchAdminJob = async (jobId: string) => {
+  try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_admin_job', job_id: jobId },
+      severity: 'low'
+    });
+
+    const { data, error } = await supabase.rpc('admin_get_job', {
+      job_id: jobId
+    });
+    
+    if (error) {
+      console.error('Error fetching admin job details:', error);
+      throw error;
+    }
+    
+    return data?.[0] || null;
+  } catch (error: any) {
+    console.error('Error in fetchAdminJob:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_admin_job_failed',
+        job_id: jobId,
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
+    throw error;
+  }
+};

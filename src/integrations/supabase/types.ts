@@ -426,6 +426,34 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      admin_get_job: {
+        Args: { job_id: string }
+        Returns: {
+          id: string
+          title: string
+          company: string
+          location: string
+          description: string
+          requirements: string[]
+          salary_min: number
+          salary_max: number
+          salary_currency: string
+          employment_type: string
+          experience_level: string
+          tech_stack: string[]
+          visa_sponsorship: boolean
+          remote: boolean
+          company_size: string
+          application_deadline: string
+          logo: string
+          status: string
+          application_type: string
+          application_value: string
+          employer_id: string
+          created_at: string
+          updated_at: string
+        }[]
+      }
       admin_update_company: {
         Args: {
           company_id: string

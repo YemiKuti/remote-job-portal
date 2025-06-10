@@ -54,7 +54,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
 
   // Use our custom hooks
   const { loading: submitting, handleSubmit } = useJobForm({ jobId, isAdmin, afterSubmit });
-  const { loading: fetching } = useJobData(jobId, form);
+  const { loading: fetching } = useJobData(jobId, form, isAdmin);
   
   // Combined loading state
   const loading = submitting || fetching;

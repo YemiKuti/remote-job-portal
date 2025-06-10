@@ -36,6 +36,66 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          company_size: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          email: string | null
+          founded_year: number | null
+          id: string
+          industry: string | null
+          linkedin_url: string | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          status: string
+          twitter_url: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          company_size?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          founded_year?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          twitter_url?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          company_size?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          founded_year?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          twitter_url?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           candidate_id: string
@@ -306,9 +366,71 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_company: {
+        Args: {
+          company_name: string
+          company_description?: string
+          company_industry?: string
+          company_website?: string
+          company_logo_url?: string
+          company_location?: string
+          company_size?: string
+          company_founded_year?: number
+          company_email?: string
+          company_phone?: string
+          company_linkedin_url?: string
+          company_twitter_url?: string
+        }
+        Returns: string
+      }
+      admin_delete_company: {
+        Args: { company_id: string }
+        Returns: boolean
+      }
+      admin_update_company: {
+        Args: {
+          company_id: string
+          company_name: string
+          company_description?: string
+          company_industry?: string
+          company_website?: string
+          company_logo_url?: string
+          company_location?: string
+          company_size?: string
+          company_founded_year?: number
+          company_email?: string
+          company_phone?: string
+          company_linkedin_url?: string
+          company_twitter_url?: string
+          company_status?: string
+        }
+        Returns: boolean
+      }
       admin_update_job_status: {
         Args: { job_id: string; new_status: string }
         Returns: boolean
+      }
+      get_admin_companies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          description: string
+          industry: string
+          website: string
+          logo_url: string
+          location: string
+          company_size: string
+          founded_year: number
+          email: string
+          phone: string
+          linkedin_url: string
+          twitter_url: string
+          status: string
+          created_at: string
+          updated_at: string
+          created_by: string
+        }[]
       }
       get_admin_jobs: {
         Args: Record<PropertyKey, never>

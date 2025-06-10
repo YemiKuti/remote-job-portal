@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
   Table,
@@ -18,40 +18,51 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Search } from "lucide-react";
+import { Search, Edit, Trash2, ExternalLink } from "lucide-react";
+import { useCompaniesManagement } from '@/hooks/admin/useCompaniesManagement';
+import { AddCompanyDialog } from '@/components/admin/companies/AddCompanyDialog';
 
 const CompaniesPage = () => {
-  // Mock data for companies
-  const [companies, setCompanies] = useState([
-    { id: '1', name: 'TechCorp', industry: 'Technology', location: 'San Francisco', employees: 250, status: 'Active' },
-    { id: '2', name: 'DesignHub', industry: 'Design', location: 'New York', employees: 120, status: 'Active' },
-    { id: '3', name: 'MarketPro', industry: 'Marketing', location: 'Chicago', employees: 85, status: 'Inactive' },
-    { id: '4', name: 'DevWorks', industry: 'Software', location: 'Boston', employees: 175, status: 'Active' },
-    { id: '5', name: 'DataSystems', industry: 'Data Analytics', location: 'Austin', employees: 210, status: 'Active' },
-  ]);
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const filteredCompanies = companies.filter(company => 
-    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const {
+    companies,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    handleCreateCompany,
+    handleDeleteCompany
+  } = useCompaniesManagement();
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleDelete = async (companyId: string, companyName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) {
+      await handleDeleteCompany(companyId);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading companies...</div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Companies Management</h1>
-          <Button className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
-            <span>Add Company</span>
-          </Button>
+          <AddCompanyDialog onCreateCompany={handleCreateCompany} />
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Companies</CardTitle>
+            <CardTitle>Companies ({companies.length})</CardTitle>
             <CardDescription>Manage and monitor all registered companies on the platform.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -61,8 +72,8 @@ const CompaniesPage = () => {
                 <Input
                   placeholder="Search companies..."
                   className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
@@ -74,31 +85,79 @@ const CompaniesPage = () => {
                     <TableHead>Company Name</TableHead>
                     <TableHead>Industry</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Employees</TableHead>
+                    <TableHead>Size</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCompanies.map((company) => (
-                    <TableRow key={company.id}>
-                      <TableCell className="font-medium">{company.name}</TableCell>
-                      <TableCell>{company.industry}</TableCell>
-                      <TableCell>{company.location}</TableCell>
-                      <TableCell>{company.employees}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          company.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {company.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">View</Button>
-                        <Button variant="ghost" size="sm">Edit</Button>
+                  {companies.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        {searchTerm ? 'No companies found matching your search.' : 'No companies found. Add your first company to get started.'}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    companies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {company.logo_url && (
+                              <img 
+                                src={company.logo_url} 
+                                alt={`${company.name} logo`}
+                                className="w-8 h-8 rounded object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <div>
+                              <div>{company.name}</div>
+                              {company.website && (
+                                <a 
+                                  href={company.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Website
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{company.industry || 'N/A'}</TableCell>
+                        <TableCell>{company.location || 'N/A'}</TableCell>
+                        <TableCell>{company.company_size || 'N/A'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            company.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {company.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{formatDate(company.created_at)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDelete(company.id, company.name)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

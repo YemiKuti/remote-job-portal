@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logSecurityEvent } from '@/utils/securityLogger';
 
@@ -373,6 +372,208 @@ export const fetchUserDetails = async (userId: string) => {
         error: error.message 
       },
       severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
+// Company management functions
+export interface Company {
+  id: string;
+  name: string;
+  description?: string;
+  industry?: string;
+  website?: string;
+  logo_url?: string;
+  location?: string;
+  company_size?: string;
+  founded_year?: number;
+  email?: string;
+  phone?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+export interface CompanyFormData {
+  name: string;
+  description?: string;
+  industry?: string;
+  website?: string;
+  logo_url?: string;
+  location?: string;
+  company_size?: string;
+  founded_year?: number;
+  email?: string;
+  phone?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+}
+
+// Fetch all companies using admin function
+export const fetchAdminCompanies = async (): Promise<Company[]> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { action: 'fetch_admin_companies' },
+      severity: 'low'
+    });
+
+    const { data, error } = await supabase.rpc('get_admin_companies');
+    
+    if (error) {
+      console.error('Error fetching admin companies:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching admin companies:', error);
+    
+    await logSecurityEvent({
+      event_type: 'data_access',
+      details: { 
+        action: 'fetch_admin_companies_failed',
+        error: error.message 
+      },
+      severity: 'medium'
+    });
+    
+    throw error;
+  }
+};
+
+// Create company using admin function
+export const createCompany = async (companyData: CompanyFormData): Promise<string> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'create_company', company_name: companyData.name },
+      severity: 'medium'
+    });
+
+    const { data, error } = await supabase.rpc('admin_create_company', {
+      company_name: companyData.name,
+      company_description: companyData.description || null,
+      company_industry: companyData.industry || null,
+      company_website: companyData.website || null,
+      company_logo_url: companyData.logo_url || null,
+      company_location: companyData.location || null,
+      company_size: companyData.company_size || null,
+      company_founded_year: companyData.founded_year || null,
+      company_email: companyData.email || null,
+      company_phone: companyData.phone || null,
+      company_linkedin_url: companyData.linkedin_url || null,
+      company_twitter_url: companyData.twitter_url || null
+    });
+    
+    if (error) {
+      console.error('Error creating company:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error creating company:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'create_company_failed',
+        company_name: companyData.name,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
+// Update company using admin function
+export const updateCompany = async (companyId: string, companyData: CompanyFormData & { status?: string }): Promise<boolean> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'update_company', company_id: companyId, company_name: companyData.name },
+      severity: 'medium'
+    });
+
+    const { data, error } = await supabase.rpc('admin_update_company', {
+      company_id: companyId,
+      company_name: companyData.name,
+      company_description: companyData.description || null,
+      company_industry: companyData.industry || null,
+      company_website: companyData.website || null,
+      company_logo_url: companyData.logo_url || null,
+      company_location: companyData.location || null,
+      company_size: companyData.company_size || null,
+      company_founded_year: companyData.founded_year || null,
+      company_email: companyData.email || null,
+      company_phone: companyData.phone || null,
+      company_linkedin_url: companyData.linkedin_url || null,
+      company_twitter_url: companyData.twitter_url || null,
+      company_status: companyData.status || 'active'
+    });
+    
+    if (error) {
+      console.error('Error updating company:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error updating company:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'update_company_failed',
+        company_id: companyId,
+        company_name: companyData.name,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
+// Delete company using admin function
+export const deleteCompany = async (companyId: string): Promise<boolean> => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'delete_company', company_id: companyId },
+      severity: 'high'
+    });
+
+    const { data, error } = await supabase.rpc('admin_delete_company', {
+      company_id: companyId
+    });
+    
+    if (error) {
+      console.error('Error deleting company:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error deleting company:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'delete_company_failed',
+        company_id: companyId,
+        error: error.message 
+      },
+      severity: 'critical'
     });
     
     throw error;

@@ -120,25 +120,58 @@ Deno.serve(async (req) => {
           throw new Error('No user returned from auth creation')
         }
 
-        // Create profile record
-        const { error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .insert({
-            id: authUser.user.id,
-            username: username || null,
-            full_name: full_name || null,
-            created_at: new Date().toISOString()
-          })
+        console.log('[ADMIN-USER-MANAGEMENT] Auth user created:', authUser.user.id)
 
-        if (profileError) {
-          console.error('[ADMIN-USER-MANAGEMENT] Profile creation error:', profileError)
-          // Clean up auth user if profile creation fails
-          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
-          throw new Error(`Failed to create profile: ${profileError.message}`)
+        // Check if profile already exists
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('id', authUser.user.id)
+          .single()
+
+        // Create profile record only if it doesn't exist
+        if (!existingProfile) {
+          const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .insert({
+              id: authUser.user.id,
+              username: username || null,
+              full_name: full_name || null,
+              created_at: new Date().toISOString()
+            })
+
+          if (profileError) {
+            console.error('[ADMIN-USER-MANAGEMENT] Profile creation error:', profileError)
+            // Clean up auth user if profile creation fails
+            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+            throw new Error(`Failed to create profile: ${profileError.message}`)
+          }
+          console.log('[ADMIN-USER-MANAGEMENT] Profile created for user:', authUser.user.id)
+        } else {
+          console.log('[ADMIN-USER-MANAGEMENT] Profile already exists for user:', authUser.user.id)
+          // Update existing profile with new data
+          const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+              username: username || null,
+              full_name: full_name || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', authUser.user.id)
+
+          if (updateError) {
+            console.error('[ADMIN-USER-MANAGEMENT] Profile update error:', updateError)
+          }
         }
 
         // Assign role if not default 'user'
         if (role !== 'user') {
+          // Remove any existing roles first
+          await supabaseAdmin
+            .from('user_roles')
+            .delete()
+            .eq('user_id', authUser.user.id)
+
           const { error: roleError } = await supabaseAdmin
             .from('user_roles')
             .insert({
@@ -148,10 +181,10 @@ Deno.serve(async (req) => {
 
           if (roleError) {
             console.error('[ADMIN-USER-MANAGEMENT] Role assignment error:', roleError)
-            // Clean up on role assignment failure
-            await supabaseAdmin.from('profiles').delete().eq('id', authUser.user.id)
-            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
-            throw new Error(`Failed to assign role: ${roleError.message}`)
+            // Don't fail completely on role assignment error, just log it
+            console.log('[ADMIN-USER-MANAGEMENT] Continuing despite role assignment error')
+          } else {
+            console.log('[ADMIN-USER-MANAGEMENT] Role assigned:', role)
           }
         }
 

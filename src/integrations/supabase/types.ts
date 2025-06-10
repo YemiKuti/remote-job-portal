@@ -36,6 +36,53 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          job_id: string
+          new_status: string | null
+          notes: string | null
+          performed_at: string
+          performed_by: string
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          job_id: string
+          new_status?: string | null
+          notes?: string | null
+          performed_at?: string
+          performed_by: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          new_status?: string | null
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_log_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_categories: {
         Row: {
           color: string | null
@@ -180,6 +227,8 @@ export type Database = {
           application_type: string
           application_value: string | null
           applications: number | null
+          approval_date: string | null
+          approved_by: string | null
           company: string
           company_size: string | null
           created_at: string | null
@@ -190,10 +239,15 @@ export type Database = {
           id: string
           is_featured: boolean | null
           is_verified: boolean | null
+          last_reviewed_at: string | null
           location: string
           logo: string | null
+          rejected_by: string | null
+          rejection_date: string | null
+          rejection_reason: string | null
           remote: boolean | null
           requirements: string[]
+          review_notes: string | null
           salary_currency: string | null
           salary_max: number | null
           salary_min: number | null
@@ -209,6 +263,8 @@ export type Database = {
           application_type?: string
           application_value?: string | null
           applications?: number | null
+          approval_date?: string | null
+          approved_by?: string | null
           company: string
           company_size?: string | null
           created_at?: string | null
@@ -219,10 +275,15 @@ export type Database = {
           id?: string
           is_featured?: boolean | null
           is_verified?: boolean | null
+          last_reviewed_at?: string | null
           location: string
           logo?: string | null
+          rejected_by?: string | null
+          rejection_date?: string | null
+          rejection_reason?: string | null
           remote?: boolean | null
           requirements?: string[]
+          review_notes?: string | null
           salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
@@ -238,6 +299,8 @@ export type Database = {
           application_type?: string
           application_value?: string | null
           applications?: number | null
+          approval_date?: string | null
+          approved_by?: string | null
           company?: string
           company_size?: string | null
           created_at?: string | null
@@ -248,10 +311,15 @@ export type Database = {
           id?: string
           is_featured?: boolean | null
           is_verified?: boolean | null
+          last_reviewed_at?: string | null
           location?: string
           logo?: string | null
+          rejected_by?: string | null
+          rejection_date?: string | null
+          rejection_reason?: string | null
           remote?: boolean | null
           requirements?: string[]
+          review_notes?: string | null
           salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
@@ -552,6 +620,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_job: {
+        Args: {
+          job_id: string
+          approval_reason?: string
+          review_notes?: string
+        }
+        Returns: boolean
+      }
+      admin_batch_approve_jobs: {
+        Args: { job_ids: string[]; approval_reason?: string }
+        Returns: {
+          job_id: string
+          success: boolean
+          error_message: string
+        }[]
+      }
       admin_create_company: {
         Args: {
           company_name: string
@@ -639,6 +723,28 @@ export type Database = {
           created_at: string
           updated_at: string
         }[]
+      }
+      admin_get_job_approval_history: {
+        Args: { job_id: string }
+        Returns: {
+          id: string
+          action: string
+          performed_by: string
+          performed_at: string
+          reason: string
+          previous_status: string
+          new_status: string
+          notes: string
+          performer_name: string
+        }[]
+      }
+      admin_reject_job: {
+        Args: {
+          job_id: string
+          rejection_reason: string
+          review_notes?: string
+        }
+        Returns: boolean
       }
       admin_update_company: {
         Args: {

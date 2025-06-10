@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
@@ -86,6 +85,31 @@ export interface AdminJob {
   logo?: string;
   application_type?: string;
   application_value?: string;
+  rejection_reason?: string;
+  approval_date?: string;
+  approved_by?: string;
+  rejected_by?: string;
+  rejection_date?: string;
+  last_reviewed_at?: string;
+  review_notes?: string;
+}
+
+export interface ApprovalHistoryEntry {
+  id: string;
+  action: string;
+  performed_by: string;
+  performed_at: string;
+  reason?: string;
+  previous_status?: string;
+  new_status?: string;
+  notes?: string;
+  performer_name?: string;
+}
+
+export interface BatchApprovalResult {
+  job_id: string;
+  success: boolean;
+  error_message?: string;
 }
 
 export interface AdminStats {
@@ -291,9 +315,121 @@ export const fetchAdminJobs = async (): Promise<AdminJob[]> => {
   }
 };
 
-// Update job status
+// Enhanced job approval with logging and validation
+export const approveJob = async (
+  jobId: string, 
+  approvalReason?: string, 
+  reviewNotes?: string
+): Promise<{ success: boolean; message?: string }> => {
+  console.log('Approving job:', jobId, { approvalReason, reviewNotes });
+  
+  try {
+    const { data, error } = await supabase.rpc('admin_approve_job', {
+      job_id: jobId,
+      approval_reason: approvalReason || null,
+      review_notes: reviewNotes || null
+    });
+    
+    if (error) {
+      console.error('Error approving job:', error);
+      throw new Error(`Failed to approve job: ${error.message}`);
+    }
+    
+    console.log('Job approved successfully:', data);
+    return { success: true, message: 'Job approved successfully' };
+  } catch (error: any) {
+    console.error('Error in approveJob:', error);
+    throw new Error(error.message || 'Failed to approve job');
+  }
+};
+
+// Enhanced job rejection with mandatory reason
+export const rejectJob = async (
+  jobId: string, 
+  rejectionReason: string, 
+  reviewNotes?: string
+): Promise<{ success: boolean; message?: string }> => {
+  console.log('Rejecting job:', jobId, { rejectionReason, reviewNotes });
+  
+  if (!rejectionReason || rejectionReason.trim() === '') {
+    throw new Error('Rejection reason is required');
+  }
+  
+  try {
+    const { data, error } = await supabase.rpc('admin_reject_job', {
+      job_id: jobId,
+      rejection_reason: rejectionReason,
+      review_notes: reviewNotes || null
+    });
+    
+    if (error) {
+      console.error('Error rejecting job:', error);
+      throw new Error(`Failed to reject job: ${error.message}`);
+    }
+    
+    console.log('Job rejected successfully:', data);
+    return { success: true, message: 'Job rejected successfully' };
+  } catch (error: any) {
+    console.error('Error in rejectJob:', error);
+    throw new Error(error.message || 'Failed to reject job');
+  }
+};
+
+// Batch approval operations
+export const batchApproveJobs = async (
+  jobIds: string[], 
+  approvalReason?: string
+): Promise<BatchApprovalResult[]> => {
+  console.log('Batch approving jobs:', jobIds, { approvalReason });
+  
+  if (!jobIds || jobIds.length === 0) {
+    throw new Error('No job IDs provided');
+  }
+  
+  try {
+    const { data, error } = await supabase.rpc('admin_batch_approve_jobs', {
+      job_ids: jobIds,
+      approval_reason: approvalReason || null
+    });
+    
+    if (error) {
+      console.error('Error in batch approval:', error);
+      throw new Error(`Failed to batch approve jobs: ${error.message}`);
+    }
+    
+    console.log('Batch approval completed:', data);
+    return data || [];
+  } catch (error: any) {
+    console.error('Error in batchApproveJobs:', error);
+    throw new Error(error.message || 'Failed to batch approve jobs');
+  }
+};
+
+// Get approval history for a job
+export const getJobApprovalHistory = async (jobId: string): Promise<ApprovalHistoryEntry[]> => {
+  console.log('Fetching approval history for job:', jobId);
+  
+  try {
+    const { data, error } = await supabase.rpc('admin_get_job_approval_history', {
+      job_id: jobId
+    });
+    
+    if (error) {
+      console.error('Error fetching approval history:', error);
+      throw new Error(`Failed to fetch approval history: ${error.message}`);
+    }
+    
+    console.log('Approval history fetched successfully:', data);
+    return data || [];
+  } catch (error: any) {
+    console.error('Error in getJobApprovalHistory:', error);
+    throw new Error(error.message || 'Failed to fetch approval history');
+  }
+};
+
+// Update job status (legacy function - kept for backward compatibility)
 export const updateJobStatus = async (jobId: string, status: string): Promise<{ success: boolean }> => {
-  console.log('Updating job status:', jobId, status);
+  console.log('Updating job status (legacy):', jobId, status);
   
   try {
     const { error } = await supabase

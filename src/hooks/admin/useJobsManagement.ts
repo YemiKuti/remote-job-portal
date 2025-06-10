@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { fetchAdminJobs, updateJobStatus } from "@/utils/api/adminApi";
+import { fetchAdminJobs } from "@/utils/api/adminApi";
 
 interface AdminJob {
   id: string;
@@ -11,6 +11,13 @@ interface AdminJob {
   created_at: string;
   status: string;
   applications: number;
+  rejection_reason?: string;
+  approval_date?: string;
+  approved_by?: string;
+  rejected_by?: string;
+  rejection_date?: string;
+  last_reviewed_at?: string;
+  review_notes?: string;
 }
 
 export const useJobsManagement = () => {
@@ -20,72 +27,33 @@ export const useJobsManagement = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadJobs = async () => {
-      try {
-        setLoading(true);
-        console.log('Loading admin jobs...');
-        
-        const data = await fetchAdminJobs();
-        console.log('Admin jobs loaded:', data);
-        
-        setJobs(data || []);
-      } catch (error) {
-        console.error('Error fetching admin jobs:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load jobs. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadJobs();
-  }, [toast]);
+  }, []);
 
-  const handleJobAction = async (jobId: string, action: string) => {
+  const loadJobs = async () => {
     try {
-      let newStatus = '';
-      let successMessage = '';
+      setLoading(true);
+      console.log('Loading admin jobs...');
       
-      if (action === 'approve') {
-        newStatus = 'active';
-        successMessage = 'Job approved and published';
-      } else if (action === 'reject') {
-        newStatus = 'draft';
-        successMessage = 'Job rejected and moved to draft';
-      }
+      const data = await fetchAdminJobs();
+      console.log('Admin jobs loaded:', data);
       
-      if (newStatus) {
-        console.log(`Updating job ${jobId} status to ${newStatus}`);
-        
-        const result = await updateJobStatus(jobId, newStatus);
-        
-        if (result.success) {
-          // Update local state
-          setJobs(jobs.map(job => 
-            job.id === jobId 
-              ? { ...job, status: newStatus } 
-              : job
-          ));
-          
-          toast({
-            title: 'Success',
-            description: successMessage,
-          });
-        } else {
-          throw new Error('Update failed');
-        }
-      }
+      setJobs(data || []);
     } catch (error) {
-      console.error(`Error performing action ${action}:`, error);
+      console.error('Error fetching admin jobs:', error);
       toast({
         title: 'Error',
-        description: `Failed to ${action} job. Please try again.`,
+        description: 'Failed to load jobs. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleJobAction = async () => {
+    // Reload jobs after any action
+    await loadJobs();
   };
 
   const filteredJobs = searchTerm.trim() === '' 
@@ -101,6 +69,7 @@ export const useJobsManagement = () => {
     loading,
     searchTerm,
     setSearchTerm,
-    handleJobAction
+    handleJobAction,
+    reloadJobs: loadJobs
   };
 };

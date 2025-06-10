@@ -21,6 +21,7 @@ import CreateJob from "./pages/admin/CreateJob";
 import EditJob from "./pages/admin/EditJob";
 import CompaniesAdmin from "./pages/admin/Companies";
 import SettingsAdmin from "./pages/admin/Settings";
+import AdminProfile from "./pages/admin/Profile";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard"; 
 import SignIn from "./pages/SignIn";
@@ -88,6 +89,7 @@ const App = () => {
                   {/* Protected Admin Routes */}
                   <Route element={<AdminRoute />}>
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/profile" element={<AdminProfile />} />
                     <Route path="/admin/blog" element={<BlogManagement />} />
                     <Route path="/admin/blog/create" element={<BlogEditor />} />
                     <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />

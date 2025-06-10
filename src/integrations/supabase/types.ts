@@ -36,6 +36,57 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      blog_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           company_size: string | null
@@ -251,33 +302,120 @@ export type Database = {
           },
         ]
       }
+      post_categories: {
+        Row: {
+          category_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_categories_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_tags: {
+        Row: {
+          id: string
+          post_id: string
+          tag_id: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          tag_id: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "blog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string
           created_at: string | null
+          excerpt: string | null
+          featured_image: string | null
           id: string
           is_published: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          reading_time: number | null
+          slug: string | null
           title: string
           updated_at: string | null
           user_id: string
+          view_count: number | null
         }
         Insert: {
           content: string
           created_at?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
           id?: string
           is_published?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          reading_time?: number | null
+          slug?: string | null
           title: string
           updated_at?: string | null
           user_id: string
+          view_count?: number | null
         }
         Update: {
           content?: string
           created_at?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
           id?: string
           is_published?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          reading_time?: number | null
+          slug?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -553,6 +691,10 @@ export type Database = {
       admin_update_user_role: {
         Args: { target_user_id: string; new_role: string }
         Returns: boolean
+      }
+      generate_slug: {
+        Args: { title: string }
+        Returns: string
       }
       get_admin_companies: {
         Args: Record<PropertyKey, never>

@@ -117,6 +117,7 @@ export interface BlogPostDetails {
   id: string;
   title: string;
   content: string;
+  featured_image?: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;

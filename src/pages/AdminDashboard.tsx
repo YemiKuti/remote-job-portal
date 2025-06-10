@@ -144,19 +144,6 @@ const AdminDashboard = () => {
                   <span>Manage Users</span>
                 </Link>
               </Button>
-              <Button 
-                variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2"
-                onClick={() => handleQuickAction("Messages")}
-              >
-                <MessageSquare className="h-6 w-6 text-purple-500" />
-                <span>Messages</span>
-                {stats.newMessages > 0 && (
-                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                    {stats.newMessages}
-                  </span>
-                )}
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -445,3 +432,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+</edits_to_apply>

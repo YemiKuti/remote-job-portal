@@ -19,7 +19,8 @@ import {
   MessageSquare,
   Bell,
   BookOpen,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,8 @@ const AdminDashboard = () => {
     totalCompanies: 0,
     totalJobs: 0,
     totalRevenue: 0,
+    monthlyRevenue: 0,
+    activeSubscriptions: 0,
     pendingApprovals: 0,
     newMessages: 0
   });
@@ -171,7 +174,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
         
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
           <Card className="bg-white border-l-4 border-green-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -204,12 +207,22 @@ const AdminDashboard = () => {
           </Card>
           <Card className="bg-white border-l-4 border-purple-500">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${stats.totalRevenue}</div>
-              <p className="text-xs text-muted-foreground">From featured listings</p>
+              <p className="text-xs text-muted-foreground">From subscriptions</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-l-4 border-indigo-500">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
+              <CreditCard className="h-4 w-4 text-indigo-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
+              <p className="text-xs text-muted-foreground">Active subscribers</p>
             </CardContent>
           </Card>
         </div>
@@ -445,3 +458,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+}

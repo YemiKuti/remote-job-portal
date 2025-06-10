@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
@@ -92,6 +93,8 @@ export interface AdminStats {
   totalCompanies: number;
   totalJobs: number;
   totalRevenue: number;
+  monthlyRevenue: number;
+  activeSubscriptions: number;
   pendingApprovals: number;
   newMessages: number;
 }
@@ -496,6 +499,41 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
     const totalJobs = jobsData?.length || 0;
     const pendingApprovals = jobsData?.filter(job => job.status === 'pending')?.length || 0;
     
+    // Fetch revenue data from subscribers table
+    const { data: subscribersData, error: subscribersError } = await supabase
+      .from('subscribers')
+      .select('subscription_amount, subscription_currency, subscribed, subscription_start, subscription_end')
+      .eq('subscribed', true);
+    
+    if (subscribersError) {
+      console.error('Error fetching subscribers for revenue:', subscribersError);
+    }
+    
+    // Calculate revenue statistics
+    let totalRevenue = 0;
+    let monthlyRevenue = 0;
+    const activeSubscriptions = subscribersData?.length || 0;
+    
+    if (subscribersData) {
+      const now = new Date();
+      
+      subscribersData.forEach(subscriber => {
+        const amount = subscriber.subscription_amount || 0;
+        const subscriptionEnd = subscriber.subscription_end ? new Date(subscriber.subscription_end) : null;
+        
+        // Only count active subscriptions (not expired)
+        if (!subscriptionEnd || subscriptionEnd > now) {
+          // Convert cents to dollars
+          const dollarAmount = amount / 100;
+          totalRevenue += dollarAmount;
+          
+          // For monthly revenue, assume all subscriptions are monthly for now
+          // This could be enhanced to check subscription intervals
+          monthlyRevenue += dollarAmount;
+        }
+      });
+    }
+    
     // Fetch other counts using proper methods
     const [usersResult, companiesResult] = await Promise.all([
       supabase.rpc('get_admin_users'),
@@ -509,7 +547,9 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
       totalUsers,
       totalCompanies,
       totalJobs,
-      totalRevenue: 0, // TODO: Implement revenue tracking
+      totalRevenue: Math.round(totalRevenue * 100) / 100, // Round to 2 decimal places
+      monthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
+      activeSubscriptions,
       pendingApprovals,
       newMessages: 0 // TODO: Count unread messages
     };

@@ -57,7 +57,11 @@ serve(async (req) => {
         stripe_customer_id: null,
         subscribed: false,
         subscription_tier: null,
+        subscription_amount: null,
+        subscription_currency: null,
+        subscription_start: null,
         subscription_end: null,
+        status: 'inactive',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'email' });
       return new Response(JSON.stringify({ subscribed: false }), {
@@ -77,17 +81,32 @@ serve(async (req) => {
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
+    let subscriptionAmount = null;
+    let subscriptionCurrency = null;
+    let subscriptionStart = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      subscriptionStart = new Date(subscription.current_period_start * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
-      // Get the product name from the subscription to determine tier
-      const productId = subscription.items.data[0].price.product as string;
+      // Get the product name and price from the subscription to determine tier and amount
+      const priceId = subscription.items.data[0].price.id;
+      const price = await stripe.prices.retrieve(priceId);
+      subscriptionAmount = price.unit_amount || 0;
+      subscriptionCurrency = price.currency || 'usd';
+      
+      const productId = price.product as string;
       const product = await stripe.products.retrieve(productId);
       subscriptionTier = product.name;
-      logStep("Determined subscription tier", { productId, subscriptionTier });
+      
+      logStep("Determined subscription details", { 
+        priceId, 
+        subscriptionTier, 
+        amount: subscriptionAmount,
+        currency: subscriptionCurrency 
+      });
     } else {
       logStep("No active subscription found");
     }
@@ -98,11 +117,20 @@ serve(async (req) => {
       stripe_customer_id: customerId,
       subscribed: hasActiveSub,
       subscription_tier: subscriptionTier,
+      subscription_amount: subscriptionAmount,
+      subscription_currency: subscriptionCurrency ? subscriptionCurrency.toUpperCase() : null,
+      subscription_start: subscriptionStart,
       subscription_end: subscriptionEnd,
+      status: hasActiveSub ? 'active' : 'inactive',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
 
-    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
+    logStep("Updated database with subscription info", { 
+      subscribed: hasActiveSub, 
+      subscriptionTier,
+      amount: subscriptionAmount 
+    });
+    
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscription_tier: subscriptionTier,

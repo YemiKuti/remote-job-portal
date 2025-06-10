@@ -120,6 +120,204 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
   }
 };
 
+// Fetch recommended jobs based on user profile and skills
+export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
+  try {
+    // Get user profile data to base recommendations on
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      console.log('No profile found, fetching recent active jobs');
+      // Fallback to recent active jobs if no profile
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    // Get user skills and preferences from metadata
+    const userMetadata = userProfile?.user_metadata || {};
+    const userSkills = userMetadata.skills ? userMetadata.skills.toLowerCase().split(',').map((s: string) => s.trim()) : [];
+    const userLocation = userMetadata.location || '';
+
+    // Build recommendation query
+    let query = supabase
+      .from('jobs')
+      .select('*')
+      .eq('status', 'active');
+
+    // If user has skills, try to match them with job tech stack
+    if (userSkills.length > 0) {
+      // This is a simple text matching - in production you'd want more sophisticated matching
+      const skillsPattern = userSkills.join('|');
+      query = query.or(`tech_stack.cs.{${userSkills.join(',')}}`, `title.ilike.%${userSkills[0]}%`);
+    }
+
+    // Add location preference if available
+    if (userLocation) {
+      query = query.or(`location.ilike.%${userLocation}%`, `remote.eq.true`);
+    }
+
+    const { data: recommendedJobs, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    // If we don't get enough recommendations, fill with recent jobs
+    if (!recommendedJobs || recommendedJobs.length < limit) {
+      const remaining = limit - (recommendedJobs?.length || 0);
+      const { data: recentJobs, error: recentError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(remaining);
+
+      if (!recentError && recentJobs) {
+        const combined = [...(recommendedJobs || []), ...recentJobs];
+        // Remove duplicates
+        const uniqueJobs = combined.filter((job, index, self) => 
+          index === self.findIndex(j => j.id === job.id)
+        );
+        return uniqueJobs.slice(0, limit);
+      }
+    }
+
+    return recommendedJobs || [];
+  } catch (error: any) {
+    console.error('Error fetching recommended jobs:', error);
+    // Fallback to recent jobs
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (fallbackError) {
+      console.error('Error fetching fallback jobs:', fallbackError);
+      return [];
+    }
+  }
+};
+
+// Apply to a job
+export const applyToJob = async (userId: string, jobId: string, employerId?: string) => {
+  try {
+    // Check if already applied
+    const { data: existingApplication, error: checkError } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('job_id', jobId)
+      .single();
+
+    if (existingApplication) {
+      toast.error("You have already applied to this job");
+      return false;
+    }
+
+    // Create application
+    const { error } = await supabase
+      .from('applications')
+      .insert({
+        user_id: userId,
+        job_id: jobId,
+        employer_id: employerId,
+        status: 'pending',
+        applied_date: new Date().toISOString()
+      });
+
+    if (error) throw error;
+
+    // Update job application count
+    const { error: updateError } = await supabase.rpc('increment_job_applications', {
+      job_id: jobId
+    });
+
+    if (updateError) {
+      console.warn('Failed to update job application count:', updateError);
+    }
+
+    toast.success("Application submitted successfully!");
+    return true;
+  } catch (error: any) {
+    console.error('Error applying to job:', error);
+    toast.error("Failed to submit application. Please try again.");
+    return false;
+  }
+};
+
+// Withdraw application
+export const withdrawApplication = async (applicationId: string) => {
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .update({ status: 'withdrawn' })
+      .eq('id', applicationId);
+
+    if (error) throw error;
+
+    toast.success("Application withdrawn successfully");
+    return true;
+  } catch (error: any) {
+    console.error('Error withdrawing application:', error);
+    toast.error("Failed to withdraw application");
+    return false;
+  }
+};
+
+// Track profile view
+export const trackProfileView = async (viewerId: string, profileId: string) => {
+  try {
+    // Don't track self-views
+    if (viewerId === profileId) return;
+
+    const { error } = await supabase
+      .from('profile_views')
+      .insert({
+        viewer_id: viewerId,
+        profile_id: profileId,
+        viewed_at: new Date().toISOString()
+      });
+
+    if (error && error.code !== '23505') { // Ignore duplicate key violations
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('Error tracking profile view:', error);
+  }
+};
+
+// Get profile view count
+export const getProfileViewCount = async (profileId: string) => {
+  try {
+    const { count, error } = await supabase
+      .from('profile_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('profile_id', profileId);
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error: any) {
+    console.error('Error fetching profile view count:', error);
+    return 0;
+  }
+};
+
 // Update candidate profile
 export const updateCandidateProfile = async (userId: string, data: { 
   full_name?: string;

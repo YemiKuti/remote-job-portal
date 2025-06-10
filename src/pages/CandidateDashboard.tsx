@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Briefcase, Building, Star, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchCandidateApplications, fetchSavedJobs, fetchRecommendedJobs } from '@/utils/dataFetching';
+import { 
+  fetchCandidateApplications, 
+  fetchSavedJobs, 
+  fetchRecommendedJobs,
+  getProfileViewCount 
+} from '@/utils/api/candidateApi';
 import { useNavigate } from 'react-router-dom';
 
 const CandidateDashboard = () => {
@@ -41,12 +46,15 @@ const CandidateDashboard = () => {
         const recommended = await fetchRecommendedJobs(user.id);
         setRecommendedJobs(recommended);
 
+        // Get real profile view count
+        const profileViews = await getProfileViewCount(user.id);
+
         // Update stats
         setStats({
-          profileViews: Math.floor(Math.random() * 50) + 10, // Mock data for now
+          profileViews: profileViews,
           totalApplications: applications.length,
           savedJobs: savedJobs.length,
-          followedCompanies: Math.floor(Math.random() * 5) // Mock data for now
+          followedCompanies: Math.floor(Math.random() * 5) // TODO: Implement company following
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -91,7 +99,9 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.profileViews}</div>
-              <p className="text-xs text-muted-foreground">+20% from last month</p>
+              <p className="text-xs text-muted-foreground">
+                {stats.profileViews > 0 ? 'People viewing your profile' : 'Complete your profile to get views'}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -254,6 +264,7 @@ const CandidateDashboard = () => {
                 ) : (
                   <div className="text-center py-6">
                     <p className="text-muted-foreground">No recommended jobs available right now.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Complete your profile to get better recommendations.</p>
                   </div>
                 )}
               </TabsContent>

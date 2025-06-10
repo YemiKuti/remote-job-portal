@@ -8,6 +8,7 @@ import { useProfileManager } from '@/hooks/useProfileManager';
 import { PersonalInfoCard } from '@/components/candidate/profile/PersonalInfoCard';
 import { ProfessionalInfoCard } from '@/components/candidate/profile/ProfessionalInfoCard';
 import { PhotoUploadDialog } from '@/components/candidate/profile/PhotoUploadDialog';
+import { ResumeManagementCard } from '@/components/candidate/profile/ResumeManagementCard';
 
 const CandidateProfile = () => {
   const {
@@ -49,42 +50,51 @@ const CandidateProfile = () => {
         </div>
         <Separator />
         
-        <div className="grid gap-6 md:grid-cols-2">
-          <PersonalInfoCard
-            user={user}
-            formData={{
-              fullName: formData.fullName,
-              phone: formData.phone,
-              location: formData.location
-            }}
-            handleInputChange={handleInputChange}
-            handleChoosePhoto={handleChoosePhoto}
-            fileInputRef={fileInputRef}
-          />
-          
-          <ProfessionalInfoCard
-            formData={{
-              title: formData.title,
-              experience: formData.experience,
-              skills: formData.skills,
-              bio: formData.bio
-            }}
-            handleInputChange={handleInputChange}
-          />
-        </div>
-        
-        <div className="flex justify-end">
-          <Button 
-            onClick={handleSaveProfile} 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : "Save Changes"}
-          </Button>
+        <div className="grid gap-6">
+          {/* Personal and Professional Info Row */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <PersonalInfoCard
+              user={user}
+              formData={{
+                fullName: formData.fullName,
+                phone: formData.phone,
+                location: formData.location
+              }}
+              handleInputChange={handleInputChange}
+              handleChoosePhoto={handleChoosePhoto}
+              fileInputRef={fileInputRef}
+            />
+            
+            <ProfessionalInfoCard
+              formData={{
+                title: formData.title,
+                experience: formData.experience,
+                skills: formData.skills,
+                bio: formData.bio
+              }}
+              handleInputChange={handleInputChange}
+            />
+          </div>
+
+          {/* Resume Management - Full Width */}
+          {user && (
+            <ResumeManagementCard userId={user.id} />
+          )}
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleSaveProfile} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : "Save Changes"}
+            </Button>
+          </div>
         </div>
       </div>
       

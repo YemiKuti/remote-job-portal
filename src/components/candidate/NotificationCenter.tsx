@@ -235,7 +235,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
             <p className="text-sm text-gray-400">You'll see updates about your applications here</p>
           </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }

@@ -549,24 +549,23 @@ export const fetchRecentJobs = async (limit: number = 5): Promise<any[]> => {
   
   try {
     const { data, error } = await supabase
-      .from('jobs')
-      .select('id, title, company, created_at, status')
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .rpc('get_admin_jobs');
     
     if (error) {
       console.error('Error fetching recent jobs:', error);
       throw new Error(`Failed to fetch recent jobs: ${error.message}`);
     }
     
-    // Transform the data to match expected format
-    const transformedData = (data || []).map(job => ({
-      id: job.id,
-      title: job.title,
-      company: job.company,
-      postedDate: job.created_at,
-      status: job.status
-    }));
+    // Transform and limit the data to match expected format
+    const transformedData = (data || [])
+      .slice(0, limit)
+      .map(job => ({
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        postedDate: job.created_at,
+        status: job.status
+      }));
     
     console.log('Recent jobs fetched successfully:', transformedData);
     return transformedData;

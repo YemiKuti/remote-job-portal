@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Briefcase, 
   Building, 
@@ -14,43 +15,172 @@ import {
   TrendingUp,
   Bell,
   Users,
-  FileText
+  FileText,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchCandidateApplications, fetchSavedJobs, fetchRecommendedJobs } from '@/utils/api/candidateApi';
+import { fetchCandidateApplications, fetchSavedJobs, fetchCandidateRecommendedJobs } from '@/utils/api';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
 
+interface DashboardData {
+  applications: any[];
+  savedJobs: any[];
+  recommendedJobs: any[];
+}
+
+interface LoadingState {
+  applications: boolean;
+  savedJobs: boolean;
+  recommendations: boolean;
+  overall: boolean;
+}
+
+interface ErrorState {
+  applications: string | null;
+  savedJobs: string | null;
+  recommendations: string | null;
+  general: string | null;
+}
+
 const CandidateDashboard = () => {
-  const { user } = useAuth();
-  const [applications, setApplications] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [recommendedJobs, setRecommendedJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading, authError } = useAuth();
+  const [data, setData] = useState<DashboardData>({
+    applications: [],
+    savedJobs: [],
+    recommendedJobs: []
+  });
+  
+  const [loading, setLoading] = useState<LoadingState>({
+    applications: true,
+    savedJobs: true,
+    recommendations: true,
+    overall: true
+  });
+  
+  const [errors, setErrors] = useState<ErrorState>({
+    applications: null,
+    savedJobs: null,
+    recommendations: null,
+    general: null
+  });
+
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+  const loadApplications = async (userId: string) => {
+    try {
+      console.log('📊 Dashboard: Loading applications for user:', userId);
+      setLoading(prev => ({ ...prev, applications: true }));
+      setErrors(prev => ({ ...prev, applications: null }));
+      
+      const appsData = await fetchCandidateApplications(userId);
+      console.log('📊 Dashboard: Applications loaded:', appsData.length);
+      setData(prev => ({ ...prev, applications: appsData }));
+    } catch (error: any) {
+      console.error('📊 Dashboard: Error loading applications:', error);
+      setErrors(prev => ({ ...prev, applications: 'Failed to load applications' }));
+    } finally {
+      setLoading(prev => ({ ...prev, applications: false }));
+    }
+  };
+
+  const loadSavedJobs = async (userId: string) => {
+    try {
+      console.log('📊 Dashboard: Loading saved jobs for user:', userId);
+      setLoading(prev => ({ ...prev, savedJobs: true }));
+      setErrors(prev => ({ ...prev, savedJobs: null }));
+      
+      const savedData = await fetchSavedJobs(userId);
+      console.log('📊 Dashboard: Saved jobs loaded:', savedData.length);
+      setData(prev => ({ ...prev, savedJobs: savedData }));
+    } catch (error: any) {
+      console.error('📊 Dashboard: Error loading saved jobs:', error);
+      setErrors(prev => ({ ...prev, savedJobs: 'Failed to load saved jobs' }));
+    } finally {
+      setLoading(prev => ({ ...prev, savedJobs: false }));
+    }
+  };
+
+  const loadRecommendations = async (userId: string) => {
+    try {
+      console.log('📊 Dashboard: Loading recommendations for user:', userId);
+      setLoading(prev => ({ ...prev, recommendations: true }));
+      setErrors(prev => ({ ...prev, recommendations: null }));
+      
+      const recommendedData = await fetchCandidateRecommendedJobs(userId, 3);
+      console.log('📊 Dashboard: Recommendations loaded:', recommendedData.length);
+      setData(prev => ({ ...prev, recommendedJobs: recommendedData }));
+    } catch (error: any) {
+      console.error('📊 Dashboard: Error loading recommendations:', error);
+      setErrors(prev => ({ ...prev, recommendations: 'Failed to load recommendations' }));
+    } finally {
+      setLoading(prev => ({ ...prev, recommendations: false }));
+    }
+  };
+
+  const loadDashboardData = async (userId: string, isRetry = false) => {
+    if (isRetry) {
+      console.log('📊 Dashboard: Retrying data load, attempt:', retryCount + 1);
+    } else {
+      console.log('📊 Dashboard: Initial data load for user:', userId);
+    }
+    
+    setLoading(prev => ({ ...prev, overall: true }));
+    setErrors(prev => ({ ...prev, general: null }));
+
+    // Load data concurrently with individual error handling
+    const loadPromises = [
+      loadApplications(userId),
+      loadSavedJobs(userId),
+      loadRecommendations(userId)
+    ];
+
+    try {
+      await Promise.allSettled(loadPromises);
+      console.log('📊 Dashboard: All data loading completed');
+    } catch (error: any) {
+      console.error('📊 Dashboard: Critical error during data loading:', error);
+      setErrors(prev => ({ ...prev, general: 'Failed to load dashboard data' }));
+    } finally {
+      setLoading(prev => ({ ...prev, overall: false }));
+    }
+  };
+
+  const handleRetry = () => {
+    if (retryCount < maxRetries && user) {
+      setRetryCount(prev => prev + 1);
+      loadDashboardData(user.id, true);
+    }
+  };
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      if (!user) return;
-      
-      setLoading(true);
-      try {
-        const [appsData, savedData, recommendedData] = await Promise.all([
-          fetchCandidateApplications(user.id),
-          fetchSavedJobs(user.id),
-          fetchRecommendedJobs(user.id, 3)
-        ]);
-        
-        setApplications(appsData);
-        setSavedJobs(savedData);
-        setRecommendedJobs(recommendedData);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadDashboardData();
+    if (!user) {
+      console.log('📊 Dashboard: No user available, skipping data load');
+      return;
+    }
+
+    // Add a small delay to ensure auth is fully settled
+    const loadTimer = setTimeout(() => {
+      loadDashboardData(user.id);
+    }, 100);
+
+    return () => clearTimeout(loadTimer);
   }, [user]);
+
+  // Auto-retry mechanism with exponential backoff
+  useEffect(() => {
+    if (errors.general && retryCount < maxRetries && user) {
+      const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+      console.log(`📊 Dashboard: Auto-retry in ${retryDelay}ms`);
+      
+      const retryTimer = setTimeout(() => {
+        handleRetry();
+      }, retryDelay);
+
+      return () => clearTimeout(retryTimer);
+    }
+  }, [errors.general, retryCount, user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -70,11 +200,54 @@ const CandidateDashboard = () => {
     });
   };
 
-  if (loading) {
+  // Show loading spinner for auth or initial overall loading
+  if (authLoading || (loading.overall && data.applications.length === 0)) {
     return (
       <DashboardLayout userType="candidate">
-        <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center justify-center h-full space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">
+            {authLoading ? 'Authenticating...' : 'Loading your dashboard...'}
+          </p>
+          {loading.overall && (
+            <div className="text-sm text-muted-foreground space-y-1">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${loading.applications ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+                <span>Applications {loading.applications ? 'loading...' : 'loaded'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${loading.savedJobs ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+                <span>Saved jobs {loading.savedJobs ? 'loading...' : 'loaded'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${loading.recommendations ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+                <span>Recommendations {loading.recommendations ? 'loading...' : 'loaded'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state with retry option
+  if (authError || errors.general) {
+    return (
+      <DashboardLayout userType="candidate">
+        <div className="flex flex-col items-center justify-center h-full space-y-4">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <Alert className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {authError || errors.general}
+            </AlertDescription>
+          </Alert>
+          {retryCount < maxRetries && (
+            <Button onClick={handleRetry} disabled={loading.overall}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading.overall ? 'animate-spin' : ''}`} />
+              Retry ({retryCount + 1}/{maxRetries})
+            </Button>
+          )}
         </div>
       </DashboardLayout>
     );
@@ -92,6 +265,21 @@ const CandidateDashboard = () => {
         </div>
         <Separator />
 
+        {/* Show individual section errors */}
+        {(errors.applications || errors.savedJobs || errors.recommendations) && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Some sections couldn't load properly. You can still use the dashboard with available data.
+              {retryCount < maxRetries && (
+                <Button variant="link" onClick={handleRetry} className="ml-2 p-0 h-auto">
+                  Retry
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -100,10 +288,21 @@ const CandidateDashboard = () => {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{applications.length}</div>
-              <p className="text-xs text-muted-foreground">
-                {applications.filter(app => app.status === 'pending').length} pending review
-              </p>
+              {loading.applications ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : errors.applications ? (
+                <div className="text-red-500 text-sm">Failed to load</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{data.applications.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {data.applications.filter(app => app.status === 'pending').length} pending review
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -113,10 +312,21 @@ const CandidateDashboard = () => {
               <BookmarkIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{savedJobs.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Jobs bookmarked for later
-              </p>
+              {loading.savedJobs ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : errors.savedJobs ? (
+                <div className="text-red-500 text-sm">Failed to load</div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{data.savedJobs.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Jobs bookmarked for later
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -126,12 +336,21 @@ const CandidateDashboard = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {applications.filter(app => app.status === 'interview').length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Active interview processes
-              </p>
+              {loading.applications ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {data.applications.filter(app => app.status === 'interview').length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Active interview processes
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -141,12 +360,21 @@ const CandidateDashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {applications.filter(app => app.status === 'offer').length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Pending decisions
-              </p>
+              {loading.applications ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {data.applications.filter(app => app.status === 'offer').length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Pending decisions
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -163,9 +391,27 @@ const CandidateDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {applications.length > 0 ? (
+                {loading.applications ? (
                   <div className="space-y-4">
-                    {applications.slice(0, 5).map((app) => (
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="animate-pulse border-b pb-4">
+                        <div className="h-5 bg-gray-200 rounded w-48 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : errors.applications ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
+                    <p className="text-red-600">Failed to load applications</p>
+                    <Button variant="outline" onClick={() => loadApplications(user?.id || '')} className="mt-2">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : data.applications.length > 0 ? (
+                  <div className="space-y-4">
+                    {data.applications.slice(0, 5).map((app) => (
                       <div key={app.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                         <div className="space-y-1">
                           <h4 className="font-medium">{app.position || "Position"}</h4>
@@ -218,9 +464,28 @@ const CandidateDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {recommendedJobs.length > 0 ? (
+            {loading.recommendations ? (
               <div className="grid gap-4 md:grid-cols-3">
-                {recommendedJobs.map((job) => (
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse border rounded-lg p-4 space-y-2">
+                    <div className="h-5 bg-gray-200 rounded w-32"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+                ))}
+              </div>
+            ) : errors.recommendations ? (
+              <div className="text-center py-8">
+                <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
+                <p className="text-red-600">Failed to load recommendations</p>
+                <Button variant="outline" onClick={() => loadRecommendations(user?.id || '')} className="mt-2">
+                  Try Again
+                </Button>
+              </div>
+            ) : data.recommendedJobs.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                {data.recommendedJobs.map((job) => (
                   <div key={job.id} className="border rounded-lg p-4 space-y-2">
                     <h4 className="font-medium">{job.title}</h4>
                     <div className="flex items-center text-sm text-muted-foreground">

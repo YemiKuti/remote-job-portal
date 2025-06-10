@@ -483,24 +483,34 @@ export const fetchAdminStats = async (): Promise<AdminStats> => {
   console.log('Fetching admin stats...');
   
   try {
-    // Fetch basic counts
-    const [usersResult, companiesResult, jobsResult] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('companies').select('id', { count: 'exact', head: true }),
-      supabase.from('jobs').select('id', { count: 'exact', head: true })
+    // Fetch all jobs using admin function to get real counts
+    const { data: jobsData, error: jobsError } = await supabase
+      .rpc('get_admin_jobs');
+    
+    if (jobsError) {
+      console.error('Error fetching jobs for stats:', jobsError);
+      throw new Error(`Failed to fetch jobs for stats: ${jobsError.message}`);
+    }
+    
+    // Calculate job statistics
+    const totalJobs = jobsData?.length || 0;
+    const pendingApprovals = jobsData?.filter(job => job.status === 'pending')?.length || 0;
+    
+    // Fetch other counts using proper methods
+    const [usersResult, companiesResult] = await Promise.all([
+      supabase.rpc('get_admin_users'),
+      supabase.from('companies').select('id', { count: 'exact', head: true })
     ]);
     
-    const totalUsers = usersResult.count || 0;
+    const totalUsers = usersResult.data?.length || 0;
     const totalCompanies = companiesResult.count || 0;
-    const totalJobs = jobsResult.count || 0;
     
-    // For now, return mock data for revenue and other metrics
     const stats: AdminStats = {
       totalUsers,
       totalCompanies,
       totalJobs,
       totalRevenue: 0, // TODO: Implement revenue tracking
-      pendingApprovals: 0, // TODO: Count pending jobs
+      pendingApprovals,
       newMessages: 0 // TODO: Count unread messages
     };
     

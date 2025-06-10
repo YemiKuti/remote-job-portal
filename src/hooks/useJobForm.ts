@@ -3,6 +3,7 @@ import { useState } from "react";
 import { JobFormValues } from "@/components/job-form/formSchema";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { createAdminJob, updateAdminJob } from "@/utils/api/adminApi";
 import { useAuth } from "@/components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -31,7 +32,7 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         throw new Error("User not authenticated");
       }
 
-      // Create a properly typed object for Supabase
+      // Create a properly typed object for the job data
       const jobData = {
         title: values.title,
         company: values.company,
@@ -56,36 +57,55 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         employer_id: user.id
       };
 
-      let response;
+      let result;
       
-      if (jobId) {
-        // Update existing job
-        response = await supabase
-          .from("jobs")
-          .update(jobData)
-          .eq("id", jobId);
+      if (isAdmin) {
+        // Use admin functions for job creation/update
+        if (jobId) {
+          result = await updateAdminJob(jobId, jobData);
+        } else {
+          result = await createAdminJob(jobData);
+        }
       } else {
-        // Create new job
-        response = await supabase
-          .from("jobs")
-          .insert(jobData)
-          .select();
-      }
+        // Use regular Supabase operations for non-admin users
+        if (jobId) {
+          // Update existing job
+          const response = await supabase
+            .from("jobs")
+            .update(jobData)
+            .eq("id", jobId);
 
-      if (response.error) {
-        throw new Error(response.error.message);
+          if (response.error) {
+            throw new Error(response.error.message);
+          }
+          result = jobId;
+        } else {
+          // Create new job
+          const response = await supabase
+            .from("jobs")
+            .insert(jobData)
+            .select();
+
+          if (response.error) {
+            throw new Error(response.error.message);
+          }
+          result = response.data?.[0]?.id;
+        }
       }
 
       toast({
         title: jobId ? "Job Updated" : "Job Created",
         description: jobId 
           ? "The job has been updated successfully." 
-          : "Your job has been created and is pending approval.",
+          : isAdmin 
+            ? "Job has been created successfully."
+            : "Your job has been created and is pending approval.",
       });
 
       // Call afterSubmit callback if provided, otherwise navigate
-      if (afterSubmit && response.data && response.data[0]) {
-        afterSubmit(response.data[0].id);
+      if (afterSubmit && result) {
+        const finalJobId = typeof result === 'string' ? result : result.id || jobId;
+        afterSubmit(finalJobId);
       } else {
         // Navigate based on user role
         if (isAdmin) {

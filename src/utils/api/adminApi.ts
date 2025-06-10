@@ -378,6 +378,116 @@ export const fetchUserDetails = async (userId: string) => {
   }
 };
 
+// Admin job creation and update functions
+export const createAdminJob = async (jobData: any) => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'create_admin_job', job_title: jobData.title },
+      severity: 'medium'
+    });
+
+    const { data, error } = await supabase.rpc('admin_create_job', {
+      job_title: jobData.title,
+      job_company: jobData.company,
+      job_location: jobData.location,
+      job_description: jobData.description,
+      job_requirements: jobData.requirements,
+      job_employment_type: jobData.employment_type,
+      job_experience_level: jobData.experience_level,
+      job_salary_min: jobData.salary_min,
+      job_salary_max: jobData.salary_max,
+      job_salary_currency: jobData.salary_currency,
+      job_tech_stack: jobData.tech_stack,
+      job_visa_sponsorship: jobData.visa_sponsorship,
+      job_remote: jobData.remote,
+      job_company_size: jobData.company_size,
+      job_application_deadline: jobData.application_deadline,
+      job_logo: jobData.logo,
+      job_status: jobData.status,
+      job_application_type: jobData.application_type,
+      job_application_value: jobData.application_value,
+      job_employer_id: jobData.employer_id
+    });
+    
+    if (error) {
+      console.error('Error creating admin job:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error creating admin job:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'create_admin_job_failed',
+        job_title: jobData.title,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
+export const updateAdminJob = async (jobId: string, jobData: any) => {
+  try {
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { action: 'update_admin_job', job_id: jobId, job_title: jobData.title },
+      severity: 'medium'
+    });
+
+    const { data, error } = await supabase.rpc('admin_update_job', {
+      job_id: jobId,
+      job_title: jobData.title,
+      job_company: jobData.company,
+      job_location: jobData.location,
+      job_description: jobData.description,
+      job_requirements: jobData.requirements,
+      job_employment_type: jobData.employment_type,
+      job_experience_level: jobData.experience_level,
+      job_salary_min: jobData.salary_min,
+      job_salary_max: jobData.salary_max,
+      job_salary_currency: jobData.salary_currency,
+      job_tech_stack: jobData.tech_stack,
+      job_visa_sponsorship: jobData.visa_sponsorship,
+      job_remote: jobData.remote,
+      job_company_size: jobData.company_size,
+      job_application_deadline: jobData.application_deadline,
+      job_logo: jobData.logo,
+      job_status: jobData.status,
+      job_application_type: jobData.application_type,
+      job_application_value: jobData.application_value
+    });
+    
+    if (error) {
+      console.error('Error updating admin job:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error updating admin job:', error);
+    
+    await logSecurityEvent({
+      event_type: 'admin_action',
+      details: { 
+        action: 'update_admin_job_failed',
+        job_id: jobId,
+        job_title: jobData.title,
+        error: error.message 
+      },
+      severity: 'high'
+    });
+    
+    throw error;
+  }
+};
+
 // Company management functions
 export interface Company {
   id: string;
@@ -604,7 +714,7 @@ export interface CreateUserData {
 // Fetch all users using admin function
 export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
   try {
-    // First check authentication status
+    // First check authentication status using existing function
     console.log('Checking authentication status before fetching users...');
     
     const { data: session } = await supabase.auth.getSession();
@@ -614,17 +724,17 @@ export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
 
     console.log('Session found, user ID:', session.session.user.id);
 
-    // Check admin status
-    const { data: authStatus, error: authError } = await supabase.rpc('get_current_user_auth_status');
+    // Check admin status using existing function
+    const { data: isAdmin, error: adminError } = await supabase.rpc('is_current_user_admin');
     
-    if (authError) {
-      console.error('Error checking auth status:', authError);
-      throw new Error('Failed to verify authentication status');
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
+      throw new Error('Failed to verify admin privileges');
     }
 
-    console.log('Auth status:', authStatus);
+    console.log('Admin status check result:', isAdmin);
 
-    if (!authStatus?.[0]?.is_admin) {
+    if (!isAdmin) {
       throw new Error('Admin privileges required to access user data');
     }
 

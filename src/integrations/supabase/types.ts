@@ -383,6 +383,31 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_job: {
+        Args: {
+          job_title: string
+          job_company: string
+          job_location: string
+          job_description: string
+          job_requirements: string[]
+          job_employment_type: string
+          job_experience_level: string
+          job_salary_min?: number
+          job_salary_max?: number
+          job_salary_currency?: string
+          job_tech_stack?: string[]
+          job_visa_sponsorship?: boolean
+          job_remote?: boolean
+          job_company_size?: string
+          job_application_deadline?: string
+          job_logo?: string
+          job_status?: string
+          job_application_type?: string
+          job_application_value?: string
+          job_employer_id?: string
+        }
+        Returns: string
+      }
       admin_create_user: {
         Args: {
           user_email: string
@@ -417,6 +442,31 @@ export type Database = {
           company_linkedin_url?: string
           company_twitter_url?: string
           company_status?: string
+        }
+        Returns: boolean
+      }
+      admin_update_job: {
+        Args: {
+          job_id: string
+          job_title: string
+          job_company: string
+          job_location: string
+          job_description: string
+          job_requirements: string[]
+          job_employment_type: string
+          job_experience_level: string
+          job_salary_min?: number
+          job_salary_max?: number
+          job_salary_currency?: string
+          job_tech_stack?: string[]
+          job_visa_sponsorship?: boolean
+          job_remote?: boolean
+          job_company_size?: string
+          job_application_deadline?: string
+          job_logo?: string
+          job_status?: string
+          job_application_type?: string
+          job_application_value?: string
         }
         Returns: boolean
       }

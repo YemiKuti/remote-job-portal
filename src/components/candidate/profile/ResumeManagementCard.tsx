@@ -3,9 +3,10 @@ import React, { useState, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Download, Trash2, Eye, Plus } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { ensureStorageBucketExists } from '@/utils/storageSetup';
 
 interface Resume {
   id: string;
@@ -67,6 +68,9 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
 
     setUploading(true);
     try {
+      // Ensure storage bucket exists
+      await ensureStorageBucketExists();
+
       // Upload file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;

@@ -147,10 +147,12 @@ const AdminDashboard = () => {
               <Button 
                 variant="outline" 
                 className="flex flex-col h-24 items-center justify-center gap-2"
-                onClick={() => handleQuickAction("User Management")}
+                asChild
               >
-                <Users className="h-6 w-6 text-green-500" />
-                <span>Manage Users</span>
+                <Link to="/admin/users">
+                  <Users className="h-6 w-6 text-green-500" />
+                  <span>Manage Users</span>
+                </Link>
               </Button>
               <Button 
                 variant="outline" 
@@ -219,9 +221,11 @@ const AdminDashboard = () => {
                 <CardTitle>Recent Users</CardTitle>
                 <CardDescription>New user registrations</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleQuickAction("View All Users")}>
-                <Users className="h-4 w-4" />
-                <span>View All</span>
+              <Button variant="ghost" size="sm" className="gap-1" asChild>
+                <Link to="/admin/users">
+                  <Users className="h-4 w-4" />
+                  <span>View All</span>
+                </Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -254,9 +258,11 @@ const AdminDashboard = () => {
                 <CardTitle>Recent Job Postings</CardTitle>
                 <CardDescription>Latest job listings</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleQuickAction("View All Jobs")}>
-                <Briefcase className="h-4 w-4" />
-                <span>View All</span>
+              <Button variant="ghost" size="sm" className="gap-1" asChild>
+                <Link to="/admin/jobs">
+                  <Briefcase className="h-4 w-4" />
+                  <span>View All</span>
+                </Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -320,9 +326,11 @@ const AdminDashboard = () => {
               
               <TabsContent value="users" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Users className="h-8 w-8" />
-                    <span>Manage Users</span>
+                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
+                    <Link to="/admin/users">
+                      <Users className="h-8 w-8" />
+                      <span>Manage Users</span>
+                    </Link>
                   </Button>
                   <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
                     <Shield className="h-8 w-8" />
@@ -341,9 +349,11 @@ const AdminDashboard = () => {
               
               <TabsContent value="jobs">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Briefcase className="h-8 w-8" />
-                    <span>Manage Jobs</span>
+                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
+                    <Link to="/admin/jobs">
+                      <Briefcase className="h-8 w-8" />
+                      <span>Manage Jobs</span>
+                    </Link>
                   </Button>
                   <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
                     <FileText className="h-8 w-8" />
@@ -362,9 +372,11 @@ const AdminDashboard = () => {
               
               <TabsContent value="companies">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Building className="h-8 w-8" />
-                    <span>Manage Companies</span>
+                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
+                    <Link to="/admin/companies">
+                      <Building className="h-8 w-8" />
+                      <span>Manage Companies</span>
+                    </Link>
                   </Button>
                   <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
                     <FileText className="h-8 w-8" />

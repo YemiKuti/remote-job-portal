@@ -1,23 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, 
   Building, 
   Briefcase, 
   DollarSign, 
-  Settings, 
-  Database, 
   Server, 
-  BarChart,
-  Search,
-  Shield,
-  FileText,
-  AlertCircle,
-  MessageSquare,
-  Bell,
   BookOpen,
   Loader2,
   CreditCard
@@ -280,152 +271,6 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>System Management</CardTitle>
-            <CardDescription>Manage all aspects of the job portal</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="users">
-              <TabsList className="mb-4 grid grid-cols-5 md:w-auto">
-                <TabsTrigger value="users" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Users</span>
-                </TabsTrigger>
-                <TabsTrigger value="jobs" className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  <span className="hidden sm:inline">Jobs</span>
-                </TabsTrigger>
-                <TabsTrigger value="companies" className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  <span className="hidden sm:inline">Companies</span>
-                </TabsTrigger>
-                <TabsTrigger value="payments" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="hidden sm:inline">Payments</span>
-                </TabsTrigger>
-                <TabsTrigger value="tools" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Tools</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="users" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
-                    <Link to="/admin/users">
-                      <Users className="h-8 w-8" />
-                      <span>Manage Users</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Shield className="h-8 w-8" />
-                    <span>User Roles</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Bell className="h-8 w-8" />
-                    <span>Notifications</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <AlertCircle className="h-8 w-8" />
-                    <span>Reports</span>
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="jobs">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
-                    <Link to="/admin/jobs">
-                      <Briefcase className="h-8 w-8" />
-                      <span>Manage Jobs</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <FileText className="h-8 w-8" />
-                    <span>Job Categories</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Search className="h-8 w-8" />
-                    <span>Search Jobs</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Shield className="h-8 w-8" />
-                    <span>Job Approval</span>
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="companies">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
-                    <Link to="/admin/companies">
-                      <Building className="h-8 w-8" />
-                      <span>Manage Companies</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <FileText className="h-8 w-8" />
-                    <span>Company Categories</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Shield className="h-8 w-8" />
-                    <span>Verify Companies</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <BarChart className="h-8 w-8" />
-                    <span>Company Stats</span>
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="payments">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1">
-                    <DollarSign className="h-8 w-8" />
-                    <span>Transaction History</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <DollarSign className="h-8 w-8" />
-                    <span>Manage Plans</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Settings className="h-8 w-8" />
-                    <span>Payment Settings</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <BarChart className="h-8 w-8" />
-                    <span>Revenue Reports</span>
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="tools">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <Button className="flex h-24 flex-col items-center justify-center gap-1" asChild>
-                    <Link to="/job-scraper">
-                      <Server className="h-8 w-8" />
-                      <span>Job Scraper Tool</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Database className="h-8 w-8" />
-                    <span>Data Import/Export</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Settings className="h-8 w-8" />
-                    <span>System Settings</span>
-                  </Button>
-                  <Button variant="outline" className="flex h-24 flex-col items-center justify-center gap-1">
-                    <Search className="h-8 w-8" />
-                    <span>Search Analytics</span>
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

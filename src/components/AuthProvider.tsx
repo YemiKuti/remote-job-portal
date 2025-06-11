@@ -25,6 +25,50 @@ export const useAuth = () => {
   return context;
 };
 
+// Function to ensure user profile exists
+const ensureUserProfile = async (user: User) => {
+  try {
+    console.log('🔍 Checking if profile exists for user:', user.id);
+    
+    // Check if profile already exists
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('❌ Error checking profile:', checkError);
+      return;
+    }
+
+    if (existingProfile) {
+      console.log('✅ Profile already exists for user');
+      return;
+    }
+
+    console.log('⚠️ No profile found, creating one...');
+    
+    // Create profile if it doesn't exist
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        username: user.user_metadata?.username || user.email?.split('@')[0] || null,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatar_url: user.user_metadata?.avatar_url || null
+      });
+
+    if (insertError) {
+      console.error('❌ Error creating profile:', insertError);
+    } else {
+      console.log('✅ Profile created successfully');
+    }
+  } catch (error) {
+    console.error('❌ Exception in ensureUserProfile:', error);
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -48,6 +92,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log('🔐 AuthProvider: Initial session:', session?.user?.email || 'No session');
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Ensure profile exists for the user
+          if (session?.user) {
+            setTimeout(() => {
+              ensureUserProfile(session.user);
+            }, 0);
+          }
         }
       } catch (error) {
         console.error('🔐 AuthProvider: Exception getting session:', error);
@@ -68,6 +119,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'SIGNED_IN') {
         console.log('🔐 AuthProvider: User signed in successfully');
+        // Ensure profile exists for the user
+        if (session?.user) {
+          setTimeout(() => {
+            ensureUserProfile(session.user);
+          }, 0);
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('🔐 AuthProvider: User signed out');
       }

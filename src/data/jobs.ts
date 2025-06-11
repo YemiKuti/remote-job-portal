@@ -3,7 +3,7 @@ import { Job } from "../types";
 
 export const jobs: Job[] = [
   {
-    id: "1",
+    id: "550e8400-e29b-41d4-a716-446655440001",
     title: "Senior Frontend Developer",
     company: "TechCorp",
     logo: "/placeholder.svg",
@@ -33,7 +33,7 @@ export const jobs: Job[] = [
     employerId: "emp001",
   },
   {
-    id: "2",
+    id: "550e8400-e29b-41d4-a716-446655440002",
     title: "Backend Engineer",
     company: "CloudSystems",
     logo: "/placeholder.svg",
@@ -63,7 +63,7 @@ export const jobs: Job[] = [
     employerId: "emp002",
   },
   {
-    id: "3",
+    id: "550e8400-e29b-41d4-a716-446655440003",
     title: "DevOps Engineer",
     company: "InfraInc",
     logo: "/placeholder.svg",
@@ -93,7 +93,7 @@ export const jobs: Job[] = [
     employerId: "emp003",
   },
   {
-    id: "4",
+    id: "550e8400-e29b-41d4-a716-446655440004",
     title: "Product Designer",
     company: "DesignHub",
     logo: "/placeholder.svg",
@@ -123,7 +123,7 @@ export const jobs: Job[] = [
     employerId: "emp004",
   },
   {
-    id: "5",
+    id: "550e8400-e29b-41d4-a716-446655440005",
     title: "Machine Learning Engineer",
     company: "AI Innovations",
     logo: "/placeholder.svg",
@@ -153,7 +153,7 @@ export const jobs: Job[] = [
     employerId: "emp005",
   },
   {
-    id: "6",
+    id: "550e8400-e29b-41d4-a716-446655440006",
     title: "Full Stack Developer",
     company: "WebWorks",
     logo: "/placeholder.svg",
@@ -183,7 +183,7 @@ export const jobs: Job[] = [
     employerId: "emp006",
   },
   {
-    id: "7",
+    id: "550e8400-e29b-41d4-a716-446655440007",
     title: "Data Scientist",
     company: "DataDrive",
     logo: "/placeholder.svg",

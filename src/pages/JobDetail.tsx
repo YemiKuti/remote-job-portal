@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Job } from "../types";
@@ -80,30 +79,6 @@ const JobDetail = () => {
                   <p className="text-lg text-gray-700">{job.company}</p>
                   <p className="text-sm text-gray-500">Posted {new Date(job.postedDate).toLocaleDateString()}</p>
                 </div>
-              </div>
-              
-              <div className="mt-4 md:mt-0">
-                {isCandidate ? (
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleApplyClick}
-                      className="bg-job-green hover:bg-job-darkGreen"
-                    >
-                      Apply Now
-                    </Button>
-                    <SaveJobButton 
-                      jobId={job.id}
-                      variant="outline"
-                    />
-                  </div>
-                ) : (
-                  <Button 
-                    onClick={handleApplyClick}
-                    className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
-                  >
-                    {user ? 'Apply Now' : 'Sign In to Apply'}
-                  </Button>
-                )}
               </div>
             </div>
             

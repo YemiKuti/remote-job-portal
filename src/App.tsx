@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,6 +47,7 @@ import JobDetail from "./pages/JobDetail";
 import FAQ from "./pages/FAQ";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import JobsBrowse from "./pages/JobsBrowse";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +71,7 @@ const App = () => {
                 <Sonner />
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/jobs" element={<JobsBrowse />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/job-scraper" element={<JobScraper />} />
                   <Route path="/blog" element={<Blog />} />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,11 +16,13 @@ import {
   Users,
   FileText,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Search
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchCandidateApplications, fetchSavedJobs, fetchCandidateRecommendedJobs } from '@/utils/api';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
+import { Link } from 'react-router-dom';
 
 interface DashboardData {
   applications: any[];
@@ -257,11 +258,19 @@ const CandidateDashboard = () => {
     <DashboardLayout userType="candidate">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Welcome back! Here's an overview of your job search activity.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground">
+              Welcome back! Here's an overview of your job search activity.
+            </p>
+          </div>
+          <Link to="/jobs">
+            <Button className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Browse Jobs
+            </Button>
+          </Link>
         </div>
         <Separator />
 
@@ -442,7 +451,9 @@ const CandidateDashboard = () => {
                     <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No applications yet</p>
                     <p className="text-sm text-muted-foreground mb-4">Start applying to jobs to see them here</p>
-                    <Button>Browse Jobs</Button>
+                    <Link to="/jobs">
+                      <Button>Browse Jobs</Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
@@ -512,7 +523,10 @@ const CandidateDashboard = () => {
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                 <p className="text-muted-foreground">No recommendations available</p>
-                <p className="text-sm text-muted-foreground">Complete your profile to get personalized job recommendations</p>
+                <p className="text-sm text-muted-foreground mb-4">Complete your profile to get personalized job recommendations</p>
+                <Link to="/jobs">
+                  <Button>Browse All Jobs</Button>
+                </Link>
               </div>
             )}
           </CardContent>

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -20,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogIn, User, Building, Facebook, Twitter, ShieldCheck, UserPlus } from "lucide-react";
+import { LogIn, User, Building, Facebook, Twitter, ShieldCheck, UserPlus, Briefcase } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -61,6 +60,10 @@ export default function Header() {
           <Link to="/" className="text-gray-600 hover:text-gray-900">
             Home
           </Link>
+          <Link to="/jobs" className="text-gray-600 hover:text-gray-900 flex items-center gap-1">
+            <Briefcase className="h-4 w-4" />
+            Browse Jobs
+          </Link>
           <Link to="/pricing" className="text-gray-600 hover:text-gray-900">
             Pricing
           </Link>
@@ -81,9 +84,15 @@ export default function Header() {
                   Profile
                 </DropdownMenuItem>
                 {user.user_metadata?.role === 'candidate' && (
-                  <DropdownMenuItem onClick={() => navigate('/candidate')}>
-                    Candidate Dashboard
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={() => navigate('/candidate')}>
+                      Candidate Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/jobs')}>
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      Browse Jobs
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {user.user_metadata?.role === 'employer' && (
                   <DropdownMenuItem onClick={() => navigate('/employer')}>
@@ -95,6 +104,7 @@ export default function Header() {
                     Admin Dashboard
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}>
                   Sign Out
                 </DropdownMenuItem>
@@ -246,6 +256,14 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Home
+            </Link>
+            <Link
+              to="/jobs"
+              className="px-4 py-2 rounded-md hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Briefcase className="h-4 w-4" />
+              Browse Jobs
             </Link>
             <Link
               to="/pricing"

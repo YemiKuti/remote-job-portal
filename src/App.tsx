@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,6 +49,7 @@ import FAQ from "./pages/FAQ";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import JobsBrowse from "./pages/JobsBrowse";
+import { ProtectedEmployerRoute } from "./components/employer/ProtectedEmployerRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,15 +112,47 @@ const App = () => {
                   <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
                   <Route path="/candidate/settings" element={<CandidateSettings />} />
                   
-                  {/* Employer Routes */}
-                  <Route path="/employer" element={<EmployerDashboard />} />
-                  <Route path="/employer/jobs" element={<EmployerJobs />} />
-                  <Route path="/employer/post-job" element={<PostJob />} />
-                  <Route path="/employer/edit-job/:jobId" element={<EditJobPage />} />
-                  <Route path="/employer/candidates" element={<EmployerCandidates />} />
-                  <Route path="/employer/company" element={<EmployerCompany />} />
-                  <Route path="/employer/messages" element={<EmployerMessages />} />
-                  <Route path="/employer/settings" element={<EmployerSettings />} />
+                  {/* Protected Employer Routes */}
+                  <Route path="/employer" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerDashboard />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/jobs" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerJobs />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/post-job" element={
+                    <ProtectedEmployerRoute>
+                      <PostJob />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/edit-job/:jobId" element={
+                    <ProtectedEmployerRoute>
+                      <EditJobPage />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/candidates" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerCandidates />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/company" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerCompany />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/messages" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerMessages />
+                    </ProtectedEmployerRoute>
+                  } />
+                  <Route path="/employer/settings" element={
+                    <ProtectedEmployerRoute>
+                      <EmployerSettings />
+                    </ProtectedEmployerRoute>
+                  } />
                   
                   {/* Redirect old PostJob route to employer route */}
                   <Route path="/post-job" element={<Navigate to="/employer/post-job" replace />} />

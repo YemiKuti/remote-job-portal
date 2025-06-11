@@ -6,6 +6,12 @@ export const fetchEmployerApplications = async (userId: string) => {
   try {
     console.log('🔄 Fetching employer applications for user:', userId);
     
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Authentication required');
+    }
+    
     const { data, error } = await supabase
       .from('applications')
       .select(`
@@ -34,6 +40,12 @@ export const fetchEmployerJobs = async (userId: string) => {
   try {
     console.log('🔄 Fetching employer jobs for user:', userId);
     
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Authentication required');
+    }
+    
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
@@ -57,6 +69,12 @@ export const fetchEmployerJobs = async (userId: string) => {
 export const updateApplicationStatus = async (applicationId: string, status: string) => {
   try {
     console.log('🔄 Updating application status:', { applicationId, status });
+    
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Authentication required');
+    }
     
     const { error } = await supabase
       .from('applications')

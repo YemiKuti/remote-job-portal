@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ import { DashboardStatsSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { analytics } from '@/utils/analytics';
-import { performanceMonitor } from '@/utils/performance';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 const EmployerDashboard = () => {
@@ -21,7 +20,9 @@ const EmployerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Memoize stats calculation to prevent unnecessary recalculations
   const stats = useMemo(() => {
@@ -46,51 +47,114 @@ const EmployerDashboard = () => {
     };
   }, [jobs, applications]);
 
-  // Memoized data fetching function with retry logic
+  // Stable data fetching function without dependencies that cause cycles
   const fetchData = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || hasFetchedRef.current) return;
 
     try {
+      // Cancel any existing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      abortControllerRef.current = new AbortController();
       setLoading(true);
+      setError(null);
+      
+      console.log('🔄 EmployerDashboard: Fetching data for user:', user.id);
       
       const [jobsData, applicationsData] = await Promise.all([
         fetchEmployerJobs(user.id),
         fetchEmployerApplications(user.id)
       ]);
       
+      console.log('✅ EmployerDashboard: Data fetched successfully', { 
+        jobs: jobsData?.length || 0, 
+        applications: applicationsData?.length || 0 
+      });
+      
       setJobs(jobsData || []);
       setApplications(applicationsData || []);
-      setRetryCount(0); // Reset retry count on success
+      hasFetchedRef.current = true;
       
-    } catch (error) {
-      console.error('Error fetching employer data:', error);
+    } catch (error: any) {
+      console.error('❌ EmployerDashboard: Error fetching data:', error);
       
-      // Only retry if we haven't exceeded retry limit
-      if (retryCount < 2) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchData();
-        }, 1000 * (retryCount + 1)); // Exponential backoff
-      } else {
-        handleError(error, 'Failed to load dashboard data. Please try refreshing the page.');
-      }
+      // Don't show error for aborted requests
+      if (error.name === 'AbortError') return;
+      
+      setError('Failed to load dashboard data. Please try refreshing the page.');
+      handleError(error, 'Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
     }
-  }, [user?.id, retryCount, handleError]);
+  }, [user?.id]); // Only depend on user.id
 
-  // Use a stable effect that only depends on user.id
+  // Separate effect for initial data fetch
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !hasFetchedRef.current) {
       analytics.trackPageView('employer_dashboard');
-      fetchData();
+      
+      // Add small delay to prevent rapid calls
+      const timeoutId = setTimeout(() => {
+        fetchData();
+      }, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      };
     }
-  }, [user?.id]); // Only depend on user.id, not fetchData
+  }, [user?.id, fetchData]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const handlePostJob = useCallback(() => {
     analytics.track('post_job_clicked', { source: 'dashboard' });
     navigate('/employer/post-job');
   }, [navigate]);
+
+  const handleRetry = useCallback(() => {
+    hasFetchedRef.current = false;
+    setError(null);
+    fetchData();
+  }, [fetchData]);
+
+  // Show error state
+  if (error && !loading && jobs.length === 0 && applications.length === 0) {
+    return (
+      <DashboardLayout userType="employer">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Unable to load dashboard</h3>
+                  <p className="text-muted-foreground mt-1">{error}</p>
+                </div>
+                <Button onClick={handleRetry} className="w-full">
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Show loading state consistently
   if (loading && jobs.length === 0 && applications.length === 0) {

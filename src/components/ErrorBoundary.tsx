@@ -1,52 +1,33 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
+  error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false,
-    error: null,
-    errorInfo: null
+    hasError: false
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    console.error('🚨 ErrorBoundary: Error caught:', error);
-    return {
-      hasError: true,
-      error,
-      errorInfo: null
-    };
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 ErrorBoundary: Component stack:', errorInfo.componentStack);
-    this.setState({
-      error,
-      errorInfo
-    });
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    this.props.onError?.(error, errorInfo);
   }
-
-  private handleRetry = () => {
-    console.log('🔄 ErrorBoundary: Retrying...');
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null
-    });
-  };
 
   public render() {
     if (this.state.hasError) {
@@ -55,42 +36,34 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="max-w-md w-full space-y-4">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Something went wrong while loading the application.
-              </AlertDescription>
-            </Alert>
-            
-            <div className="space-y-2">
-              <Button onClick={this.handleRetry} className="w-full">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Try Again
-              </Button>
-              
+        <div className="min-h-[400px] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <CardTitle className="text-xl text-red-600">Something went wrong</CardTitle>
+              <CardDescription>
+                We're sorry, but something unexpected happened. Please try refreshing the page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
               <Button 
-                variant="outline" 
-                onClick={() => window.location.reload()} 
+                onClick={() => window.location.reload()}
                 className="w-full"
               >
-                Reload Page
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Page
               </Button>
-            </div>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-4 p-4 bg-gray-100 rounded text-sm">
-                <summary className="cursor-pointer font-medium">
-                  Error Details (Development Only)
-                </summary>
-                <pre className="mt-2 whitespace-pre-wrap text-red-600">
-                  {this.state.error.toString()}
-                  {this.state.errorInfo?.componentStack}
-                </pre>
-              </details>
-            )}
-          </div>
+              <Button 
+                variant="outline"
+                onClick={() => this.setState({ hasError: false, error: undefined })}
+                className="w-full"
+              >
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       );
     }
@@ -98,3 +71,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;

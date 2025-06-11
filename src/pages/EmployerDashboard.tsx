@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,6 @@ const EmployerDashboard = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const hasFetchedRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Memoize stats calculation to prevent unnecessary recalculations
   const stats = useMemo(() => {
@@ -47,25 +47,17 @@ const EmployerDashboard = () => {
     };
   }, [jobs, applications]);
 
-  // Stable data fetching function - removed from useEffect dependencies
-  const fetchData = useCallback(async () => {
-    if (!user?.id || hasFetchedRef.current) return;
-
+  // Stable data fetching function
+  const fetchData = useCallback(async (userId: string) => {
     try {
-      // Cancel any existing request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      
-      abortControllerRef.current = new AbortController();
       setLoading(true);
       setError(null);
       
-      console.log('🔄 EmployerDashboard: Fetching data for user:', user.id);
+      console.log('🔄 EmployerDashboard: Fetching data for user:', userId);
       
       const [jobsData, applicationsData] = await Promise.all([
-        fetchEmployerJobs(user.id),
-        fetchEmployerApplications(user.id)
+        fetchEmployerJobs(userId),
+        fetchEmployerApplications(userId)
       ]);
       
       console.log('✅ EmployerDashboard: Data fetched successfully', { 
@@ -80,9 +72,6 @@ const EmployerDashboard = () => {
     } catch (error: any) {
       console.error('❌ EmployerDashboard: Error fetching data:', error);
       
-      // Don't show error for aborted requests
-      if (error.name === 'AbortError') return;
-      
       // Handle authentication errors specifically
       if (error.message?.includes('auth') || error.code === 'PGRST301') {
         setError('Authentication required. Please log in to access your dashboard.');
@@ -94,37 +83,16 @@ const EmployerDashboard = () => {
       handleError(error, 'Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
-      abortControllerRef.current = null;
     }
-  }, [user?.id, handleError, navigate]); // Removed fetchData from dependencies
+  }, [handleError, navigate]);
 
-  // Single effect for initial data fetch - no fetchData dependency
+  // Single effect for initial data fetch
   useEffect(() => {
     if (user?.id && !hasFetchedRef.current) {
       analytics.trackPageView('employer_dashboard');
-      
-      // Add small delay to prevent rapid calls
-      const timeoutId = setTimeout(() => {
-        fetchData();
-      }, 100);
-      
-      return () => {
-        clearTimeout(timeoutId);
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-      };
+      fetchData(user.id);
     }
-  }, [user?.id]); // Only depend on user.id
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
+  }, [user?.id, fetchData]);
 
   const handlePostJob = useCallback(() => {
     analytics.track('post_job_clicked', { source: 'dashboard' });
@@ -132,10 +100,12 @@ const EmployerDashboard = () => {
   }, [navigate]);
 
   const handleRetry = useCallback(() => {
-    hasFetchedRef.current = false;
-    setError(null);
-    fetchData();
-  }, [fetchData]);
+    if (user?.id) {
+      hasFetchedRef.current = false;
+      setError(null);
+      fetchData(user.id);
+    }
+  }, [user?.id, fetchData]);
 
   // Show error state
   if (error && !loading && jobs.length === 0 && applications.length === 0) {

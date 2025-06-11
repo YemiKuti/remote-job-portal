@@ -12,23 +12,61 @@ export const fetchEmployerApplications = async (userId: string) => {
       throw new Error('Authentication required');
     }
     
-    const { data, error } = await supabase
+    // First, get applications for jobs owned by this employer
+    const { data: applications, error: appsError } = await supabase
       .from('applications')
-      .select(`
-        *,
-        job:jobs!job_id (*),
-        candidate:profiles!user_id (username, full_name)
-      `)
+      .select('*')
       .eq('employer_id', userId)
       .order('applied_date', { ascending: false });
 
-    if (error) {
-      console.error('❌ Database error fetching applications:', error);
-      throw error;
+    if (appsError) {
+      console.error('❌ Database error fetching applications:', appsError);
+      throw appsError;
     }
+
+    if (!applications || applications.length === 0) {
+      console.log('✅ No applications found for employer');
+      return [];
+    }
+
+    // Get unique job IDs and user IDs
+    const jobIds = [...new Set(applications.map(app => app.job_id))];
+    const userIds = [...new Set(applications.map(app => app.user_id))];
+
+    // Fetch job details
+    const { data: jobs, error: jobsError } = await supabase
+      .from('jobs')
+      .select('id, title, company, location')
+      .in('id', jobIds);
+
+    if (jobsError) {
+      console.error('❌ Error fetching job details:', jobsError);
+    }
+
+    // Fetch candidate profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('❌ Error fetching profiles:', profilesError);
+    }
+
+    // Combine the data
+    const enrichedApplications = applications.map(app => {
+      const job = jobs?.find(j => j.id === app.job_id);
+      const candidate = profiles?.find(p => p.id === app.user_id);
+      
+      return {
+        ...app,
+        job: job || { title: 'Unknown Job', company: 'Unknown', location: 'Unknown' },
+        candidate: candidate || { username: 'Unknown', full_name: 'Unknown Candidate' }
+      };
+    });
     
-    console.log('✅ Fetched applications:', data?.length || 0);
-    return data || [];
+    console.log('✅ Fetched applications:', enrichedApplications.length);
+    return enrichedApplications;
   } catch (error: any) {
     console.error('❌ Error fetching employer applications:', error);
     throw error;

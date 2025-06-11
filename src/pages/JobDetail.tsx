@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Job } from "../types";
@@ -9,11 +8,17 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/components/AuthProvider";
+import ApplyJobDialog from "@/components/ApplyJobDialog";
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
+  const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showApplyDialog, setShowApplyDialog] = useState(false);
+
+  const isCandidate = user?.user_metadata?.role === 'candidate';
 
   useEffect(() => {
     // Simulate loading from API
@@ -25,6 +30,15 @@ const JobDetail = () => {
 
     return () => clearTimeout(timer);
   }, [jobId]);
+
+  const handleApplyClick = () => {
+    if (!user) {
+      // Redirect to auth page or show sign in dialog
+      window.location.href = '/auth?role=candidate';
+      return;
+    }
+    setShowApplyDialog(true);
+  };
 
   if (loading) {
     return <JobDetailSkeleton />;
@@ -67,7 +81,21 @@ const JobDetail = () => {
               </div>
               
               <div className="mt-4 md:mt-0">
-                <Button className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen">Apply Now</Button>
+                {isCandidate ? (
+                  <Button 
+                    onClick={handleApplyClick}
+                    className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
+                  >
+                    Apply Now
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleApplyClick}
+                    className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
+                  >
+                    {user ? 'Apply Now' : 'Sign In to Apply'}
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -142,12 +170,38 @@ const JobDetail = () => {
               <div className="mb-4 md:mb-0">
                 <p className="text-gray-500 text-sm">Job ID: {job.id}</p>
               </div>
-              <Button className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen">Apply Now</Button>
+              {isCandidate ? (
+                <Button 
+                  onClick={handleApplyClick}
+                  className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
+                >
+                  Apply Now
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleApplyClick}
+                  className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
+                >
+                  {user ? 'Apply Now' : 'Sign In to Apply'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
       <Footer />
+
+      {/* Apply Dialog */}
+      {job && (
+        <ApplyJobDialog
+          isOpen={showApplyDialog}
+          onClose={() => setShowApplyDialog(false)}
+          job={job}
+          onApplicationSuccess={() => {
+            console.log('Application submitted successfully!');
+          }}
+        />
+      )}
     </>
   );
 };

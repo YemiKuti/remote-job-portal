@@ -159,7 +159,7 @@ const JobsBrowse = () => {
           {/* Advanced Filters */}
           {showFilters && (
             <AdvancedFilters
-              onApply={handleFiltersApply}
+              onFiltersChange={handleFiltersApply}
               onClose={() => setShowFilters(false)}
               initialFilters={activeFilters}
             />

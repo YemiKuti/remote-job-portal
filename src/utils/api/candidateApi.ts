@@ -1,7 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Application, SavedJob } from '@/types/api';
+import { jobs } from '@/data/jobs';
 
 // Fetch candidate applications
 export const fetchCandidateApplications = async (userId: string) => {
@@ -60,6 +60,7 @@ export const fetchSavedJobs = async (userId: string) => {
     const savedJobs: SavedJob[] = [];
     
     for (const savedJob of savedJobRecords) {
+      // First try to get job from database
       const { data: jobData, error: jobError } = await supabase
         .from('jobs')
         .select('*')
@@ -72,7 +73,26 @@ export const fetchSavedJobs = async (userId: string) => {
           job: jobData
         });
       } else {
-        savedJobs.push(savedJob);
+        // Fallback to static job data
+        const staticJob = jobs.find(job => job.id === savedJob.job_id);
+        if (staticJob) {
+          savedJobs.push({
+            ...savedJob,
+            job: {
+              title: staticJob.title,
+              company: staticJob.company,
+              location: staticJob.location,
+              description: staticJob.description,
+              salary_min: staticJob.salary.min,
+              salary_max: staticJob.salary.max,
+              employment_type: staticJob.employmentType,
+              tech_stack: staticJob.techStack
+            }
+          });
+        } else {
+          // Include the saved job record even if we can't find job details
+          savedJobs.push(savedJob);
+        }
       }
     }
     

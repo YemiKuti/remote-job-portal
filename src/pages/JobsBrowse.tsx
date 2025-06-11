@@ -157,13 +157,11 @@ const JobsBrowse = () => {
           )}
 
           {/* Advanced Filters */}
-          {showFilters && (
-            <AdvancedFilters
-              onFiltersChange={handleFiltersApply}
-              onClose={() => setShowFilters(false)}
-              initialFilters={activeFilters}
-            />
-          )}
+          <AdvancedFilters
+            isOpen={showFilters}
+            onClose={() => setShowFilters(false)}
+            onApplyFilters={handleFiltersApply}
+          />
 
           {/* Results Summary */}
           <div className="flex items-center justify-between">

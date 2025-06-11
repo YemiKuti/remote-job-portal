@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Eye, Briefcase, BarChart } from 'lucide-react';
+import { Users, Eye, Briefcase, BarChart, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/api/employerApi';
@@ -22,6 +22,7 @@ const EmployerDashboard = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const hasFetchedRef = useRef(false);
 
   // Memoize stats calculation to prevent unnecessary recalculations
@@ -47,27 +48,60 @@ const EmployerDashboard = () => {
     };
   }, [jobs, applications]);
 
-  // Stable data fetching function
+  // Stable data fetching function with improved error handling
   const fetchData = useCallback(async (userId: string) => {
     try {
       setLoading(true);
       setError(null);
+      setDebugInfo('');
       
       console.log('🔄 EmployerDashboard: Fetching data for user:', userId);
       
-      const [jobsData, applicationsData] = await Promise.all([
+      // Add debug info
+      setDebugInfo(`Attempting to fetch data for user: ${userId}`);
+      
+      const [jobsData, applicationsData] = await Promise.allSettled([
         fetchEmployerJobs(userId),
         fetchEmployerApplications(userId)
       ]);
       
-      console.log('✅ EmployerDashboard: Data fetched successfully', { 
-        jobs: jobsData?.length || 0, 
-        applications: applicationsData?.length || 0 
+      // Handle jobs data
+      if (jobsData.status === 'fulfilled') {
+        console.log('✅ Jobs fetched successfully:', jobsData.value?.length || 0);
+        setJobs(jobsData.value || []);
+      } else {
+        console.error('❌ Jobs fetch failed:', jobsData.reason);
+        setJobs([]);
+        
+        // Check if it's a permission error
+        if (jobsData.reason?.message?.includes('permission denied') || 
+            jobsData.reason?.message?.includes('access denied')) {
+          setDebugInfo(`Permission denied accessing jobs. User ID: ${userId}. This might indicate missing database permissions.`);
+        } else {
+          setDebugInfo(`Error fetching jobs: ${jobsData.reason?.message || 'Unknown error'}`);
+        }
+      }
+      
+      // Handle applications data
+      if (applicationsData.status === 'fulfilled') {
+        console.log('✅ Applications fetched successfully:', applicationsData.value?.length || 0);
+        setApplications(applicationsData.value || []);
+      } else {
+        console.error('❌ Applications fetch failed:', applicationsData.reason);
+        setApplications([]);
+      }
+      
+      console.log('✅ EmployerDashboard: Data fetch completed', { 
+        jobs: jobsData.status === 'fulfilled' ? jobsData.value?.length || 0 : 0, 
+        applications: applicationsData.status === 'fulfilled' ? applicationsData.value?.length || 0 : 0 
       });
       
-      setJobs(jobsData || []);
-      setApplications(applicationsData || []);
       hasFetchedRef.current = true;
+      
+      // Only set error if both failed
+      if (jobsData.status === 'rejected' && applicationsData.status === 'rejected') {
+        setError('Failed to load dashboard data. Please check your permissions and try again.');
+      }
       
     } catch (error: any) {
       console.error('❌ EmployerDashboard: Error fetching data:', error);
@@ -75,11 +109,13 @@ const EmployerDashboard = () => {
       // Handle authentication errors specifically
       if (error.message?.includes('auth') || error.code === 'PGRST301') {
         setError('Authentication required. Please log in to access your dashboard.');
+        setDebugInfo('Authentication error detected. Redirecting to login...');
         navigate('/auth?role=employer');
         return;
       }
       
       setError('Failed to load dashboard data. Please try refreshing the page.');
+      setDebugInfo(`Fetch error: ${error.message || 'Unknown error'}`);
       handleError(error, 'Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
@@ -103,25 +139,34 @@ const EmployerDashboard = () => {
     if (user?.id) {
       hasFetchedRef.current = false;
       setError(null);
+      setDebugInfo('');
       fetchData(user.id);
     }
   }, [user?.id, fetchData]);
 
-  // Show error state
+  // Show error state with debug info
   if (error && !loading && jobs.length === 0 && applications.length === 0) {
     return (
       <ProtectedEmployerRoute>
         <DashboardLayout userType="employer">
           <div className="flex items-center justify-center min-h-[400px]">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-2xl">
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
                   <div className="w-12 h-12 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-                    <Users className="w-6 h-6 text-red-600" />
+                    <AlertCircle className="w-6 h-6 text-red-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Unable to load dashboard</h3>
                     <p className="text-muted-foreground mt-1">{error}</p>
+                    {debugInfo && (
+                      <details className="mt-4 text-left">
+                        <summary className="cursor-pointer text-sm text-gray-500">Debug Information</summary>
+                        <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+                          {debugInfo}
+                        </pre>
+                      </details>
+                    )}
                   </div>
                   <Button onClick={handleRetry} className="w-full">
                     Try Again
@@ -172,6 +217,9 @@ const EmployerDashboard = () => {
                 <p className="text-muted-foreground mt-1">
                   Manage your job postings and track applications
                 </p>
+                {debugInfo && (
+                  <p className="text-xs text-gray-500 mt-1">Debug: {debugInfo}</p>
+                )}
               </div>
               <Button 
                 className="bg-primary hover:bg-primary/90"

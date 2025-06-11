@@ -49,7 +49,11 @@ export const performanceMonitor = {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          console.log(`⚡ FID: ${entry.processingStart - entry.startTime}ms`);
+          // Cast to PerformanceEventTiming to access processingStart
+          const eventEntry = entry as PerformanceEventTiming;
+          if (eventEntry.processingStart) {
+            console.log(`⚡ FID: ${eventEntry.processingStart - entry.startTime}ms`);
+          }
         });
       });
       observer.observe({ entryTypes: ['first-input'] });

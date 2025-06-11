@@ -89,9 +89,9 @@ export const updateMetaTags = (tags: Record<string, string>) => {
 
 // Add structured data to page
 export const addStructuredData = (data: any) => {
-  let script = document.querySelector('script[type="application/ld+json"]');
+  let script = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
   if (!script) {
-    script = document.createElement('script');
+    script = document.createElement('script') as HTMLScriptElement;
     script.type = 'application/ld+json';
     document.head.appendChild(script);
   }

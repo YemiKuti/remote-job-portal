@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Job } from "../types";
@@ -10,6 +11,7 @@ import Footer from "@/components/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/AuthProvider";
 import ApplyJobDialog from "@/components/ApplyJobDialog";
+import SaveJobButton from "@/components/SaveJobButton";
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -82,12 +84,18 @@ const JobDetail = () => {
               
               <div className="mt-4 md:mt-0">
                 {isCandidate ? (
-                  <Button 
-                    onClick={handleApplyClick}
-                    className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
-                  >
-                    Apply Now
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleApplyClick}
+                      className="bg-job-green hover:bg-job-darkGreen"
+                    >
+                      Apply Now
+                    </Button>
+                    <SaveJobButton 
+                      jobId={job.id}
+                      variant="outline"
+                    />
+                  </div>
                 ) : (
                   <Button 
                     onClick={handleApplyClick}
@@ -171,12 +179,18 @@ const JobDetail = () => {
                 <p className="text-gray-500 text-sm">Job ID: {job.id}</p>
               </div>
               {isCandidate ? (
-                <Button 
-                  onClick={handleApplyClick}
-                  className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
-                >
-                  Apply Now
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleApplyClick}
+                    className="bg-job-green hover:bg-job-darkGreen"
+                  >
+                    Apply Now
+                  </Button>
+                  <SaveJobButton 
+                    jobId={job.id}
+                    variant="outline"
+                  />
+                </div>
               ) : (
                 <Button 
                   onClick={handleApplyClick}

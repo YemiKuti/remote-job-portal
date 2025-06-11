@@ -9,6 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import ApplyJobDialog from "./ApplyJobDialog";
+import SaveJobButton from "./SaveJobButton";
 
 interface JobCardProps {
   job: Job;
@@ -45,7 +46,15 @@ const JobCard = ({ job }: JobCardProps) => {
                 <p className="text-xs sm:text-sm text-gray-600">{job.company}</p>
               </div>
             </div>
-            <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{getTimeAgo(job.postedDate)}</span>
+            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+              <span className="text-xs text-gray-500">{getTimeAgo(job.postedDate)}</span>
+              <SaveJobButton 
+                jobId={job.id} 
+                showText={false}
+                size="icon"
+                className="h-8 w-8"
+              />
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-3">
@@ -95,13 +104,22 @@ const JobCard = ({ job }: JobCardProps) => {
         {/* Apply Button for Candidates */}
         {isCandidate && (
           <div className="mt-4 pt-3 border-t border-gray-100">
-            <Button 
-              onClick={handleApplyClick}
-              className="w-full bg-job-green hover:bg-job-darkGreen"
-              size="sm"
-            >
-              Apply Now
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleApplyClick}
+                className="flex-1 bg-job-green hover:bg-job-darkGreen"
+                size="sm"
+              >
+                Apply Now
+              </Button>
+              <SaveJobButton 
+                jobId={job.id}
+                variant="outline"
+                size="sm"
+                showText={false}
+                className="px-3"
+              />
+            </div>
           </div>
         )}
       </div>

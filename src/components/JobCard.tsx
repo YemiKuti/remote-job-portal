@@ -1,4 +1,3 @@
-
 import { Job } from "../types";
 import { formatSalary, getTimeAgo } from "../data/jobs";
 import { MapPin, Briefcase, Clock, DollarSign } from "lucide-react";
@@ -46,14 +45,8 @@ const JobCard = ({ job }: JobCardProps) => {
                 <p className="text-xs sm:text-sm text-gray-600">{job.company}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+            <div className="flex items-center ml-2 flex-shrink-0">
               <span className="text-xs text-gray-500">{getTimeAgo(job.postedDate)}</span>
-              <SaveJobButton 
-                jobId={job.id} 
-                showText={false}
-                size="icon"
-                className="h-8 w-8"
-              />
             </div>
           </div>
           
@@ -116,8 +109,8 @@ const JobCard = ({ job }: JobCardProps) => {
                 jobId={job.id}
                 variant="outline"
                 size="sm"
-                showText={false}
-                className="px-3"
+                showText={true}
+                className="px-4"
               />
             </div>
           </div>

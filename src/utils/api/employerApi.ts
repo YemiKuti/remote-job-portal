@@ -1,10 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 // Fetch candidate applications for an employer
 export const fetchEmployerApplications = async (userId: string) => {
   try {
+    // Add a delay to prevent rapid successive calls
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const { data, error } = await supabase
       .from('applications')
       .select(`
@@ -15,30 +17,41 @@ export const fetchEmployerApplications = async (userId: string) => {
       .eq('employer_id', userId)
       .order('applied_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Database error fetching applications:', error);
+      throw error;
+    }
     
-    return data;
+    return data || [];
   } catch (error: any) {
     console.error('Error fetching employer applications:', error);
-    return [];
+    // Don't return empty array on error, let the error bubble up
+    throw error;
   }
 };
 
 // Fetch jobs created by an employer
 export const fetchEmployerJobs = async (userId: string) => {
   try {
+    // Add a delay to prevent rapid successive calls
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
       .eq('employer_id', userId)
       .order('created_at', { ascending: false });
       
-    if (error) throw error;
+    if (error) {
+      console.error('Database error fetching jobs:', error);
+      throw error;
+    }
     
-    return data;
+    return data || [];
   } catch (error: any) {
     console.error('Error fetching employer jobs:', error);
-    return [];
+    // Don't return empty array on error, let the error bubble up
+    throw error;
   }
 };
 
@@ -50,11 +63,14 @@ export const updateApplicationStatus = async (applicationId: string, status: str
       .update({ status })
       .eq('id', applicationId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Database error updating application:', error);
+      throw error;
+    }
     
     return true;
   } catch (error: any) {
     console.error('Error updating application status:', error);
-    return false;
+    throw error;
   }
 };

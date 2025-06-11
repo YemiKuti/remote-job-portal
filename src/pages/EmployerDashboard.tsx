@@ -1,16 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Eye, Briefcase, BarChart, Loader2 } from 'lucide-react';
+import { Users, Eye, Briefcase, BarChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchEmployerJobs, fetchEmployerApplications } from '@/utils/api/employerApi';
 import { DashboardStatsSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useRetry } from '@/hooks/useRetry';
 import { analytics } from '@/utils/analytics';
 import { performanceMonitor } from '@/utils/performance';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -22,98 +21,79 @@ const EmployerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [stats, setStats] = useState({
-    totalViews: 0,
-    totalApplications: 0,
-    activeJobs: 0,
-    candidatesShortlisted: 0
-  });
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Retry mechanism for data fetching
-  const { execute: fetchDataWithRetry } = useRetry(
-    async () => {
-      if (!user) return;
+  // Memoize stats calculation to prevent unnecessary recalculations
+  const stats = useMemo(() => {
+    let totalViews = 0;
+    let totalApplications = 0;
+    let shortlistedCount = 0;
+    
+    if (jobs?.length > 0) {
+      totalViews = jobs.reduce((sum, job) => sum + (job?.views || 0), 0);
+    }
+    
+    if (applications?.length > 0) {
+      totalApplications = applications.length;
+      shortlistedCount = applications.filter(app => app?.status === 'shortlisted').length;
+    }
 
+    return {
+      totalViews,
+      totalApplications,
+      activeJobs: jobs?.filter(job => job?.status === 'active').length || 0,
+      candidatesShortlisted: shortlistedCount
+    };
+  }, [jobs, applications]);
+
+  // Memoized data fetching function with retry logic
+  const fetchData = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      
       const [jobsData, applicationsData] = await Promise.all([
         fetchEmployerJobs(user.id),
         fetchEmployerApplications(user.id)
       ]);
-
-      return { jobsData, applicationsData };
-    },
-    {
-      maxAttempts: 3,
-      delay: 1000,
-      onError: (error, attempt) => {
-        console.warn(`Data fetch attempt ${attempt} failed:`, error);
-      }
-    }
-  );
-
-  useEffect(() => {
-    const fetchEmployerData = async () => {
-      if (!user) return;
-
-      setLoading(true);
       
-      try {
-        analytics.trackPageView('employer_dashboard');
-        
-        const result = await performanceMonitor.measureAsyncTime(
-          () => fetchDataWithRetry(),
-          'Employer Dashboard Data Fetch'
-        );
-
-        if (!result) return;
-
-        const { jobsData, applicationsData } = result;
-        
-        setJobs(jobsData || []);
-        setApplications(applicationsData || []);
-        
-        // Calculate stats safely
-        let totalViews = 0;
-        let totalApplications = 0;
-        let shortlistedCount = 0;
-        
-        if (jobsData?.length > 0) {
-          totalViews = jobsData.reduce((sum, job) => sum + (job?.views || 0), 0);
-        }
-        
-        if (applicationsData?.length > 0) {
-          totalApplications = applicationsData.length;
-          shortlistedCount = applicationsData.filter(app => app?.status === 'shortlisted').length;
-        }
-
-        setStats({
-          totalViews,
-          totalApplications,
-          activeJobs: jobsData?.filter(job => job?.status === 'active').length || 0,
-          candidatesShortlisted: shortlistedCount
-        });
-
-        analytics.track('dashboard_loaded', {
-          jobsCount: jobsData?.length || 0,
-          applicationsCount: applicationsData?.length || 0
-        });
-
-      } catch (error) {
+      setJobs(jobsData || []);
+      setApplications(applicationsData || []);
+      setRetryCount(0); // Reset retry count on success
+      
+    } catch (error) {
+      console.error('Error fetching employer data:', error);
+      
+      // Only retry if we haven't exceeded retry limit
+      if (retryCount < 2) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchData();
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+      } else {
         handleError(error, 'Failed to load dashboard data. Please try refreshing the page.');
-        analytics.trackError('dashboard_load_failed', { userId: user.id });
-      } finally {
-        setLoading(false);
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, retryCount, handleError]);
 
-    fetchEmployerData();
-  }, [user, handleError, fetchDataWithRetry]);
+  // Use a stable effect that only depends on user.id
+  useEffect(() => {
+    if (user?.id) {
+      analytics.trackPageView('employer_dashboard');
+      fetchData();
+    }
+  }, [user?.id]); // Only depend on user.id, not fetchData
 
-  const handlePostJob = () => {
+  const handlePostJob = useCallback(() => {
     analytics.track('post_job_clicked', { source: 'dashboard' });
     navigate('/employer/post-job');
-  };
+  }, [navigate]);
 
-  if (loading) {
+  // Show loading state consistently
+  if (loading && jobs.length === 0 && applications.length === 0) {
     return (
       <DashboardLayout userType="employer">
         <div className="space-y-6">

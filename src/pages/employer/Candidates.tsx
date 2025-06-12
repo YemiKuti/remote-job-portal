@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/dataFetching';
+import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
 import { useAuth } from '@/components/AuthProvider';
 
 const EmployerCandidates = () => {

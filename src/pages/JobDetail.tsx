@@ -1,7 +1,8 @@
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Job } from "../types";
-import { jobs, formatSalary } from "@/data/jobs";
+import { formatSalary } from "@/data/jobs";
 import { MapPin, Briefcase, Clock, DollarSign, Building, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,25 +12,59 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/AuthProvider";
 import ApplyJobDialog from "@/components/ApplyJobDialog";
 import SaveJobButton from "@/components/SaveJobButton";
+import { supabase } from "@/integrations/supabase/client";
+import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
 
   const isCandidate = user?.user_metadata?.role === 'candidate';
 
   useEffect(() => {
-    // Simulate loading from API
-    const timer = setTimeout(() => {
-      const foundJob = jobs.find(j => j.id === jobId);
-      setJob(foundJob || null);
-      setLoading(false);
-    }, 600);
+    const fetchJob = async () => {
+      if (!jobId) {
+        setError('No job ID provided');
+        setLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: fetchError } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('id', jobId)
+          .eq('status', 'active')
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching job:', fetchError);
+          setError('Job not found or no longer available');
+          setJob(null);
+        } else if (data) {
+          const transformedJob = transformDatabaseJobToFrontendJob(data);
+          setJob(transformedJob);
+        } else {
+          setError('Job not found');
+          setJob(null);
+        }
+      } catch (err: any) {
+        console.error('Error fetching job:', err);
+        setError('Failed to load job details');
+        setJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
   }, [jobId]);
 
   const handleApplyClick = () => {
@@ -45,13 +80,15 @@ const JobDetail = () => {
     return <JobDetailSkeleton />;
   }
 
-  if (!job) {
+  if (error || !job) {
     return (
       <>
         <Header />
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-3xl font-bold mb-4">Job Not Found</h1>
-          <p className="text-gray-600 mb-8">The job posting you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-600 mb-8">
+            {error || "The job posting you're looking for doesn't exist or has been removed."}
+          </p>
           <Button onClick={() => window.history.back()}>Go Back</Button>
         </div>
         <Footer />

@@ -2,6 +2,24 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Job } from '@/types/api';
 
+// Fetch all active jobs for public job listings
+export const fetchActiveJobs = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching active jobs:', error);
+    return [];
+  }
+};
+
 // Fetch recommended jobs based on user skills
 export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
   try {

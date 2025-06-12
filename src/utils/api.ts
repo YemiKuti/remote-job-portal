@@ -20,3 +20,6 @@ export {
 
 // Re-export fetchRecommendedJobs with a specific alias to avoid naming conflicts
 export { fetchRecommendedJobs as fetchCandidateRecommendedJobs } from './api/candidateApi';
+
+// Export the new active jobs function
+export { fetchActiveJobs } from './api/jobsApi';

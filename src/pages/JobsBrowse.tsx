@@ -11,28 +11,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X, Briefcase, MapPin, Building } from 'lucide-react';
-import { jobs } from '@/data/jobs';
+import { Filter, X, Briefcase, MapPin, Building, AlertCircle } from 'lucide-react';
 import { Job } from '@/types';
+import { useActiveJobs } from '@/hooks/useActiveJobs';
 
 const JobsBrowse = () => {
   const { user } = useAuth();
+  const { jobs: allJobs, loading, error, refetch } = useActiveJobs();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>(jobs);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [activeFilters, setActiveFilters] = useState<any>({});
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    let filtered = jobs;
+    let filtered = allJobs;
 
     // Apply search query
     if (searchQuery.trim()) {
@@ -65,7 +57,7 @@ const JobsBrowse = () => {
     }
 
     setFilteredJobs(filtered);
-  }, [searchQuery, activeFilters]);
+  }, [allJobs, searchQuery, activeFilters]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -89,7 +81,7 @@ const JobsBrowse = () => {
     return Object.values(activeFilters).flat().length;
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -131,6 +123,19 @@ const JobsBrowse = () => {
               onAdvancedSearch={handleAdvancedSearch}
             />
           </div>
+
+          {/* Error State */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{error}</span>
+                <Button variant="outline" size="sm" onClick={refetch}>
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Active Filters */}
           {getActiveFilterCount() > 0 && (
@@ -199,17 +204,26 @@ const JobsBrowse = () => {
                 <JobCard key={job.id} job={job} />
               ))}
             </div>
-          ) : (
+          ) : !loading && (
             <Card>
               <CardContent className="text-center py-12">
                 <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
                 <p className="text-muted-foreground mb-4">
-                  Try adjusting your search criteria or browse all available positions.
+                  {error 
+                    ? "We're having trouble loading jobs right now." 
+                    : "Try adjusting your search criteria or browse all available positions."
+                  }
                 </p>
-                <Button onClick={clearAllFilters}>
-                  Clear Filters
-                </Button>
+                {error ? (
+                  <Button onClick={refetch}>
+                    Reload Jobs
+                  </Button>
+                ) : (
+                  <Button onClick={clearAllFilters}>
+                    Clear Filters
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from "react";
-import { jobs } from "@/data/jobs";
 import SearchBar from "@/components/SearchBar";
 import JobCard from "@/components/JobCard";
 import AdvancedFilters from "@/components/AdvancedFilters";
@@ -13,28 +13,32 @@ import { SearchFilters, Job } from "@/types";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSupabase";
+import { useActiveJobs } from "@/hooks/useActiveJobs";
 
 const MAX_JOBS_DEFAULT = 5;
 const MAX_JOBS_SEARCH = 3;
 
 const Index = () => {
+  const { jobs: allJobs, loading, error } = useActiveJobs();
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const { subscribed, loading: subscriptionLoading } = useSubscription();
   
   useEffect(() => {
-    const sortedJobs = [...jobs].sort((a, b) => 
-      new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
-    );
-    
-    // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
-    setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-  }, [subscribed]);
+    if (!loading && allJobs.length > 0) {
+      const sortedJobs = [...allJobs].sort((a, b) => 
+        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+      );
+      
+      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+    }
+  }, [allJobs, subscribed, loading]);
 
   const handleSearch = (query: string) => {
     if (!query.trim()) {
-      const sortedJobs = [...jobs].sort((a, b) => 
+      const sortedJobs = [...allJobs].sort((a, b) => 
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
       // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
@@ -46,7 +50,7 @@ const Index = () => {
     setIsFiltering(true);
     const searchTerms = query.toLowerCase().split(' ');
     
-    const searchResults = jobs.filter(job => {
+    const searchResults = allJobs.filter(job => {
       const jobText = `${job.title} ${job.company} ${job.description} ${job.techStack.join(' ')}`.toLowerCase();
       return searchTerms.every(term => jobText.includes(term));
     });
@@ -68,7 +72,7 @@ const Index = () => {
   const handleAdvancedSearch = (filters: SearchFilters) => {
     setIsFiltering(true);
     
-    const filteredResults = jobs.filter(job => {
+    const filteredResults = allJobs.filter(job => {
       if (filters.query && !`${job.title} ${job.company} ${job.description}`.toLowerCase().includes(filters.query.toLowerCase())) {
         return false;
       }
@@ -124,6 +128,108 @@ const Index = () => {
     }
   };
 
+  const clearFilters = () => {
+    const sortedJobs = [...allJobs].sort((a, b) => 
+      new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+    );
+    // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+    setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
+    setIsFiltering(false);
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        
+        <main className="flex-grow">
+          <HeroSection />
+          
+          <div className="bg-white py-8 shadow-md">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-center">
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  onAdvancedSearch={() => setIsAdvancedFiltersOpen(true)} 
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="container mx-auto px-4 py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <h2 className="text-2xl font-semibold mb-8">Loading Jobs...</h2>
+                <div className="space-y-6">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-32 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="lg:col-span-1">
+                <FeaturedCompanies />
+              </div>
+            </div>
+          </div>
+          
+          <Testimonials />
+        </main>
+        
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        
+        <main className="flex-grow">
+          <HeroSection />
+          
+          <div className="bg-white py-8 shadow-md">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-center">
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  onAdvancedSearch={() => setIsAdvancedFiltersOpen(true)} 
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="container mx-auto px-4 py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <div className="text-center py-16">
+                  <h3 className="text-xl font-medium text-gray-800 mb-2">Unable to load jobs</h3>
+                  <p className="text-gray-600 mb-6">{error}</p>
+                  <Button onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="lg:col-span-1">
+                <FeaturedCompanies />
+              </div>
+            </div>
+          </div>
+          
+          <Testimonials />
+        </main>
+        
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -152,14 +258,7 @@ const Index = () => {
                 {isFiltering && (
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      const sortedJobs = [...jobs].sort((a, b) => 
-                        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
-                      );
-                      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
-                      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-                      setIsFiltering(false);
-                    }}
+                    onClick={clearFilters}
                   >
                     Clear Filters
                   </Button>
@@ -175,19 +274,16 @@ const Index = () => {
               ) : (
                 <div className="text-center py-16">
                   <h3 className="text-xl font-medium text-gray-800 mb-2">No jobs found</h3>
-                  <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
-                  <Button 
-                    onClick={() => {
-                      const sortedJobs = [...jobs].sort((a, b) => 
-                        new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
-                      );
-                      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
-                      setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
-                      setIsFiltering(false);
-                    }}
-                  >
-                    View All Jobs
-                  </Button>
+                  <p className="text-gray-600 mb-6">
+                    {isFiltering 
+                      ? "Try adjusting your search criteria" 
+                      : "No jobs are currently available"}
+                  </p>
+                  {isFiltering && (
+                    <Button onClick={clearFilters}>
+                      View All Jobs
+                    </Button>
+                  )}
                 </div>
               )}
               

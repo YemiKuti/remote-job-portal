@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/api';
 
@@ -108,17 +109,25 @@ export const createOrFindConversation = async (
   }
 };
 
-// Send a message using the database function
+// Send a message using the database function with optional attachment
 export const sendMessage = async (
   conversationId: string,
   recipientId: string,
-  content: string
+  content: string,
+  attachment?: {
+    url: string;
+    name: string;
+    size: number;
+  }
 ) => {
   try {
     const { data: messageId, error } = await supabase.rpc('send_message', {
       conversation_id: conversationId,
       recipient_id: recipientId,
-      message_content: content
+      message_content: content,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_size: attachment?.size || null
     });
 
     if (error) throw error;

@@ -1,4 +1,3 @@
-
 // Common interfaces for API data
 export interface Application {
   id: string;
@@ -38,6 +37,9 @@ export interface Message {
   read: boolean;
   sender_name?: string;
   company?: string;
+  attachment_url?: string;
+  attachment_name?: string;
+  attachment_size?: number;
 }
 
 export interface Conversation {

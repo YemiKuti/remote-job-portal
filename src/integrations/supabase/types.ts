@@ -430,6 +430,9 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_url: string | null
           content: string
           conversation_id: string
           id: string
@@ -439,6 +442,9 @@ export type Database = {
           sent_at: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
           content: string
           conversation_id: string
           id?: string
@@ -448,6 +454,9 @@ export type Database = {
           sent_at?: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
           content?: string
           conversation_id?: string
           id?: string
@@ -1026,11 +1035,20 @@ export type Database = {
         Returns: boolean
       }
       send_message: {
-        Args: {
-          conversation_id: string
-          recipient_id: string
-          message_content: string
-        }
+        Args:
+          | {
+              conversation_id: string
+              recipient_id: string
+              message_content: string
+            }
+          | {
+              conversation_id: string
+              recipient_id: string
+              message_content: string
+              attachment_url?: string
+              attachment_name?: string
+              attachment_size?: number
+            }
         Returns: string
       }
     }

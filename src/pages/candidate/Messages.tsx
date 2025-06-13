@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,8 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import type { Conversation, Message } from '@/types/api';
+import { FileAttachment } from '@/components/messaging/FileAttachment';
+import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 
 const CandidateMessages = () => {
   const { user } = useAuth();
@@ -24,6 +25,11 @@ const CandidateMessages = () => {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
+  const [attachment, setAttachment] = useState<{
+    url: string;
+    name: string;
+    size: number;
+  } | null>(null);
   
   useEffect(() => {
     const loadConversations = async () => {
@@ -72,26 +78,28 @@ const CandidateMessages = () => {
   };
   
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !activeConversation || !user || sending) return;
+    if ((!newMessage.trim() && !attachment) || !activeConversation || !user || sending) return;
     
     setSending(true);
     try {
       await sendMessage(
         activeConversation.id,
         activeConversation.employer_id,
-        newMessage
+        newMessage || '',
+        attachment || undefined
       );
       
       const updatedMessages = await fetchMessages(activeConversation.id);
       setMessages(updatedMessages);
       setNewMessage('');
+      setAttachment(null);
       
       setConversations(prev => 
         prev.map(conv => 
           conv.id === activeConversation.id 
             ? { 
                 ...conv, 
-                last_message: newMessage,
+                last_message: attachment ? `Sent an attachment: ${attachment.name}` : newMessage,
                 last_message_at: new Date().toISOString()
               }
             : conv
@@ -104,6 +112,14 @@ const CandidateMessages = () => {
       toast.error('Failed to send message');
     }
     setSending(false);
+  };
+  
+  const handleFileUploaded = (url: string, name: string, size: number) => {
+    setAttachment({ url, name, size });
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
   };
   
   const filteredConversations = conversations.filter(conv => {
@@ -215,7 +231,14 @@ const CandidateMessages = () => {
                               : 'bg-gray-100 rounded-bl-none'
                           }`}
                         >
-                          <p>{message.content}</p>
+                          {message.content && <p>{message.content}</p>}
+                          {message.attachment_url && message.attachment_name && message.attachment_size && (
+                            <MessageAttachment
+                              url={message.attachment_url}
+                              name={message.attachment_name}
+                              size={message.attachment_size}
+                            />
+                          )}
                           <p className={`text-xs mt-1 ${message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
                             {new Date(message.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -232,6 +255,16 @@ const CandidateMessages = () => {
                 
                 {/* Message Input */}
                 <div className="p-4 border-t">
+                  {attachment && (
+                    <div className="mb-2">
+                      <FileAttachment
+                        onFileUploaded={handleFileUploaded}
+                        onRemove={handleRemoveAttachment}
+                        attachment={attachment}
+                        disabled={sending}
+                      />
+                    </div>
+                  )}
                   <div className="flex space-x-2">
                     <Input 
                       placeholder="Type a message..."
@@ -246,10 +279,16 @@ const CandidateMessages = () => {
                       }}
                       disabled={sending}
                     />
+                    <FileAttachment
+                      onFileUploaded={handleFileUploaded}
+                      onRemove={handleRemoveAttachment}
+                      attachment={attachment}
+                      disabled={sending}
+                    />
                     <Button 
                       size="icon" 
                       onClick={handleSendMessage}
-                      disabled={sending || !newMessage.trim()}
+                      disabled={sending || (!newMessage.trim() && !attachment)}
                     >
                       {sending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

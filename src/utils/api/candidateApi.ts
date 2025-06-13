@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
@@ -130,7 +129,86 @@ export const fetchCandidateApplications = async (userId: string) => {
   }
 };
 
-// Fetch saved jobs
+// Toggle save job
+export const toggleSaveJob = async (userId: string, jobId: string, currentlySaved?: boolean) => {
+  try {
+    console.log('🔄 Toggling save job:', { userId, jobId, currentlySaved });
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Authentication required');
+    }
+
+    // If currentlySaved is provided and true, remove from saved jobs
+    if (currentlySaved === true) {
+      const { error } = await supabase
+        .from('saved_jobs')
+        .delete()
+        .eq('user_id', userId)
+        .eq('job_id', jobId);
+
+      if (error) {
+        console.error('❌ Database error removing saved job:', error);
+        throw error;
+      }
+
+      console.log('✅ Removed job from saved jobs');
+      return { saved: false };
+    }
+
+    // Check if job is already saved (only if currentlySaved is not provided)
+    if (currentlySaved === undefined) {
+      const { data: existingSave, error: checkError } = await supabase
+        .from('saved_jobs')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('job_id', jobId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('❌ Error checking saved job:', checkError);
+        throw checkError;
+      }
+
+      if (existingSave) {
+        // Remove from saved jobs
+        const { error } = await supabase
+          .from('saved_jobs')
+          .delete()
+          .eq('id', existingSave.id);
+
+        if (error) {
+          console.error('❌ Database error removing saved job:', error);
+          throw error;
+        }
+
+        console.log('✅ Removed job from saved jobs');
+        return { saved: false };
+      }
+    }
+
+    // Add to saved jobs
+    const { error } = await supabase
+      .from('saved_jobs')
+      .insert({
+        user_id: userId,
+        job_id: jobId
+      });
+
+    if (error) {
+      console.error('❌ Database error saving job:', error);
+      throw error;
+    }
+
+    console.log('✅ Added job to saved jobs');
+    return { saved: true };
+  } catch (error: any) {
+    console.error('❌ Error toggling save job:', error);
+    throw error;
+  }
+};
+
+// Fetch saved jobs - fix the join query
 export const fetchSavedJobs = async (userId: string) => {
   try {
     console.log('🔄 Fetching saved jobs for user:', userId);
@@ -140,84 +218,60 @@ export const fetchSavedJobs = async (userId: string) => {
       throw new Error('Authentication required');
     }
 
-    const { data, error } = await supabase
+    // First get saved job IDs
+    const { data: savedJobsData, error: savedJobsError } = await supabase
       .from('saved_jobs')
-      .select(`
-        *,
-        job:jobs(*)
-      `)
+      .select('id, job_id, saved_date')
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
 
-    if (error) {
-      console.error('❌ Database error fetching saved jobs:', error);
-      throw error;
+    if (savedJobsError) {
+      console.error('❌ Database error fetching saved jobs:', savedJobsError);
+      throw savedJobsError;
     }
 
-    console.log('✅ Fetched saved jobs:', data?.length || 0);
-    return data || [];
+    if (!savedJobsData || savedJobsData.length === 0) {
+      console.log('✅ No saved jobs found');
+      return [];
+    }
+
+    // Get job details for each saved job
+    const jobIds = savedJobsData.map(sj => sj.job_id);
+    const { data: jobsData, error: jobsError } = await supabase
+      .from('jobs')
+      .select('*')
+      .in('id', jobIds);
+
+    if (jobsError) {
+      console.error('❌ Database error fetching job details:', jobsError);
+      throw jobsError;
+    }
+
+    // Combine saved jobs with job details
+    const result = savedJobsData.map(savedJob => {
+      const jobData = jobsData?.find(job => job.id === savedJob.job_id);
+      return {
+        id: savedJob.id,
+        user_id: userId,
+        job_id: savedJob.job_id,
+        saved_date: savedJob.saved_date,
+        job: jobData ? {
+          title: jobData.title,
+          company: jobData.company,
+          location: jobData.location,
+          description: jobData.description,
+          salary_min: jobData.salary_min,
+          salary_max: jobData.salary_max,
+          employment_type: jobData.employment_type,
+          tech_stack: jobData.tech_stack || []
+        } : null
+      };
+    });
+
+    console.log('✅ Fetched saved jobs:', result.length);
+    return result;
   } catch (error: any) {
     console.error('❌ Error fetching saved jobs:', error);
-    throw error;
-  }
-};
-
-// Toggle save job
-export const toggleSaveJob = async (userId: string, jobId: string) => {
-  try {
-    console.log('🔄 Toggling save job:', { userId, jobId });
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Authentication required');
-    }
-
-    // Check if job is already saved
-    const { data: existingSave, error: checkError } = await supabase
-      .from('saved_jobs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('job_id', jobId)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('❌ Error checking saved job:', checkError);
-      throw checkError;
-    }
-
-    if (existingSave) {
-      // Remove from saved jobs
-      const { error } = await supabase
-        .from('saved_jobs')
-        .delete()
-        .eq('id', existingSave.id);
-
-      if (error) {
-        console.error('❌ Database error removing saved job:', error);
-        throw error;
-      }
-
-      console.log('✅ Removed job from saved jobs');
-      return { saved: false };
-    } else {
-      // Add to saved jobs
-      const { error } = await supabase
-        .from('saved_jobs')
-        .insert({
-          user_id: userId,
-          job_id: jobId
-        });
-
-      if (error) {
-        console.error('❌ Database error saving job:', error);
-        throw error;
-      }
-
-      console.log('✅ Added job to saved jobs');
-      return { saved: true };
-    }
-  } catch (error: any) {
-    console.error('❌ Error toggling save job:', error);
     throw error;
   }
 };

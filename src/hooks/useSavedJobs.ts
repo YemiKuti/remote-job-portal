@@ -14,9 +14,14 @@ export const useSavedJobs = () => {
       if (!user) return;
       
       setLoading(true);
-      const jobs = await fetchSavedJobs(user.id);
-      setSavedJobs(jobs);
-      setLoading(false);
+      try {
+        const jobs = await fetchSavedJobs(user.id);
+        setSavedJobs(jobs);
+      } catch (error) {
+        console.error('Error loading saved jobs:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadSavedJobs();
@@ -46,9 +51,11 @@ export const useSavedJobs = () => {
       setSavedJobs(prev => [...prev, tempSavedJob]);
     }
     
-    const success = await toggleSaveJob(user.id, jobId, currentlySaved);
-    
-    if (!success) {
+    try {
+      const result = await toggleSaveJob(user.id, jobId, currentlySaved);
+      return result.saved;
+    } catch (error) {
+      console.error('Error toggling save job:', error);
       // Revert optimistic update on failure
       if (currentlySaved) {
         // Re-add the job if unsave failed
@@ -64,9 +71,8 @@ export const useSavedJobs = () => {
         // Remove the job if save failed
         setSavedJobs(prev => prev.filter(job => job.job_id !== jobId));
       }
+      return false;
     }
-    
-    return success;
   };
 
   return {

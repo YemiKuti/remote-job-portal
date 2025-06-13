@@ -24,9 +24,14 @@ const SavedJobs = () => {
       if (!user) return;
       
       setLoading(true);
-      const jobs = await fetchSavedJobs(user.id);
-      setSavedJobs(jobs);
-      setLoading(false);
+      try {
+        const jobs = await fetchSavedJobs(user.id);
+        setSavedJobs(jobs);
+      } catch (error) {
+        console.error('Error loading saved jobs:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadSavedJobs();
@@ -35,9 +40,13 @@ const SavedJobs = () => {
   const handleRemoveJob = async (jobId: string) => {
     if (!user) return;
     
-    const success = await toggleSaveJob(user.id, jobId, true);
-    if (success) {
-      setSavedJobs(savedJobs.filter(job => job.job_id !== jobId));
+    try {
+      const result = await toggleSaveJob(user.id, jobId, true);
+      if (result.saved === false) {
+        setSavedJobs(savedJobs.filter(job => job.job_id !== jobId));
+      }
+    } catch (error) {
+      console.error('Error removing saved job:', error);
     }
   };
   

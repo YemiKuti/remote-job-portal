@@ -109,7 +109,7 @@ const CandidateDashboard = () => {
       setLoading(prev => ({ ...prev, recommendations: true }));
       setErrors(prev => ({ ...prev, recommendations: null }));
       
-      const recommendedData = await fetchCandidateRecommendedJobs(userId, 3);
+      const recommendedData = await fetchCandidateRecommendedJobs(userId);
       console.log('📊 Dashboard: Recommendations loaded:', recommendedData.length);
       setData(prev => ({ ...prev, recommendedJobs: recommendedData }));
     } catch (error: any) {

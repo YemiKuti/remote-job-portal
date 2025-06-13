@@ -9,6 +9,9 @@ import { User } from '@supabase/supabase-js';
 
 interface PersonalInfoCardProps {
   user: User | null;
+  profileData: {
+    avatar_url?: string;
+  } | null;
   formData: {
     fullName: string;
     phone: string;
@@ -21,11 +24,15 @@ interface PersonalInfoCardProps {
 
 export function PersonalInfoCard({ 
   user,
+  profileData,
   formData, 
   handleInputChange,
   handleChoosePhoto,
   fileInputRef
 }: PersonalInfoCardProps) {
+  // Use avatar from profiles table first, then fallback to user metadata
+  const avatarUrl = profileData?.avatar_url || user?.user_metadata?.avatar_url || "";
+  
   return (
     <Card>
       <CardHeader>
@@ -35,8 +42,8 @@ export function PersonalInfoCard({
       <CardContent className="space-y-4">
         <div className="flex items-center space-x-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
-            <AvatarFallback>{user?.user_metadata?.full_name?.[0] || "U"}</AvatarFallback>
+            <AvatarImage src={avatarUrl} />
+            <AvatarFallback>{user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
           </Avatar>
           <div>
             <Button 
@@ -46,13 +53,6 @@ export function PersonalInfoCard({
             >
               Change Photo
             </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={() => {}} // This will be handled by the parent component
-            />
           </div>
         </div>
         

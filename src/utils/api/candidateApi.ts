@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
@@ -386,6 +387,16 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
       throw new Error('Authentication required');
     }
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please select an image file (PNG, JPG, WebP)');
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
     const fileExt = file.name.split('.').pop();
     const timestamp = Date.now();
     const fileName = `profile-${timestamp}.${fileExt}`;
@@ -395,11 +406,13 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
 
     const { error: uploadError } = await supabase.storage
       .from('profile-photos')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        upsert: false
+      });
 
     if (uploadError) {
       console.error('❌ Storage error uploading photo:', uploadError);
-      throw uploadError;
+      throw new Error(`Failed to upload photo: ${uploadError.message}`);
     }
 
     const { data } = supabase.storage
@@ -416,7 +429,7 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
 
     if (updateError) {
       console.error('❌ Database error updating avatar URL:', updateError);
-      throw updateError;
+      throw new Error(`Failed to update profile: ${updateError.message}`);
     }
 
     console.log('✅ Profile photo uploaded successfully');

@@ -12,6 +12,7 @@ export function useProfileManager() {
   const [isUploading, setIsUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showPhotoDialog, setShowPhotoDialog] = useState(false);
+  const [profileData, setProfileData] = useState<{ avatar_url?: string } | null>(null);
   const [formData, setFormData] = useState({
     fullName: user?.user_metadata?.full_name || '',
     phone: user?.user_metadata?.phone || '',
@@ -42,6 +43,8 @@ export function useProfileManager() {
           console.error('Error fetching profile:', error);
           return;
         }
+        
+        setProfileData(data);
         
         // Combine profile data with user metadata for the extended fields
         const userMetadata = user.user_metadata || {};
@@ -96,6 +99,18 @@ export function useProfileManager() {
       const avatarUrl = await uploadProfilePhoto(user.id, file);
       
       if (avatarUrl) {
+        // Update local profile data immediately
+        setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+        
+        // Update user metadata to ensure avatar shows immediately
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { avatar_url: avatarUrl }
+        });
+        
+        if (metadataError) {
+          console.error('Error updating user metadata:', metadataError);
+        }
+        
         // Refresh the session to get updated user metadata
         await refreshSession();
         setShowPhotoDialog(false);
@@ -103,6 +118,8 @@ export function useProfileManager() {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        
+        toast.success('Profile photo updated successfully');
       }
     } catch (error) {
       console.error('Error uploading photo:', error);
@@ -146,6 +163,23 @@ export function useProfileManager() {
       const success = await updateCandidateProfile(user.id, profileData);
       
       if (success) {
+        // Update user metadata as well
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone,
+            location: formData.location,
+            title: formData.title,
+            experience: formData.experience ? Number(formData.experience) : undefined,
+            skills: formData.skills,
+            bio: formData.bio
+          }
+        });
+        
+        if (metadataError) {
+          console.error('Error updating user metadata:', metadataError);
+        }
+        
         // Refresh the session to update user metadata
         await refreshSession();
         toast.success('Profile updated successfully');
@@ -160,6 +194,7 @@ export function useProfileManager() {
 
   return {
     user,
+    profileData,
     formData,
     isLoading,
     isSubmitting,

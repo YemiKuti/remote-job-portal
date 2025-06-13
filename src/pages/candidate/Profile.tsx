@@ -13,6 +13,7 @@ import { ResumeManagementCard } from '@/components/candidate/profile/ResumeManag
 const CandidateProfile = () => {
   const {
     user,
+    profileData,
     formData,
     isLoading,
     isSubmitting,
@@ -55,6 +56,7 @@ const CandidateProfile = () => {
           <div className="grid gap-6 md:grid-cols-2">
             <PersonalInfoCard
               user={user}
+              profileData={profileData}
               formData={{
                 fullName: formData.fullName,
                 phone: formData.phone,

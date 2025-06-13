@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Fetch candidate applications for an employer
@@ -13,18 +14,18 @@ export const fetchEmployerApplications = async (userId: string) => {
 
     console.log('🔍 User session valid, attempting to fetch applications...');
     
-    // Fetch applications with proper join to get job and candidate details
+    // Fetch applications with left joins to handle incomplete candidate profiles
     const { data: applications, error: appsError } = await supabase
       .from('applications')
       .select(`
         *,
-        job:jobs!inner(
+        job:jobs(
           id,
           title,
           company,
           location
         ),
-        candidate:profiles!inner(
+        candidate:profiles(
           id,
           username,
           full_name
@@ -39,6 +40,13 @@ export const fetchEmployerApplications = async (userId: string) => {
     }
 
     console.log(`✅ Found ${applications?.length || 0} applications for employer`);
+    console.log('📊 Application details:', applications?.map(app => ({
+      id: app.id,
+      jobTitle: app.job?.title,
+      candidateName: app.candidate?.full_name || app.candidate?.username,
+      status: app.status
+    })));
+    
     return applications || [];
   } catch (error: any) {
     console.error('❌ Error fetching employer applications:', error);

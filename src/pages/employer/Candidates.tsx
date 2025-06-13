@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Filter, Loader2, AlertCircle, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
@@ -54,9 +55,23 @@ const EmployerCandidates = () => {
     }
   };
   
+  // Helper function to get candidate display name
+  const getCandidateDisplayName = (candidate) => {
+    if (!candidate) return 'Unknown Candidate';
+    return candidate.full_name || candidate.username || 'Candidate Profile Incomplete';
+  };
+  
+  // Helper function to get candidate initials for avatar
+  const getCandidateInitials = (candidate) => {
+    if (!candidate) return 'U';
+    const name = candidate.full_name || candidate.username;
+    if (!name) return 'C';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+  
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.candidate?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          app.candidate?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const candidateName = getCandidateDisplayName(app.candidate);
+    const matchesSearch = candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           app.job?.title?.toLowerCase().includes(searchTerm.toLowerCase());
                           
     if (!matchesSearch) return false;
@@ -64,6 +79,73 @@ const EmployerCandidates = () => {
     if (activeTab === 'all') return true;
     return app.status === activeTab;
   });
+
+  const renderApplicationTable = () => (
+    <div className="relative overflow-x-auto rounded-md border">
+      <table className="w-full text-sm text-left">
+        <thead className="bg-gray-50 text-xs uppercase">
+          <tr>
+            <th scope="col" className="px-6 py-3">Candidate</th>
+            <th scope="col" className="px-6 py-3">Position</th>
+            <th scope="col" className="px-6 py-3">Applied Date</th>
+            <th scope="col" className="px-6 py-3">Status</th>
+            <th scope="col" className="px-6 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredApplications.map(app => (
+            <tr key={app.id} className="bg-white border-b">
+              <td className="px-6 py-4 font-medium">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback className="bg-blue-100 text-blue-600">
+                      {getCandidateInitials(app.candidate)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">
+                      {getCandidateDisplayName(app.candidate)}
+                    </div>
+                    {!app.candidate?.full_name && !app.candidate?.username && (
+                      <div className="text-xs text-orange-600 flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        Profile needs completion
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4">{app.job?.title || 'Position Unavailable'}</td>
+              <td className="px-6 py-4">{new Date(app.applied_date).toLocaleDateString()}</td>
+              <td className="px-6 py-4">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  app.status === 'reviewed' ? 'bg-blue-100 text-blue-800' : 
+                  app.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <div className="flex space-x-2">
+                  <Button size="sm" variant="outline">View</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleUpdateStatus(app.id, 'shortlisted')}
+                    disabled={app.status === 'shortlisted'}
+                  >
+                    Shortlist
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <DashboardLayout userType="employer">
@@ -107,11 +189,18 @@ const EmployerCandidates = () => {
           <CardContent>
             <Tabs defaultValue="all" onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="shortlisted">Shortlisted</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
+                <TabsTrigger value="pending">
+                  Pending ({applications.filter(app => app.status === 'pending').length})
+                </TabsTrigger>
+                <TabsTrigger value="shortlisted">
+                  Shortlisted ({applications.filter(app => app.status === 'shortlisted').length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected">
+                  Rejected ({applications.filter(app => app.status === 'rejected').length})
+                </TabsTrigger>
               </TabsList>
+              
               <TabsContent value="all" className="space-y-4">
                 {loading ? (
                   <div className="flex justify-center py-8">
@@ -126,107 +215,27 @@ const EmployerCandidates = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="relative overflow-x-auto rounded-md border">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-gray-50 text-xs uppercase">
-                        <tr>
-                          <th scope="col" className="px-6 py-3">Candidate</th>
-                          <th scope="col" className="px-6 py-3">Position</th>
-                          <th scope="col" className="px-6 py-3">Applied Date</th>
-                          <th scope="col" className="px-6 py-3">Status</th>
-                          <th scope="col" className="px-6 py-3">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredApplications.map(app => (
-                          <tr key={app.id} className="bg-white border-b">
-                            <td className="px-6 py-4 font-medium">
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarFallback>
-                                    {(app.candidate?.full_name || app.candidate?.username || 'C')[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                                {app.candidate?.full_name || app.candidate?.username || 'Candidate'}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">{app.job?.title}</td>
-                            <td className="px-6 py-4">{new Date(app.applied_date).toLocaleDateString()}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                app.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                app.status === 'reviewed' ? 'bg-blue-100 text-blue-800' : 
-                                app.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex space-x-2">
-                                <Button size="sm" variant="outline">View</Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleUpdateStatus(app.id, 'shortlisted')}
-                                  disabled={app.status === 'shortlisted'}
-                                >
-                                  Shortlist
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  renderApplicationTable()
                 )}
               </TabsContent>
-              <TabsContent value="pending">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No pending applications found.</p>
-                  </div>
-                ) : (
-                  <div className="relative overflow-x-auto rounded-md border">
-                    {/* Same table structure as above */}
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="shortlisted">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No shortlisted candidates found.</p>
-                  </div>
-                ) : (
-                  <div className="relative overflow-x-auto rounded-md border">
-                    {/* Same table structure as above */}
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="rejected">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No rejected applications found.</p>
-                  </div>
-                ) : (
-                  <div className="relative overflow-x-auto rounded-md border">
-                    {/* Same table structure as above */}
-                  </div>
-                )}
-              </TabsContent>
+              
+              {['pending', 'shortlisted', 'rejected'].map(status => (
+                <TabsContent key={status} value={status} className="space-y-4">
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : filteredApplications.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        No {status} applications found.
+                      </p>
+                    </div>
+                  ) : (
+                    renderApplicationTable()
+                  )}
+                </TabsContent>
+              ))}
             </Tabs>
           </CardContent>
         </Card>

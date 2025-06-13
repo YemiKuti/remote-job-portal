@@ -14,7 +14,7 @@ export const fetchEmployerApplications = async (userId: string) => {
 
     console.log('🔍 User session valid, attempting to fetch applications...');
     
-    // Fetch applications with explicit relationship hints to handle multiple foreign keys
+    // Fetch applications with manual joins to handle the relationships properly
     const { data: applications, error: appsError } = await supabase
       .from('applications')
       .select(`
@@ -24,11 +24,6 @@ export const fetchEmployerApplications = async (userId: string) => {
           title,
           company,
           location
-        ),
-        candidate:profiles!applications_user_id_fkey(
-          id,
-          username,
-          full_name
         )
       `)
       .eq('employer_id', userId)
@@ -39,15 +34,39 @@ export const fetchEmployerApplications = async (userId: string) => {
       throw appsError;
     }
 
-    console.log(`✅ Found ${applications?.length || 0} applications for employer`);
-    console.log('📊 Application details:', applications?.map(app => ({
+    // Fetch candidate profiles separately to avoid relation issues
+    const userIds = applications?.map(app => app.user_id).filter(Boolean) || [];
+    let candidates: any[] = [];
+    
+    if (userIds.length > 0) {
+      const { data: candidateData, error: candidateError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', userIds);
+        
+      if (candidateError) {
+        console.error('❌ Error fetching candidate profiles:', candidateError);
+        // Don't throw error, just use empty candidates array
+      } else {
+        candidates = candidateData || [];
+      }
+    }
+
+    // Combine applications with candidate data
+    const applicationsWithCandidates = applications?.map(app => ({
+      ...app,
+      candidate: candidates.find(candidate => candidate.id === app.user_id) || null
+    })) || [];
+
+    console.log(`✅ Found ${applicationsWithCandidates?.length || 0} applications for employer`);
+    console.log('📊 Application details:', applicationsWithCandidates?.map(app => ({
       id: app.id,
       jobTitle: app.job?.title,
       candidateName: app.candidate?.full_name || app.candidate?.username,
       status: app.status
     })));
     
-    return applications || [];
+    return applicationsWithCandidates;
   } catch (error: any) {
     console.error('❌ Error fetching employer applications:', error);
     throw error;

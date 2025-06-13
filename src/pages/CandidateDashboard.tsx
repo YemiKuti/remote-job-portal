@@ -22,7 +22,7 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { fetchCandidateApplications, fetchSavedJobs, fetchCandidateRecommendedJobs } from '@/utils/api';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface DashboardData {
   applications: any[];
@@ -46,6 +46,7 @@ interface ErrorState {
 
 const CandidateDashboard = () => {
   const { user, isLoading: authLoading, authError } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData>({
     applications: [],
     savedJobs: [],
@@ -441,7 +442,11 @@ const CandidateDashboard = () => {
                       </div>
                     ))}
                     <div className="pt-4">
-                      <Button variant="outline" className="w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => navigate('/candidate/applications')}
+                      >
                         View All Applications
                       </Button>
                     </div>

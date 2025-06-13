@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Filter, Loader2, AlertCircle, User, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ApplicationDetailModal } from '@/components/employer/ApplicationDetailModal';
 import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
 import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -23,6 +23,8 @@ const EmployerCandidates = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   useEffect(() => {
     const loadApplications = async () => {
@@ -58,6 +60,16 @@ const EmployerCandidates = () => {
       console.error('Error updating application status:', err);
       setError('Failed to update application status');
     }
+  };
+
+  const handleViewApplication = (application) => {
+    setSelectedApplication(application);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedApplication(null);
   };
   
   // Helper function to get candidate display name
@@ -144,7 +156,13 @@ const EmployerCandidates = () => {
               </td>
               <td className="px-6 py-4">
                 <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">View</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleViewApplication(app)}
+                  >
+                    View
+                  </Button>
                   <Button 
                     size="sm" 
                     variant="outline"
@@ -283,6 +301,14 @@ const EmployerCandidates = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Application Detail Modal */}
+        <ApplicationDetailModal
+          application={selectedApplication}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onUpdateStatus={handleUpdateStatus}
+        />
       </div>
     </DashboardLayout>
   );

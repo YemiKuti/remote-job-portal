@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
@@ -377,7 +376,7 @@ export const updateCandidateProfile = async (userId: string, profileData: any) =
   }
 };
 
-// Upload profile photo
+// Upload profile photo - FIXED VERSION
 export const uploadProfilePhoto = async (userId: string, file: File) => {
   try {
     console.log('🔄 Uploading profile photo for user:', userId);
@@ -388,11 +387,15 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
     }
 
     const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Math.random()}.${fileExt}`;
+    const timestamp = Date.now();
+    const fileName = `profile-${timestamp}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    console.log('📁 Upload path:', filePath);
 
     const { error: uploadError } = await supabase.storage
       .from('profile-photos')
-      .upload(fileName, file);
+      .upload(filePath, file);
 
     if (uploadError) {
       console.error('❌ Storage error uploading photo:', uploadError);
@@ -401,7 +404,9 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
 
     const { data } = supabase.storage
       .from('profile-photos')
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
+
+    console.log('🔗 Public URL:', data.publicUrl);
 
     // Update profile with new photo URL
     const { error: updateError } = await supabase

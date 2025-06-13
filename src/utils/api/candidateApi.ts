@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
@@ -42,7 +43,16 @@ export const applyToJob = async (userId: string, jobId: string, employerId?: str
         throw new Error('Failed to fetch job details');
       }
 
+      if (!jobData.employer_id) {
+        throw new Error('Job is missing employer information');
+      }
+
       finalEmployerId = jobData.employer_id;
+    }
+
+    // Validate that we have an employer_id
+    if (!finalEmployerId) {
+      throw new Error('Employer ID is required but not provided');
     }
 
     // Create the application with employer_id

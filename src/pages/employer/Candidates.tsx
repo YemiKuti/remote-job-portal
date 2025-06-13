@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Loader2 } from 'lucide-react';
+import { Search, Filter, Loader2, AlertCircle } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -14,6 +14,7 @@ const EmployerCandidates = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   
@@ -22,22 +23,34 @@ const EmployerCandidates = () => {
       if (!user) return;
       
       setLoading(true);
-      const data = await fetchEmployerApplications(user.id);
-      setApplications(data);
-      setLoading(false);
+      setError(null);
+      try {
+        const data = await fetchEmployerApplications(user.id);
+        setApplications(data);
+      } catch (err) {
+        console.error('Error loading applications:', err);
+        setError(err.message || 'Failed to load applications');
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadApplications();
   }, [user]);
   
   const handleUpdateStatus = async (applicationId: string, newStatus: string) => {
-    const success = await updateApplicationStatus(applicationId, newStatus);
-    
-    if (success) {
-      // Update local state
-      setApplications(applications.map(app => 
-        app.id === applicationId ? { ...app, status: newStatus } : app
-      ));
+    try {
+      const success = await updateApplicationStatus(applicationId, newStatus);
+      
+      if (success) {
+        // Update local state
+        setApplications(applications.map(app => 
+          app.id === applicationId ? { ...app, status: newStatus } : app
+        ));
+      }
+    } catch (err) {
+      console.error('Error updating application status:', err);
+      setError('Failed to update application status');
     }
   };
   
@@ -61,6 +74,13 @@ const EmployerCandidates = () => {
             View and manage candidate applications
           </p>
         </div>
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -99,7 +119,11 @@ const EmployerCandidates = () => {
                   </div>
                 ) : filteredApplications.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">No applications found.</p>
+                    <p className="text-muted-foreground">
+                      {applications.length === 0 
+                        ? "No applications found. When candidates apply for your jobs, they will appear here." 
+                        : "No applications match your search criteria."}
+                    </p>
                   </div>
                 ) : (
                   <div className="relative overflow-x-auto rounded-md border">

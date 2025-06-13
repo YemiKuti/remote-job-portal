@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Fetch candidate applications for an employer
@@ -14,86 +13,33 @@ export const fetchEmployerApplications = async (userId: string) => {
 
     console.log('🔍 User session valid, attempting to fetch applications...');
     
-    // Try to fetch applications with basic query first
+    // Fetch applications with proper join to get job and candidate details
     const { data: applications, error: appsError } = await supabase
       .from('applications')
-      .select('*')
+      .select(`
+        *,
+        job:jobs!inner(
+          id,
+          title,
+          company,
+          location
+        ),
+        candidate:profiles!inner(
+          id,
+          username,
+          full_name
+        )
+      `)
       .eq('employer_id', userId)
       .order('applied_date', { ascending: false });
 
     if (appsError) {
       console.error('❌ Database error fetching applications:', appsError);
-      // If we get permission denied, return empty array instead of throwing
-      if (appsError.code === 'PGRST301' || appsError.message?.includes('permission denied')) {
-        console.log('⚠️ Permission denied for applications, returning empty array');
-        return [];
-      }
       throw appsError;
     }
 
-    if (!applications || applications.length === 0) {
-      console.log('✅ No applications found for employer');
-      return [];
-    }
-
-    console.log(`✅ Found ${applications.length} applications, fetching related data...`);
-
-    // Get unique job IDs and user IDs
-    const jobIds = [...new Set(applications.map(app => app.job_id))];
-    const userIds = [...new Set(applications.map(app => app.user_id))];
-
-    // Fetch job details with error handling
-    let jobs = [];
-    try {
-      const { data: jobsData, error: jobsError } = await supabase
-        .from('jobs')
-        .select('id, title, company, location')
-        .in('id', jobIds);
-
-      if (jobsError) {
-        console.error('❌ Error fetching job details:', jobsError);
-        jobs = [];
-      } else {
-        jobs = jobsData || [];
-      }
-    } catch (error) {
-      console.error('❌ Exception fetching jobs:', error);
-      jobs = [];
-    }
-
-    // Fetch candidate profiles with error handling
-    let profiles = [];
-    try {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, full_name')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('❌ Error fetching profiles:', profilesError);
-        profiles = [];
-      } else {
-        profiles = profilesData || [];
-      }
-    } catch (error) {
-      console.error('❌ Exception fetching profiles:', error);
-      profiles = [];
-    }
-
-    // Combine the data with fallbacks
-    const enrichedApplications = applications.map(app => {
-      const job = jobs?.find(j => j.id === app.job_id);
-      const candidate = profiles?.find(p => p.id === app.user_id);
-      
-      return {
-        ...app,
-        job: job || { title: 'Unknown Job', company: 'Unknown', location: 'Unknown' },
-        candidate: candidate || { username: 'Unknown', full_name: 'Unknown Candidate' }
-      };
-    });
-    
-    console.log('✅ Fetched applications:', enrichedApplications.length);
-    return enrichedApplications;
+    console.log(`✅ Found ${applications?.length || 0} applications for employer`);
+    return applications || [];
   } catch (error: any) {
     console.error('❌ Error fetching employer applications:', error);
     throw error;

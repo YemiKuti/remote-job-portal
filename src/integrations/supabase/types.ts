@@ -12,7 +12,7 @@ export type Database = {
       applications: {
         Row: {
           applied_date: string
-          employer_id: string | null
+          employer_id: string
           id: string
           job_id: string
           status: string
@@ -20,7 +20,7 @@ export type Database = {
         }
         Insert: {
           applied_date?: string
-          employer_id?: string | null
+          employer_id: string
           id?: string
           job_id: string
           status?: string
@@ -28,7 +28,7 @@ export type Database = {
         }
         Update: {
           applied_date?: string
-          employer_id?: string | null
+          employer_id?: string
           id?: string
           job_id?: string
           status?: string

@@ -1022,7 +1022,7 @@ export type Database = {
         Returns: boolean
       }
       mark_messages_read: {
-        Args: { conversation_id: string }
+        Args: { conv_id: string }
         Returns: boolean
       }
       send_message: {

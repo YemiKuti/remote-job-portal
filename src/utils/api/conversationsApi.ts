@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/api';
 
@@ -134,7 +133,7 @@ export const sendMessage = async (
 export const markMessagesAsRead = async (conversationId: string) => {
   try {
     const { data, error } = await supabase.rpc('mark_messages_read', {
-      conversation_id: conversationId
+      conv_id: conversationId
     });
 
     if (error) throw error;

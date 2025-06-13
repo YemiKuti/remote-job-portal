@@ -11,30 +11,49 @@ export type Database = {
     Tables: {
       applications: {
         Row: {
+          additional_notes: string | null
           applied_date: string
+          cover_letter: string | null
           employer_id: string
           id: string
           job_id: string
+          portfolio_url: string | null
+          resume_id: string | null
           status: string
           user_id: string
         }
         Insert: {
+          additional_notes?: string | null
           applied_date?: string
+          cover_letter?: string | null
           employer_id: string
           id?: string
           job_id: string
+          portfolio_url?: string | null
+          resume_id?: string | null
           status?: string
           user_id: string
         }
         Update: {
+          additional_notes?: string | null
           applied_date?: string
+          cover_letter?: string | null
           employer_id?: string
           id?: string
           job_id?: string
+          portfolio_url?: string | null
+          resume_id?: string | null
           status?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "applications_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_applications_employer_id"
             columns: ["employer_id"]

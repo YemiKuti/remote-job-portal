@@ -18,8 +18,18 @@ import {
   Globe, 
   FileText,
   User,
-  Briefcase
+  Briefcase,
+  Download,
+  ExternalLink
 } from 'lucide-react';
+
+interface Resume {
+  id: string;
+  name: string;
+  file_path: string;
+  file_size: number;
+  created_at: string;
+}
 
 interface Application {
   id: string;
@@ -27,6 +37,10 @@ interface Application {
   user_id: string;
   status: string;
   applied_date: string;
+  cover_letter?: string;
+  portfolio_url?: string;
+  additional_notes?: string;
+  resume?: Resume;
   job?: {
     id: string;
     title: string;
@@ -81,6 +95,22 @@ export const ApplicationDetailModal = ({
       case 'shortlisted': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleDownloadResume = () => {
+    if (application.resume?.file_path) {
+      // In a real implementation, this would handle secure file download
+      // For now, we'll show an alert
+      alert('Resume download functionality would be implemented here with proper file access controls.');
     }
   };
 
@@ -143,6 +173,89 @@ export const ApplicationDetailModal = ({
               <p className="text-sm text-muted-foreground">
                 {application.job?.company} • {application.job?.location}
               </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Application Documents */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Application Documents
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Cover Letter */}
+              {application.cover_letter ? (
+                <div>
+                  <h4 className="font-medium mb-2">Cover Letter</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm whitespace-pre-line">{application.cover_letter}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                  <p className="text-orange-800 text-sm">No cover letter provided</p>
+                </div>
+              )}
+
+              {/* Resume */}
+              {application.resume ? (
+                <div>
+                  <h4 className="font-medium mb-2">Resume</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{application.resume.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(application.resume.file_size)} • 
+                        Uploaded {new Date(application.resume.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDownloadResume}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                  <p className="text-orange-800 text-sm">No resume attached</p>
+                </div>
+              )}
+
+              {/* Portfolio URL */}
+              {application.portfolio_url && (
+                <div>
+                  <h4 className="font-medium mb-2">Portfolio</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <a 
+                      href={application.portfolio_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-2 text-sm"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {application.portfolio_url}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Notes */}
+              {application.additional_notes && (
+                <div>
+                  <h4 className="font-medium mb-2">Additional Notes</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm whitespace-pre-line">{application.additional_notes}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -248,19 +361,19 @@ export const ApplicationDetailModal = ({
 
           <Separator />
 
-          {/* Application Notes */}
+          {/* Application Information */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+              <Calendar className="h-5 w-5" />
               Application Information
             </h3>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Calendar className="h-4 w-4" />
                 <span>Applied on {new Date(application.applied_date).toLocaleDateString()}</span>
               </div>
-              <p className="text-sm mt-2 text-muted-foreground">
-                Additional application details like cover letter, resume, and other documents would appear here when available.
+              <p className="text-sm text-muted-foreground">
+                Application ID: {application.id}
               </p>
             </div>
           </div>

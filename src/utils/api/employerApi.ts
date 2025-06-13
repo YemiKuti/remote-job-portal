@@ -14,7 +14,7 @@ export const fetchEmployerApplications = async (userId: string) => {
 
     console.log('🔍 User session valid, attempting to fetch applications...');
     
-    // Fetch applications with manual joins to handle the relationships properly
+    // Fetch applications with job data
     const { data: applications, error: appsError } = await supabase
       .from('applications')
       .select(`
@@ -34,14 +34,14 @@ export const fetchEmployerApplications = async (userId: string) => {
       throw appsError;
     }
 
-    // Fetch candidate profiles separately to avoid relation issues
+    // Fetch candidate profiles separately with all fields
     const userIds = applications?.map(app => app.user_id).filter(Boolean) || [];
     let candidates: any[] = [];
     
     if (userIds.length > 0) {
       const { data: candidateData, error: candidateError } = await supabase
         .from('profiles')
-        .select('id, username, full_name')
+        .select('*')
         .in('id', userIds);
         
       if (candidateError) {
@@ -52,10 +52,29 @@ export const fetchEmployerApplications = async (userId: string) => {
       }
     }
 
-    // Combine applications with candidate data
+    // Fetch resumes for applications that have resume_id
+    const resumeIds = applications?.map(app => app.resume_id).filter(Boolean) || [];
+    let resumes: any[] = [];
+    
+    if (resumeIds.length > 0) {
+      const { data: resumeData, error: resumeError } = await supabase
+        .from('candidate_resumes')
+        .select('*')
+        .in('id', resumeIds);
+        
+      if (resumeError) {
+        console.error('❌ Error fetching resumes:', resumeError);
+        // Don't throw error, just use empty resumes array
+      } else {
+        resumes = resumeData || [];
+      }
+    }
+
+    // Combine applications with candidate data and resume data
     const applicationsWithCandidates = applications?.map(app => ({
       ...app,
-      candidate: candidates.find(candidate => candidate.id === app.user_id) || null
+      candidate: candidates.find(candidate => candidate.id === app.user_id) || null,
+      resume: resumes.find(resume => resume.id === app.resume_id) || null
     })) || [];
 
     console.log(`✅ Found ${applicationsWithCandidates?.length || 0} applications for employer`);
@@ -63,7 +82,9 @@ export const fetchEmployerApplications = async (userId: string) => {
       id: app.id,
       jobTitle: app.job?.title,
       candidateName: app.candidate?.full_name || app.candidate?.username,
-      status: app.status
+      status: app.status,
+      hasCoverLetter: !!app.cover_letter,
+      hasResume: !!app.resume
     })));
     
     return applicationsWithCandidates;

@@ -56,8 +56,13 @@ export function NotificationPreferences({ userId, userType }: NotificationPrefer
 
       if (error) throw error;
 
-      // Create default preferences for types that don't exist
-      const existingTypes = data?.map(p => p.notification_type) || [];
+      // Type cast the data and create default preferences for types that don't exist
+      const typedData = (data || []).map(item => ({
+        ...item,
+        frequency: item.frequency as 'instant' | 'daily' | 'weekly' | 'disabled'
+      }));
+
+      const existingTypes = typedData.map(p => p.notification_type);
       const missingTypes = notificationTypes.filter(type => !existingTypes.includes(type.key));
       
       const defaultPreferences = missingTypes.map(type => ({
@@ -68,7 +73,7 @@ export function NotificationPreferences({ userId, userType }: NotificationPrefer
         frequency: 'instant' as const
       }));
 
-      setPreferences([...(data || []), ...defaultPreferences]);
+      setPreferences([...typedData, ...defaultPreferences]);
     } catch (error) {
       console.error('Error fetching preferences:', error);
       toast.error('Failed to load notification preferences');

@@ -24,7 +24,11 @@ export const fetchNotificationPreferences = async (userId: string): Promise<Noti
     throw error;
   }
 
-  return data || [];
+  // Type cast the frequency field to ensure it matches our interface
+  return (data || []).map(item => ({
+    ...item,
+    frequency: item.frequency as 'instant' | 'daily' | 'weekly' | 'disabled'
+  }));
 };
 
 export const updateNotificationPreference = async (

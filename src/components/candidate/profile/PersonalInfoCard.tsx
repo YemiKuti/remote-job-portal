@@ -1,17 +1,15 @@
 
 import React from 'react';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { User } from '@supabase/supabase-js';
+import { Camera, User } from 'lucide-react';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface PersonalInfoCardProps {
-  user: User | null;
-  profileData: {
-    avatar_url?: string;
-  } | null;
+  user: any;
+  profileData: any;
   formData: {
     fullName: string;
     phone: string;
@@ -22,83 +20,104 @@ interface PersonalInfoCardProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
-export function PersonalInfoCard({ 
+export const PersonalInfoCard = ({
   user,
   profileData,
-  formData, 
+  formData,
   handleInputChange,
   handleChoosePhoto,
   fileInputRef
-}: PersonalInfoCardProps) {
-  // Use avatar from profiles table first, then fallback to user metadata
-  const avatarUrl = profileData?.avatar_url || user?.user_metadata?.avatar_url || "";
-  
+}: PersonalInfoCardProps) => {
+  const getUserInitials = () => {
+    const name = formData.fullName || user?.user_metadata?.full_name || user?.email || '';
+    return name
+      .split(' ')
+      .map((word: string) => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U';
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Personal Information</CardTitle>
-        <CardDescription>Update your personal details</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Personal Information
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={avatarUrl} />
-            <AvatarFallback>{user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-          </Avatar>
-          <div>
-            <Button 
-              variant="outline" 
-              size="sm"
+        {/* Profile Photo Section */}
+        <div className="flex flex-col items-center space-y-3">
+          <div className="relative">
+            <UserAvatar 
+              userId={user?.id}
+              fallbackText={getUserInitials()}
+              className="h-24 w-24"
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
               onClick={handleChoosePhoto}
             >
-              Change Photo
+              <Camera className="h-4 w-4" />
             </Button>
           </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Click the camera icon to update your profile photo
+          </p>
         </div>
-        
-        <div className="grid gap-3">
-          <div className="grid gap-1.5">
+
+        {/* Form Fields */}
+        <div className="space-y-4">
+          <div className="space-y-2">
             <Label htmlFor="fullName">Full Name</Label>
-            <Input 
-              id="fullName" 
+            <Input
+              id="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              placeholder="Full Name" 
+              placeholder="Enter your full name"
             />
           </div>
-          
-          <div className="grid gap-1.5">
+
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Input
+              id="email"
               type="email"
-              value={user?.email || ""}
+              value={user?.email || ''}
               disabled
+              className="bg-muted"
             />
+            <p className="text-xs text-muted-foreground">
+              Email cannot be changed here. Contact support if needed.
+            </p>
           </div>
-          
-          <div className="grid gap-1.5">
+
+          <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input 
-              id="phone" 
+            <Input
+              id="phone"
               type="tel"
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="Your phone number"
+              placeholder="Enter your phone number"
             />
           </div>
-          
-          <div className="grid gap-1.5">
+
+          <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <Input 
-              id="location" 
+            <Input
+              id="location"
               value={formData.location}
               onChange={handleInputChange}
-              placeholder="City, Country" 
+              placeholder="Enter your location"
             />
           </div>
         </div>
       </CardContent>
     </Card>
   );
-}
+};

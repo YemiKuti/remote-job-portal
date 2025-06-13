@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Bell, 
@@ -28,7 +27,6 @@ import {
   SidebarProvider
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { 
   DropdownMenu,
@@ -40,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -50,7 +49,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   const handleLogout = async () => {
@@ -113,10 +112,10 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
         <Sidebar className={`transition-all duration-300 ${isCollapsed ? 'w-[70px]' : 'w-[240px]'}`}>
           <SidebarHeader className="flex justify-between items-center">
             <div className={`flex items-center gap-2 px-2 ${isCollapsed ? 'justify-center' : ''}`}>
-              <Avatar>
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>{userTypeLabel[0]}</AvatarFallback>
-              </Avatar>
+              <UserAvatar 
+                fallbackText={userTypeLabel[0]}
+                className="h-8 w-8"
+              />
               {!isCollapsed && (
                 <div className="flex flex-col">
                   <span className="font-medium">{userTypeLabel} Portal</span>
@@ -204,10 +203,10 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="cursor-pointer">
-                    <AvatarImage src="/placeholder.svg" />
-                    <AvatarFallback>{userTypeLabel[0]}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar 
+                    fallbackText={userTypeLabel[0]}
+                    className="cursor-pointer h-8 w-8"
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>

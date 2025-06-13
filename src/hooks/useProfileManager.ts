@@ -115,6 +115,12 @@ export function useProfileManager() {
         
         // Refresh the session to get updated user metadata
         await refreshSession();
+        
+        // Force a page reload to ensure all components get the new avatar
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        
         setShowPhotoDialog(false);
         // Reset the file input
         if (fileInputRef.current) {

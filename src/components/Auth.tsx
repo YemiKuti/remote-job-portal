@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [rateLimited, setRateLimited] = useState(false);
 
@@ -44,6 +44,12 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
     }
 
     if (isSignUp) {
+      if (!fullName.trim()) {
+        errors.fullName = "Full name is required";
+      } else if (fullName.trim().length < 2) {
+        errors.fullName = "Full name must be at least 2 characters";
+      }
+
       try {
         passwordSchema.parse(password);
       } catch (error: any) {
@@ -78,6 +84,7 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
     try {
       const sanitizedEmail = sanitizeInput(email);
       const sanitizedPassword = sanitizeInput(password);
+      const sanitizedFullName = sanitizeInput(fullName);
       
       const { data, error } = await supabase.auth.signUp({
         email: sanitizedEmail,
@@ -85,6 +92,7 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
         options: {
           data: {
             role: selectedRole,
+            full_name: sanitizedFullName,
           },
         },
       });
@@ -245,6 +253,21 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
                     <option value="candidate">Job Seeker</option>
                     <option value="employer">Employer</option>
                   </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-full-name">Full Name</Label>
+                  <SecureInput
+                    id="signup-full-name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={fullName}
+                    onSecureChange={setFullName}
+                    disabled={isLoading || rateLimited}
+                    className={validationErrors.fullName ? "border-red-500" : ""}
+                  />
+                  {validationErrors.fullName && (
+                    <p className="text-sm text-red-500">{validationErrors.fullName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>

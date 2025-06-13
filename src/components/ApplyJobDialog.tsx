@@ -33,12 +33,19 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
       return;
     }
 
+    // Validate that job has an employer
+    if (!job.employerId) {
+      setErrorMessage('This job posting is missing employer information. Please contact support.');
+      setApplicationStatus('error');
+      return;
+    }
+
     setIsSubmitting(true);
     setApplicationStatus('idle');
     setErrorMessage('');
 
     try {
-      const success = await applyToJob(user.id, job.id);
+      const success = await applyToJob(user.id, job.id, job.employerId);
       
       if (success) {
         setApplicationStatus('success');
@@ -192,7 +199,7 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || !job.employerId}
                 className="bg-job-green hover:bg-job-darkGreen"
               >
                 {isSubmitting ? (

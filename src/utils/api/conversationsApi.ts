@@ -152,3 +152,18 @@ export const markMessagesAsRead = async (conversationId: string) => {
     throw error;
   }
 };
+
+// Mark messages as seen - NEW FUNCTION
+export const markMessagesAsSeen = async (conversationId: string) => {
+  try {
+    const { data, error } = await supabase.rpc('mark_messages_seen', {
+      conv_id: conversationId
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Error marking messages as seen:', error);
+    throw error;
+  }
+};

@@ -438,6 +438,7 @@ export type Database = {
           id: string
           read: boolean
           recipient_id: string
+          seen: boolean
           sender_id: string
           sent_at: string
         }
@@ -450,6 +451,7 @@ export type Database = {
           id?: string
           read?: boolean
           recipient_id: string
+          seen?: boolean
           sender_id: string
           sent_at?: string
         }
@@ -462,6 +464,7 @@ export type Database = {
           id?: string
           read?: boolean
           recipient_id?: string
+          seen?: boolean
           sender_id?: string
           sent_at?: string
         }
@@ -1031,6 +1034,10 @@ export type Database = {
         Returns: boolean
       }
       mark_messages_read: {
+        Args: { conv_id: string }
+        Returns: boolean
+      }
+      mark_messages_seen: {
         Args: { conv_id: string }
         Returns: boolean
       }

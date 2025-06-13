@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,13 +11,15 @@ import {
   fetchConversations, 
   fetchMessages, 
   sendMessage, 
-  markMessagesAsRead 
+  markMessagesAsRead,
+  markMessagesAsSeen 
 } from '@/utils/api/conversationsApi';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import type { Conversation, Message } from '@/types/api';
 import { FileAttachment } from '@/components/messaging/FileAttachment';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
+import { MessageStatus } from '@/components/messaging/MessageStatus';
 
 const EmployerMessages = () => {
   const { user } = useAuth();
@@ -46,8 +49,9 @@ const EmployerMessages = () => {
           setActiveConversation(convs[0]);
           const msgs = await fetchMessages(convs[0].id);
           setMessages(msgs);
-          // Mark messages as read when viewing conversation
+          // Mark messages as read and seen when viewing conversation
           await markMessagesAsRead(convs[0].id);
+          await markMessagesAsSeen(convs[0].id);
         }
       } catch (error) {
         console.error('Error loading conversations:', error);
@@ -65,8 +69,9 @@ const EmployerMessages = () => {
     try {
       const msgs = await fetchMessages(conversation.id);
       setMessages(msgs);
-      // Mark messages as read when viewing conversation
+      // Mark messages as read and seen when viewing conversation
       await markMessagesAsRead(conversation.id);
+      await markMessagesAsSeen(conversation.id);
       
       // Update conversation's unread count in local state
       setConversations(prev => 
@@ -243,9 +248,16 @@ const EmployerMessages = () => {
                               size={message.attachment_size}
                             />
                           )}
-                          <p className={`text-xs mt-1 ${message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
-                            {new Date(message.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                          <div className={`flex items-center justify-between mt-1 ${message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'}`}>
+                            <p className="text-xs">
+                              {new Date(message.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            <MessageStatus
+                              read={message.read}
+                              seen={message.seen}
+                              isSentByCurrentUser={message.sender_id === user?.id}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))

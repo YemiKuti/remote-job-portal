@@ -12,6 +12,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { analytics } from '@/utils/analytics';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ProtectedEmployerRoute } from '@/components/employer/ProtectedEmployerRoute';
+import { StartConversationButton } from '@/components/messaging/StartConversationButton';
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();
@@ -330,6 +331,17 @@ const EmployerDashboard = () => {
                           >
                             Profile
                           </Button>
+                          {app.user_id && (
+                            <StartConversationButton
+                              recipientId={app.user_id}
+                              recipientName={app.candidate?.full_name || app.candidate?.username || 'Candidate'}
+                              currentUserRole="employer"
+                              variant="outline"
+                              size="sm"
+                            >
+                              Message
+                            </StartConversationButton>
+                          )}
                         </div>
                       </div>
                     ))

@@ -915,6 +915,15 @@ export type Database = {
         Args: { target_user_id: string; new_role: string }
         Returns: boolean
       }
+      find_or_create_conversation: {
+        Args: {
+          user1_id: string
+          user2_id: string
+          user1_role?: string
+          user2_role?: string
+        }
+        Returns: string
+      }
       generate_slug: {
         Args: { title: string }
         Returns: string
@@ -1011,6 +1020,18 @@ export type Database = {
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      mark_messages_read: {
+        Args: { conversation_id: string }
+        Returns: boolean
+      }
+      send_message: {
+        Args: {
+          conversation_id: string
+          recipient_id: string
+          message_content: string
+        }
+        Returns: string
       }
     }
     Enums: {

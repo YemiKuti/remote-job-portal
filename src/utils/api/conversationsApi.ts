@@ -5,13 +5,10 @@ import { Conversation, Message } from '@/types/api';
 // Fetch conversations with latest messages
 export const fetchConversations = async (userId: string, userRole: 'candidate' | 'employer') => {
   try {
-    const idField = userRole === 'candidate' ? 'candidate_id' : 'employer_id';
-    
-    // First get conversations
+    // Use the RLS-enabled query to get conversations for the current user
     const { data: conversations, error: convError } = await supabase
       .from('conversations')
       .select('*')
-      .eq(idField, userId)
       .order('last_message_at', { ascending: false });
 
     if (convError) throw convError;
@@ -19,7 +16,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
     // Then get user profiles for each conversation
     const enhancedConversations: Conversation[] = [];
     
-    for (const conv of conversations) {
+    for (const conv of conversations || []) {
       // Get employer profile
       const { data: employerProfile, error: empError } = await supabase
         .from('profiles')
@@ -38,7 +35,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
         ...conv,
         employer_name: employerProfile && !empError ? employerProfile.full_name || employerProfile.username : 'Employer',
         candidate_name: candidateProfile && !candError ? candidateProfile.full_name || candidateProfile.username : 'Candidate',
-        company: employerProfile && !empError ? employerProfile.username : undefined, // Using username instead of company_name
+        company: employerProfile && !empError ? employerProfile.username : undefined,
       });
     }
     
@@ -52,7 +49,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
 // Fetch messages for a conversation
 export const fetchMessages = async (conversationId: string) => {
   try {
-    // Get messages
+    // Get messages using RLS-enabled query
     const { data: messages, error: msgError } = await supabase
       .from('messages')
       .select('*')
@@ -64,7 +61,7 @@ export const fetchMessages = async (conversationId: string) => {
     // Get sender profile for each message
     const enhancedMessages: Message[] = [];
     
-    for (const msg of messages) {
+    for (const msg of messages || []) {
       const { data: senderProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -81,5 +78,62 @@ export const fetchMessages = async (conversationId: string) => {
   } catch (error: any) {
     console.error('Error fetching messages:', error);
     return [];
+  }
+};
+
+// Create or find a conversation between two users
+export const createOrFindConversation = async (
+  otherUserId: string,
+  currentUserRole: 'candidate' | 'employer' = 'candidate'
+) => {
+  try {
+    const { data: conversationId, error } = await supabase.rpc('find_or_create_conversation', {
+      user1_id: supabase.auth.getUser().then(r => r.data.user?.id),
+      user2_id: otherUserId,
+      user1_role: currentUserRole,
+      user2_role: currentUserRole === 'candidate' ? 'employer' : 'candidate'
+    });
+
+    if (error) throw error;
+    return conversationId;
+  } catch (error: any) {
+    console.error('Error creating/finding conversation:', error);
+    throw error;
+  }
+};
+
+// Send a message using the database function
+export const sendMessage = async (
+  conversationId: string,
+  recipientId: string,
+  content: string
+) => {
+  try {
+    const { data: messageId, error } = await supabase.rpc('send_message', {
+      conversation_id: conversationId,
+      recipient_id: recipientId,
+      message_content: content
+    });
+
+    if (error) throw error;
+    return messageId;
+  } catch (error: any) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+
+// Mark messages as read
+export const markMessagesAsRead = async (conversationId: string) => {
+  try {
+    const { data, error } = await supabase.rpc('mark_messages_read', {
+      conversation_id: conversationId
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Error marking messages as read:', error);
+    throw error;
   }
 };

@@ -7,12 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Send, Loader2 } from 'lucide-react';
-import { fetchConversations, fetchMessages, Message, Conversation } from '@/utils/dataFetching';
+import { 
+  fetchConversations, 
+  fetchMessages, 
+  sendMessage, 
+  markMessagesAsRead 
+} from '@/utils/api/conversationsApi';
 import { useAuth } from '@/components/AuthProvider';
+import { toast } from 'sonner';
+import type { Conversation, Message } from '@/types/api';
 
 const EmployerMessages = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -24,13 +32,20 @@ const EmployerMessages = () => {
       if (!user) return;
       
       setLoading(true);
-      const convs = await fetchConversations(user.id, 'employer');
-      setConversations(convs);
-      
-      if (convs.length > 0) {
-        setActiveConversation(convs[0]);
-        const msgs = await fetchMessages(convs[0].id);
-        setMessages(msgs);
+      try {
+        const convs = await fetchConversations(user.id, 'employer');
+        setConversations(convs);
+        
+        if (convs.length > 0) {
+          setActiveConversation(convs[0]);
+          const msgs = await fetchMessages(convs[0].id);
+          setMessages(msgs);
+          // Mark messages as read when viewing conversation
+          await markMessagesAsRead(convs[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        toast.error('Failed to load conversations');
       }
       
       setLoading(false);
@@ -41,29 +56,62 @@ const EmployerMessages = () => {
   
   const handleConversationClick = async (conversation: Conversation) => {
     setActiveConversation(conversation);
-    const msgs = await fetchMessages(conversation.id);
-    setMessages(msgs);
+    try {
+      const msgs = await fetchMessages(conversation.id);
+      setMessages(msgs);
+      // Mark messages as read when viewing conversation
+      await markMessagesAsRead(conversation.id);
+      
+      // Update conversation's unread count in local state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === conversation.id 
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast.error('Failed to load messages');
+    }
   };
   
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !activeConversation || !user) return;
+    if (!newMessage.trim() || !activeConversation || !user || sending) return;
     
-    // In a real app, you would save this to the database
-    const message = {
-      id: `temp-${Date.now()}`,
-      conversation_id: activeConversation.id,
-      sender_id: user.id,
-      recipient_id: activeConversation.candidate_id,
-      content: newMessage,
-      sent_at: new Date().toISOString(),
-      read: false,
-      sender_name: user.user_metadata?.full_name || user.user_metadata?.company_name || 'Me'
-    };
-    
-    setMessages([...messages, message]);
-    setNewMessage('');
-    
-    // In a real app, you would save the message to the database here
+    setSending(true);
+    try {
+      // Send message to database
+      await sendMessage(
+        activeConversation.id,
+        activeConversation.candidate_id,
+        newMessage
+      );
+      
+      // Reload messages to show the new message
+      const updatedMessages = await fetchMessages(activeConversation.id);
+      setMessages(updatedMessages);
+      setNewMessage('');
+      
+      // Update conversation's last message in local state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === activeConversation.id 
+            ? { 
+                ...conv, 
+                last_message: newMessage,
+                last_message_at: new Date().toISOString()
+              }
+            : conv
+        )
+      );
+      
+      toast.success('Message sent successfully');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
+    setSending(false);
   };
   
   const filteredConversations = conversations.filter(conv => {
@@ -203,9 +251,18 @@ const EmployerMessages = () => {
                           handleSendMessage();
                         }
                       }}
+                      disabled={sending}
                     />
-                    <Button size="icon" onClick={handleSendMessage}>
-                      <Send className="h-4 w-4" />
+                    <Button 
+                      size="icon" 
+                      onClick={handleSendMessage}
+                      disabled={sending || !newMessage.trim()}
+                    >
+                      {sending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>

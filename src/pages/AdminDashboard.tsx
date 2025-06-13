@@ -13,12 +13,13 @@ import {
   Loader2,
   CreditCard
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { fetchAdminStats, fetchRecentUsers, fetchRecentJobs } from '@/utils/api';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -69,6 +70,18 @@ const AdminDashboard = () => {
       title: "Action triggered",
       description: `${action} action initiated`,
     });
+  };
+
+  const handleViewUser = (userId: string) => {
+    navigate(`/admin/users?userId=${userId}`);
+  };
+
+  const handleEditUser = (userId: string) => {
+    navigate(`/admin/users?edit=${userId}`);
+  };
+
+  const handleReviewJob = (jobId: string) => {
+    navigate(`/admin/edit-job/${jobId}`);
   };
   
   if (loading) {
@@ -221,8 +234,20 @@ const AdminDashboard = () => {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">View</Button>
-                      <Button size="sm" variant="outline">Edit</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleViewUser(user.id)}
+                      >
+                        View
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditUser(user.id)}
+                      >
+                        Edit
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -263,7 +288,13 @@ const AdminDashboard = () => {
                       }`}>
                         {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                       </span>
-                      <Button size="sm" variant="outline">Review</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleReviewJob(job.id)}
+                      >
+                        Review
+                      </Button>
                     </div>
                   </div>
                 ))

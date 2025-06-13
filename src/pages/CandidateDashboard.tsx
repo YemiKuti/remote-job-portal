@@ -17,12 +17,15 @@ import {
   FileText,
   AlertCircle,
   RefreshCw,
-  Search
+  Search,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchCandidateApplications, fetchSavedJobs, fetchCandidateRecommendedJobs } from '@/utils/api';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
+import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { Link, useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface DashboardData {
   applications: any[];
@@ -47,6 +50,8 @@ interface ErrorState {
 const CandidateDashboard = () => {
   const { user, isLoading: authLoading, authError } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  
   const [data, setData] = useState<DashboardData>({
     applications: [],
     savedJobs: [],
@@ -266,276 +271,302 @@ const CandidateDashboard = () => {
               Welcome back! Here's an overview of your job search activity.
             </p>
           </div>
-          <Link to="/jobs">
-            <Button className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Browse Jobs
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/jobs">
+              <Button className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Browse Jobs
+              </Button>
+            </Link>
+          </div>
         </div>
         <Separator />
 
-        {/* Show individual section errors */}
-        {(errors.applications || errors.savedJobs || errors.recommendations) && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Some sections couldn't load properly. You can still use the dashboard with available data.
-              {retryCount < maxRetries && (
-                <Button variant="link" onClick={handleRetry} className="ml-2 p-0 h-auto">
-                  Retry
-                </Button>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="h-4 w-4 mr-2" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Preferences
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading.applications ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                </div>
-              ) : errors.applications ? (
-                <div className="text-red-500 text-sm">Failed to load</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{data.applications.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {data.applications.filter(app => app.status === 'pending').length} pending review
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Show individual section errors */}
+            {(errors.applications || errors.savedJobs || errors.recommendations) && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Some sections couldn't load properly. You can still use the dashboard with available data.
+                  {retryCount < maxRetries && (
+                    <Button variant="link" onClick={handleRetry} className="ml-2 p-0 h-auto">
+                      Retry
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saved Jobs</CardTitle>
-              <BookmarkIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading.savedJobs ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                </div>
-              ) : errors.savedJobs ? (
-                <div className="text-red-500 text-sm">Failed to load</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{data.savedJobs.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Jobs bookmarked for later
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+            {/* Stats Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading.applications ? (
+                    <div className="animate-pulse space-y-2">
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  ) : errors.applications ? (
+                    <div className="text-red-500 text-sm">Failed to load</div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{data.applications.length}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {data.applications.filter(app => app.status === 'pending').length} pending review
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Interviews</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading.applications ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {data.applications.filter(app => app.status === 'interview').length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Active interview processes
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Saved Jobs</CardTitle>
+                  <BookmarkIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading.savedJobs ? (
+                    <div className="animate-pulse space-y-2">
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  ) : errors.savedJobs ? (
+                    <div className="text-red-500 text-sm">Failed to load</div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{data.savedJobs.length}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Jobs bookmarked for later
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Job Offers</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loading.applications ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {data.applications.filter(app => app.status === 'offer').length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Pending decisions
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Interviews</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading.applications ? (
+                    <div className="animate-pulse space-y-2">
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {data.applications.filter(app => app.status === 'interview').length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Active interview processes
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Recent Applications */}
-          <div className="lg:col-span-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Job Offers</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {loading.applications ? (
+                    <div className="animate-pulse space-y-2">
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {data.applications.filter(app => app.status === 'offer').length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Pending decisions
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Recent Applications */}
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Applications</CardTitle>
+                    <CardDescription>
+                      Your latest job applications and their status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading.applications ? (
+                      <div className="space-y-4">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="animate-pulse border-b pb-4">
+                            <div className="h-5 bg-gray-200 rounded w-48 mb-2"></div>
+                            <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
+                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : errors.applications ? (
+                      <div className="text-center py-8">
+                        <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
+                        <p className="text-red-600">Failed to load applications</p>
+                        <Button variant="outline" onClick={() => loadApplications(user?.id || '')} className="mt-2">
+                          Try Again
+                        </Button>
+                      </div>
+                    ) : data.applications.length > 0 ? (
+                      <div className="space-y-4">
+                        {data.applications.slice(0, 5).map((app) => (
+                          <div key={app.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                            <div className="space-y-1">
+                              <h4 className="font-medium">{app.position || "Position"}</h4>
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Building className="mr-1 h-3 w-3" />
+                                <span>{app.company || "Company"}</span>
+                                <MapPin className="ml-2 mr-1 h-3 w-3" />
+                                <span>{app.location || "Location"}</span>
+                              </div>
+                              <div className="flex items-center text-xs text-muted-foreground">
+                                <Calendar className="mr-1 h-3 w-3" />
+                                <span>Applied {formatDate(app.applied_date)}</span>
+                              </div>
+                            </div>
+                            <Badge className={getStatusColor(app.status)}>
+                              {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                            </Badge>
+                          </div>
+                        ))}
+                        <div className="pt-4">
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => navigate('/candidate/applications')}
+                          >
+                            View All Applications
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-muted-foreground">No applications yet</p>
+                        <p className="text-sm text-muted-foreground mb-4">Start applying to jobs to see them here</p>
+                        <Link to="/jobs">
+                          <Button>Browse Jobs</Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Notifications - Keep the existing notification center for overview */}
+              <div>
+                {user && <NotificationCenter userId={user.id} />}
+              </div>
+            </div>
+
+            {/* Recommended Jobs */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Applications</CardTitle>
+                <CardTitle>Recommended for You</CardTitle>
                 <CardDescription>
-                  Your latest job applications and their status
+                  Jobs that match your profile and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading.applications ? (
-                  <div className="space-y-4">
+                {loading.recommendations ? (
+                  <div className="grid gap-4 md:grid-cols-3">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse border-b pb-4">
-                        <div className="h-5 bg-gray-200 rounded w-48 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
-                        <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      <div key={i} className="animate-pulse border rounded-lg p-4 space-y-2">
+                        <div className="h-5 bg-gray-200 rounded w-32"></div>
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        <div className="h-4 bg-gray-200 rounded w-28"></div>
+                        <div className="h-4 bg-gray-200 rounded w-20"></div>
                       </div>
                     ))}
                   </div>
-                ) : errors.applications ? (
+                ) : errors.recommendations ? (
                   <div className="text-center py-8">
                     <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
-                    <p className="text-red-600">Failed to load applications</p>
-                    <Button variant="outline" onClick={() => loadApplications(user?.id || '')} className="mt-2">
+                    <p className="text-red-600">Failed to load recommendations</p>
+                    <Button variant="outline" onClick={() => loadRecommendations(user?.id || '')} className="mt-2">
                       Try Again
                     </Button>
                   </div>
-                ) : data.applications.length > 0 ? (
-                  <div className="space-y-4">
-                    {data.applications.slice(0, 5).map((app) => (
-                      <div key={app.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">{app.position || "Position"}</h4>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Building className="mr-1 h-3 w-3" />
-                            <span>{app.company || "Company"}</span>
-                            <MapPin className="ml-2 mr-1 h-3 w-3" />
-                            <span>{app.location || "Location"}</span>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            <span>Applied {formatDate(app.applied_date)}</span>
-                          </div>
+                ) : data.recommendedJobs.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {data.recommendedJobs.map((job) => (
+                      <div key={job.id} className="border rounded-lg p-4 space-y-2">
+                        <h4 className="font-medium">{job.title}</h4>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Building className="mr-1 h-3 w-3" />
+                          <span>{job.company}</span>
                         </div>
-                        <Badge className={getStatusColor(app.status)}>
-                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                        </Badge>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <MapPin className="mr-1 h-3 w-3" />
+                          <span>{job.location}</span>
+                        </div>
+                        {job.salary_min && job.salary_max && (
+                          <p className="text-sm font-medium">
+                            ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}
+                          </p>
+                        )}
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" className="flex-1">Apply</Button>
+                          <Button size="sm" variant="outline">Save</Button>
+                        </div>
                       </div>
                     ))}
-                    <div className="pt-4">
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => navigate('/candidate/applications')}
-                      >
-                        View All Applications
-                      </Button>
-                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No applications yet</p>
-                    <p className="text-sm text-muted-foreground mb-4">Start applying to jobs to see them here</p>
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">No recommendations available</p>
+                    <p className="text-sm text-muted-foreground mb-4">Complete your profile to get personalized job recommendations</p>
                     <Link to="/jobs">
-                      <Button>Browse Jobs</Button>
+                      <Button>Browse All Jobs</Button>
                     </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
 
-          {/* Notifications */}
-          <div>
+          <TabsContent value="notifications" className="space-y-6">
             {user && <NotificationCenter userId={user.id} />}
-          </div>
-        </div>
+          </TabsContent>
 
-        {/* Recommended Jobs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommended for You</CardTitle>
-            <CardDescription>
-              Jobs that match your profile and preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading.recommendations ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse border rounded-lg p-4 space-y-2">
-                    <div className="h-5 bg-gray-200 rounded w-32"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                    <div className="h-4 bg-gray-200 rounded w-28"></div>
-                    <div className="h-4 bg-gray-200 rounded w-20"></div>
-                  </div>
-                ))}
-              </div>
-            ) : errors.recommendations ? (
-              <div className="text-center py-8">
-                <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
-                <p className="text-red-600">Failed to load recommendations</p>
-                <Button variant="outline" onClick={() => loadRecommendations(user?.id || '')} className="mt-2">
-                  Try Again
-                </Button>
-              </div>
-            ) : data.recommendedJobs.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                {data.recommendedJobs.map((job) => (
-                  <div key={job.id} className="border rounded-lg p-4 space-y-2">
-                    <h4 className="font-medium">{job.title}</h4>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Building className="mr-1 h-3 w-3" />
-                      <span>{job.company}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="mr-1 h-3 w-3" />
-                      <span>{job.location}</span>
-                    </div>
-                    {job.salary_min && job.salary_max && (
-                      <p className="text-sm font-medium">
-                        ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}
-                      </p>
-                    )}
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1">Apply</Button>
-                      <Button size="sm" variant="outline">Save</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">No recommendations available</p>
-                <p className="text-sm text-muted-foreground mb-4">Complete your profile to get personalized job recommendations</p>
-                <Link to="/jobs">
-                  <Button>Browse All Jobs</Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <TabsContent value="settings" className="space-y-6">
+            {user && <NotificationPreferences userId={user.id} userType="candidate" />}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

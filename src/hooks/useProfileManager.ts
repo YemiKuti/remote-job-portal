@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -32,6 +31,8 @@ export function useProfileManager() {
       
       try {
         setIsLoading(true);
+        console.log('🔄 Fetching profile data for user:', user.id);
+        
         // Get profile data from the profiles table
         const { data, error } = await supabase
           .from('profiles')
@@ -40,26 +41,27 @@ export function useProfileManager() {
           .single();
           
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.error('❌ Error fetching profile:', error);
           return;
         }
         
+        console.log('✅ Profile data fetched:', data);
         setProfileData(data);
         
-        // Combine profile data with user metadata for the extended fields
+        // Update form data with database values, falling back to user metadata
         const userMetadata = user.user_metadata || {};
         
         setFormData({
-          fullName: data?.full_name || user?.user_metadata?.full_name || '',
-          phone: userMetadata.phone || '',
-          location: userMetadata.location || '',
-          title: userMetadata.title || '',
-          experience: userMetadata.experience ? String(userMetadata.experience) : '',
-          skills: userMetadata.skills || '',
-          bio: userMetadata.bio || ''
+          fullName: data?.full_name || userMetadata.full_name || '',
+          phone: data?.phone || userMetadata.phone || '',
+          location: data?.location || userMetadata.location || '',
+          title: data?.title || userMetadata.title || '',
+          experience: data?.experience ? String(data.experience) : (userMetadata.experience ? String(userMetadata.experience) : ''),
+          skills: data?.skills || userMetadata.skills || '',
+          bio: data?.bio || userMetadata.bio || ''
         });
       } catch (error) {
-        console.error('Error in fetchProfileData:', error);
+        console.error('❌ Error in fetchProfileData:', error);
       } finally {
         setIsLoading(false);
       }
@@ -144,49 +146,54 @@ export function useProfileManager() {
     }
   };
   
-  // Save profile changes
+  // Save profile changes - IMPROVED VERSION
   const handleSaveProfile = async () => {
     if (!user) return;
     
     setIsSubmitting(true);
     try {
+      console.log('🔄 Saving profile changes...');
+      
       const profileData = {
         full_name: formData.fullName,
         phone: formData.phone,
         location: formData.location,
         title: formData.title,
-        experience: formData.experience ? Number(formData.experience) : undefined,
+        experience: formData.experience ? Number(formData.experience) : null,
         skills: formData.skills,
         bio: formData.bio
       };
       
+      console.log('📤 Sending profile data:', profileData);
+      
       const success = await updateCandidateProfile(user.id, profileData);
       
       if (success) {
-        // Update user metadata as well
+        // Update user metadata as well for consistency
         const { error: metadataError } = await supabase.auth.updateUser({
           data: {
             full_name: formData.fullName,
             phone: formData.phone,
             location: formData.location,
             title: formData.title,
-            experience: formData.experience ? Number(formData.experience) : undefined,
+            experience: formData.experience ? Number(formData.experience) : null,
             skills: formData.skills,
             bio: formData.bio
           }
         });
         
         if (metadataError) {
-          console.error('Error updating user metadata:', metadataError);
+          console.error('⚠️ Error updating user metadata:', metadataError);
+          // Don't fail the whole operation for metadata error
         }
         
         // Refresh the session to update user metadata
         await refreshSession();
         toast.success('Profile updated successfully');
       }
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Failed to save profile. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Error saving profile:', error);
+      toast.error(error.message || 'Failed to save profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

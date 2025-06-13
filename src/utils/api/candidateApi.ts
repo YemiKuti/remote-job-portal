@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
@@ -349,24 +348,37 @@ export const getProfileViewCount = async (profileId: string) => {
   }
 };
 
-// Update candidate profile
+// Update candidate profile - FIXED VERSION
 export const updateCandidateProfile = async (userId: string, profileData: any) => {
   try {
-    console.log('🔄 Updating candidate profile:', userId);
+    console.log('🔄 Updating candidate profile:', userId, profileData);
     
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('Authentication required');
     }
 
+    // Filter out undefined values and prepare the update data
+    const updateData: any = {};
+    
+    if (profileData.full_name !== undefined) updateData.full_name = profileData.full_name;
+    if (profileData.phone !== undefined) updateData.phone = profileData.phone;
+    if (profileData.location !== undefined) updateData.location = profileData.location;
+    if (profileData.title !== undefined) updateData.title = profileData.title;
+    if (profileData.experience !== undefined) updateData.experience = profileData.experience;
+    if (profileData.skills !== undefined) updateData.skills = profileData.skills;
+    if (profileData.bio !== undefined) updateData.bio = profileData.bio;
+
+    console.log('📝 Profile update data:', updateData);
+
     const { error } = await supabase
       .from('profiles')
-      .update(profileData)
+      .update(updateData)
       .eq('id', userId);
 
     if (error) {
       console.error('❌ Database error updating profile:', error);
-      throw error;
+      throw new Error(`Failed to update profile: ${error.message}`);
     }
 
     console.log('✅ Profile updated successfully');

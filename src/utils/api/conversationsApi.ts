@@ -87,8 +87,15 @@ export const createOrFindConversation = async (
   currentUserRole: 'candidate' | 'employer' = 'candidate'
 ) => {
   try {
+    // Get the current user ID
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
     const { data: conversationId, error } = await supabase.rpc('find_or_create_conversation', {
-      user1_id: supabase.auth.getUser().then(r => r.data.user?.id),
+      user1_id: user.id,
       user2_id: otherUserId,
       user1_role: currentUserRole,
       user2_role: currentUserRole === 'candidate' ? 'employer' : 'candidate'

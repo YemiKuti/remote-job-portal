@@ -14,7 +14,7 @@ export const fetchEmployerApplications = async (userId: string) => {
 
     console.log('🔍 User session valid, attempting to fetch applications...');
     
-    // Fetch applications with left joins to handle incomplete candidate profiles
+    // Fetch applications with explicit relationship hints to handle multiple foreign keys
     const { data: applications, error: appsError } = await supabase
       .from('applications')
       .select(`
@@ -25,7 +25,7 @@ export const fetchEmployerApplications = async (userId: string) => {
           company,
           location
         ),
-        candidate:profiles(
+        candidate:profiles!applications_user_id_fkey(
           id,
           username,
           full_name

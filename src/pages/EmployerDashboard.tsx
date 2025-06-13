@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,6 +142,22 @@ const EmployerDashboard = () => {
       fetchData(user.id);
     }
   }, [user?.id, fetchData]);
+
+  const handleViewApplication = useCallback((applicationId: string) => {
+    analytics.track('application_reviewed', { source: 'dashboard', applicationId });
+    navigate('/employer/candidates', { state: { focusApplicationId: applicationId } });
+  }, [navigate]);
+
+  const handleViewCandidateProfile = useCallback((candidateId: string, candidateName: string) => {
+    if (!candidateId) {
+      console.warn('Cannot view profile: candidate ID is missing');
+      return;
+    }
+    analytics.track('candidate_profile_viewed', { source: 'dashboard', candidateId });
+    // Navigate to a candidate profile view (we'll need to create this route later)
+    // For now, navigate to candidates page
+    navigate('/employer/candidates', { state: { focusCandidateId: candidateId } });
+  }, [navigate]);
 
   // Show error state with debug info
   if (error && !loading && jobs.length === 0 && applications.length === 0) {
@@ -300,8 +315,21 @@ const EmployerDashboard = () => {
                           </p>
                         </div>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">Review</Button>
-                          <Button variant="outline" size="sm">Profile</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleViewApplication(app.id)}
+                          >
+                            Review
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewCandidateProfile(app.user_id, app.candidate?.full_name || app.candidate?.username || 'Candidate')}
+                            disabled={!app.user_id}
+                          >
+                            Profile
+                          </Button>
                         </div>
                       </div>
                     ))

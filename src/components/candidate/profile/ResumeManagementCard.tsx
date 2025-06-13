@@ -68,19 +68,30 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
 
     setUploading(true);
     try {
-      // Ensure storage bucket exists
-      await ensureStorageBucketExists();
+      // Check if storage bucket exists
+      const bucketExists = await ensureStorageBucketExists();
+      if (!bucketExists) {
+        throw new Error('Storage not properly configured. Please contact support.');
+      }
 
-      // Upload file to Supabase Storage
+      // Upload file to Supabase Storage with user-specific path
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `resumes/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      console.log('Uploading file to path:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          upsert: false,
+          cacheControl: '3600'
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
 
       // Save resume record to database
       const { error: dbError } = await supabase
@@ -93,13 +104,18 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
           is_default: resumes.length === 0 // First resume is default
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        // Clean up uploaded file if database insert fails
+        await supabase.storage.from('documents').remove([filePath]);
+        throw new Error(`Database error: ${dbError.message}`);
+      }
 
       toast.success('Resume uploaded successfully');
       fetchResumes();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading resume:', error);
-      toast.error('Failed to upload resume');
+      toast.error(error.message || 'Failed to upload resume');
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -159,17 +175,22 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
 
     try {
       // Delete from storage
-      await supabase.storage
+      const { error: storageError } = await supabase.storage
         .from('documents')
         .remove([filePath]);
 
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        // Continue with database deletion even if file deletion fails
+      }
+
       // Delete from database
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from('candidate_resumes')
         .delete()
         .eq('id', resumeId);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       toast.success('Resume deleted successfully');
       fetchResumes();

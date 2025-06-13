@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const ensureStorageBucketExists = async () => {
   try {
-    // Check if bucket exists
+    // Check if bucket exists (don't try to create it, as it should exist via migration)
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
@@ -14,25 +14,11 @@ export const ensureStorageBucketExists = async () => {
     const documentsBucket = buckets?.find(bucket => bucket.id === 'documents');
     
     if (!documentsBucket) {
-      // Create the bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket('documents', {
-        public: false,
-        allowedMimeTypes: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ],
-        fileSizeLimit: 5242880 // 5MB
-      });
-
-      if (createError) {
-        console.error('Error creating documents bucket:', createError);
-        return false;
-      }
-
-      console.log('Documents bucket created successfully');
+      console.error('Documents bucket not found. It should be created via SQL migration.');
+      return false;
     }
 
+    console.log('Documents bucket exists and is ready for use');
     return true;
   } catch (error) {
     console.error('Error in ensureStorageBucketExists:', error);

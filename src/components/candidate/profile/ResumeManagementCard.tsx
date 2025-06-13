@@ -68,18 +68,15 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
 
     setUploading(true);
     try {
-      // Check if storage bucket exists
-      const bucketExists = await ensureStorageBucketExists();
-      if (!bucketExists) {
-        throw new Error('Storage not properly configured. Please contact support.');
-      }
+      // Check storage setup (but don't fail if check fails)
+      await ensureStorageBucketExists();
 
       // Upload file to Supabase Storage with user-specific path
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${userId}/${fileName}`;
 
-      console.log('Uploading file to path:', filePath);
+      console.log('📤 Uploading file to path:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -89,9 +86,21 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
+        console.error('❌ Upload error:', uploadError);
+        
+        // Provide more specific error messages
+        if (uploadError.message.includes('Bucket not found')) {
+          throw new Error('Storage bucket not found. Please contact support to set up document storage.');
+        } else if (uploadError.message.includes('not allowed to perform this operation')) {
+          throw new Error('You do not have permission to upload files. Please contact support.');
+        } else if (uploadError.message.includes('duplicate')) {
+          throw new Error('A file with this name already exists. Please try again.');
+        } else {
+          throw new Error(`Upload failed: ${uploadError.message}`);
+        }
       }
+
+      console.log('✅ File uploaded successfully');
 
       // Save resume record to database
       const { error: dbError } = await supabase
@@ -105,7 +114,7 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
         });
 
       if (dbError) {
-        console.error('Database error:', dbError);
+        console.error('❌ Database error:', dbError);
         // Clean up uploaded file if database insert fails
         await supabase.storage.from('documents').remove([filePath]);
         throw new Error(`Database error: ${dbError.message}`);
@@ -114,7 +123,7 @@ export function ResumeManagementCard({ userId }: ResumeManagementCardProps) {
       toast.success('Resume uploaded successfully');
       fetchResumes();
     } catch (error: any) {
-      console.error('Error uploading resume:', error);
+      console.error('❌ Error uploading resume:', error);
       toast.error(error.message || 'Failed to upload resume');
     } finally {
       setUploading(false);

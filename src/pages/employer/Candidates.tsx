@@ -5,14 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Loader2, AlertCircle, User } from 'lucide-react';
+import { Search, Filter, Loader2, AlertCircle, User, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
 import { useAuth } from '@/components/AuthProvider';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const EmployerCandidates = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get('jobId');
+  
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,7 +74,17 @@ const EmployerCandidates = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
   
-  const filteredApplications = applications.filter(app => {
+  // Filter applications by job ID if specified
+  const jobFilteredApplications = jobId 
+    ? applications.filter(app => app.job?.id === jobId)
+    : applications;
+    
+  // Get the job title for display when filtering by job
+  const filteredJobTitle = jobId && jobFilteredApplications.length > 0 
+    ? jobFilteredApplications[0].job?.title 
+    : null;
+  
+  const filteredApplications = jobFilteredApplications.filter(app => {
     const candidateName = getCandidateDisplayName(app.candidate);
     const matchesSearch = candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           app.job?.title?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -151,10 +166,30 @@ const EmployerCandidates = () => {
     <DashboardLayout userType="employer">
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Candidates</h2>
-          <p className="text-muted-foreground">
-            View and manage candidate applications
-          </p>
+          <div className="flex items-center gap-4">
+            {jobId && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/employer/jobs')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Jobs
+              </Button>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {jobId ? `Applicants for: ${filteredJobTitle || 'Job'}` : 'Candidates'}
+              </h2>
+              <p className="text-muted-foreground">
+                {jobId 
+                  ? 'View and manage applications for this specific job'
+                  : 'View and manage candidate applications'
+                }
+              </p>
+            </div>
+          </div>
         </div>
         
         {error && (
@@ -183,21 +218,28 @@ const EmployerCandidates = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Candidate Applications</CardTitle>
-            <CardDescription>Review and manage applications across all job postings</CardDescription>
+            <CardTitle>
+              {jobId ? `Applications for ${filteredJobTitle || 'Job'}` : 'Candidate Applications'}
+            </CardTitle>
+            <CardDescription>
+              {jobId 
+                ? 'Review and manage applications for this job posting'
+                : 'Review and manage applications across all job postings'
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="all" onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
+                <TabsTrigger value="all">All ({jobFilteredApplications.length})</TabsTrigger>
                 <TabsTrigger value="pending">
-                  Pending ({applications.filter(app => app.status === 'pending').length})
+                  Pending ({jobFilteredApplications.filter(app => app.status === 'pending').length})
                 </TabsTrigger>
                 <TabsTrigger value="shortlisted">
-                  Shortlisted ({applications.filter(app => app.status === 'shortlisted').length})
+                  Shortlisted ({jobFilteredApplications.filter(app => app.status === 'shortlisted').length})
                 </TabsTrigger>
                 <TabsTrigger value="rejected">
-                  Rejected ({applications.filter(app => app.status === 'rejected').length})
+                  Rejected ({jobFilteredApplications.filter(app => app.status === 'rejected').length})
                 </TabsTrigger>
               </TabsList>
               
@@ -209,8 +251,10 @@ const EmployerCandidates = () => {
                 ) : filteredApplications.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
-                      {applications.length === 0 
-                        ? "No applications found. When candidates apply for your jobs, they will appear here." 
+                      {jobFilteredApplications.length === 0 
+                        ? (jobId 
+                            ? "No applications found for this job posting." 
+                            : "No applications found. When candidates apply for your jobs, they will appear here.")
                         : "No applications match your search criteria."}
                     </p>
                   </div>
@@ -228,7 +272,7 @@ const EmployerCandidates = () => {
                   ) : filteredApplications.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">
-                        No {status} applications found.
+                        No {status} applications found{jobId ? ' for this job' : ''}.
                       </p>
                     </div>
                   ) : (

@@ -37,6 +37,10 @@ export const JobListingItem = ({
     return new Date(dateString).toLocaleDateString();
   };
   
+  const handleViewApplicants = () => {
+    navigate(`/employer/candidates?jobId=${job.id}`);
+  };
+  
   return (
     <div className="flex items-center justify-between border-b pb-4">
       <div>
@@ -52,7 +56,13 @@ export const JobListingItem = ({
       </div>
       <div className="flex space-x-2">
         {showViewApplicants && (
-          <Button size="sm" variant="outline">View Applicants</Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleViewApplicants}
+          >
+            View Applicants {job.applications !== null && job.applications > 0 && `(${job.applications})`}
+          </Button>
         )}
         
         <Button 

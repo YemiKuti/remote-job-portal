@@ -1,6 +1,15 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface Resume {
+  id: string;
+  name: string;
+  file_path: string;
+  file_size: number;
+  created_at: string;
+  is_default: boolean;
+}
+
 export interface PublicProfileData {
   id: string;
   username?: string;
@@ -38,4 +47,22 @@ export const fetchPublicProfileById = async (userId: string): Promise<PublicProf
   }
   console.log('✅ Fetched public profile data:', data);
   return data as PublicProfileData;
+};
+
+export const fetchCandidateResumes = async (userId: string): Promise<Resume[]> => {
+  console.log(`🔄 Fetching resumes for user ID: ${userId}`);
+  const { data, error } = await supabase
+    .from('candidate_resumes')
+    .select('id, name, file_path, file_size, created_at, is_default')
+    .eq('user_id', userId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('❌ Error fetching resumes:', error);
+    return [];
+  }
+  
+  console.log('✅ Fetched resumes:', data);
+  return data || [];
 };

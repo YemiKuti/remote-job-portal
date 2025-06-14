@@ -4,7 +4,6 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +13,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Save, ArrowLeft, Loader2, X } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
+import RichTextEditor from '@/components/blog/RichTextEditor';
 
 interface BlogPost {
   id: string;
@@ -196,13 +196,11 @@ const BlogEditor = () => {
 
       // Handle category assignment
       if (selectedCategory && postId) {
-        // Remove existing categories
         await supabase
           .from('post_categories')
           .delete()
           .eq('post_id', postId);
         
-        // Add new category
         await supabase
           .from('post_categories')
           .insert({
@@ -213,13 +211,11 @@ const BlogEditor = () => {
 
       // Handle tags assignment
       if (postId) {
-        // Remove existing tags
         await supabase
           .from('post_tags')
           .delete()
           .eq('post_id', postId);
         
-        // Add new tags
         if (selectedTags.length > 0) {
           const tagInserts = selectedTags.map(tagId => ({
             post_id: postId,
@@ -240,7 +236,7 @@ const BlogEditor = () => {
       });
       
       navigate('/admin/blog');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving post:', err);
       toast({
         title: "Error",
@@ -345,6 +341,7 @@ const BlogEditor = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Content</CardTitle>
+                <CardDescription>Create engaging content with our enhanced editor</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -360,27 +357,22 @@ const BlogEditor = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="excerpt">Excerpt</Label>
-                  <Textarea
+                  <Input
                     id="excerpt"
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
                     placeholder="Brief summary of the post (optional)"
-                    rows={3}
                   />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="content">Content</Label>
-                  <Textarea
-                    id="content"
+                  <RichTextEditor
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={setContent}
                     placeholder="Write your blog post content here..."
-                    className="min-h-[300px]"
+                    className="w-full"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Supports basic markdown for formatting.
-                  </p>
                 </div>
               </CardContent>
             </Card>

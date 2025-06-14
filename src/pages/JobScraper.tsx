@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ScraperDashboard from "@/components/scraper/ScraperDashboard";
-import { parseJobsXML } from "@/utils/xmlJobParser"; // Fixed import name
+import { parseXMLJobs } from "@/utils/xmlJobParser"; // Fixed import name
 import { ScraperSettings } from "@/types/scraper";
 
 const defaultSettings: ScraperSettings = {

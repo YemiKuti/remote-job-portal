@@ -1,6 +1,6 @@
 import { Job } from "@/types";
 import { ScraperSettings, ApplyOption } from "@/types/scraper";
-import { jobs } from "@/data/jobs";
+import { mockJobs } from "@/data/jobs";
 
 /**
  * Generates mock job data for the job scraper simulation
@@ -9,7 +9,7 @@ import { jobs } from "@/data/jobs";
  */
 export const mockScrapedJobs = (settings: ScraperSettings) => {
   // Filter jobs based on settings
-  const filteredJobs = jobs.filter(job => {
+  const filteredJobs = mockJobs.filter(job => {
     // Basic keyword filtering
     if (settings.keywords && settings.keywords.trim().length > 0) {
       const keywordParts = settings.keywords.toLowerCase().split(',').map(k => k.trim());

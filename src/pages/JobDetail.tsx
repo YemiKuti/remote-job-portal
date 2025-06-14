@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,9 +105,9 @@ const JobDetail = () => {
         <Card className="text-center">
           <CardContent className="p-8">
             <h2 className="text-2xl font-semibold mb-4">Job Not Found</h2>
-            <p className="text-gray-600">
+            <div className="text-gray-600">
               Sorry, the job you are looking for does not exist or has been removed.
-            </p>
+            </div>
             <Button onClick={() => navigate("/")} className="mt-4">
               Go to Homepage
             </Button>
@@ -171,16 +172,18 @@ const JobDetail = () => {
 
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">Job Description</h3>
-                  <p className="text-gray-700">{job.description}</p>
+                  <div className="text-gray-700">{job.description}</div>
                 </div>
 
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">Requirements</h3>
-                  <ul className="list-disc pl-5 text-gray-700">
-                    {job.techStack && job.techStack.map((req, index) => (
-                      <li key={index}>{req}</li>
-                    ))}
-                  </ul>
+                  <div className="text-gray-700">
+                    <ul className="list-disc pl-5">
+                      {job.techStack && job.techStack.map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>

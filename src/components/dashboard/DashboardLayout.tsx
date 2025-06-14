@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Search 
+  Search,
+  Sparkles 
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -66,6 +67,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
     { title: "Profile", icon: User, url: "/candidate/profile" },
     { title: "My Applications", icon: Briefcase, url: "/candidate/applications" },
     { title: "Saved Jobs", icon: Briefcase, url: "/candidate/saved-jobs" },
+    { title: "Tailored CVs", icon: Sparkles, url: "/candidate/tailored-resumes" },
     { title: "Messages", icon: Bell, url: "/candidate/messages" },
     { title: "Settings", icon: Settings, url: "/candidate/settings" },
   ];

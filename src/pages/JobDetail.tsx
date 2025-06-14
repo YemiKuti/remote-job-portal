@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { MapPin, Building, DollarSign, Briefcase, GraduationCap } from "lucide-react";
 import { formatSalary } from "@/data/jobs";
-import { ApplyJobDialog } from "@/components/ApplyJobDialog";
-import { SaveJobButton } from "@/components/SaveJobButton";
+import ApplyJobDialog from "@/components/ApplyJobDialog";
+import SaveJobButton from "@/components/SaveJobButton";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { JobType } from "@/types";
+import { Job } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,8 +17,9 @@ import { Sparkles } from "lucide-react";
 
 const JobDetail = () => {
   const { id } = useParams();
-  const [job, setJob] = useState<JobType | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showApplyDialog, setShowApplyDialog] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -148,17 +149,17 @@ const JobDetail = () => {
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Building className="w-4 h-4 mr-1" />
-                    {job.employment_type}
+                    {job.employmentType}
                   </div>
                   <div className="flex items-center text-gray-600">
                     <DollarSign className="w-4 h-4 mr-1" />
-                    {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
+                    {job.salary && formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Briefcase className="w-4 h-4 mr-1" />
-                    {job.experience_level}
+                    {job.experienceLevel}
                   </div>
-                  {job.visa_sponsorship && (
+                  {job.visaSponsorship && (
                     <Badge variant="outline">Visa Sponsorship</Badge>
                   )}
                   {job.remote && (
@@ -174,7 +175,7 @@ const JobDetail = () => {
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">Requirements</h3>
                   <ul className="list-disc pl-5 text-gray-700">
-                    {job.requirements.map((req, index) => (
+                    {job.techStack && job.techStack.map((req, index) => (
                       <li key={index}>{req}</li>
                     ))}
                   </ul>
@@ -190,14 +191,12 @@ const JobDetail = () => {
                 <CardDescription>Learn more about {job.company}</CardDescription>
 
                 <div className="space-y-3 mt-6">
-                  <ApplyJobDialog 
-                    job={job}
-                    trigger={
-                      <Button className="w-full">
-                        Apply Now
-                      </Button>
-                    }
-                  />
+                  <Button 
+                    className="w-full"
+                    onClick={() => setShowApplyDialog(true)}
+                  >
+                    Apply Now
+                  </Button>
                   
                   <CVTailoringDialog
                     job={job}
@@ -222,15 +221,15 @@ const JobDetail = () => {
                 <div className="space-y-3 mt-6">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Posted Date:</span>
-                    <span>{new Date(job.created_at || "").toLocaleDateString()}</span>
+                    <span>{new Date(job.postedDate || "").toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Employment Type:</span>
-                    <span>{job.employment_type}</span>
+                    <span>{job.employmentType}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Experience Level:</span>
-                    <span>{job.experience_level}</span>
+                    <span>{job.experienceLevel}</span>
                   </div>
                 </div>
               </CardContent>
@@ -238,6 +237,18 @@ const JobDetail = () => {
           </div>
         </div>
       </main>
+
+      {showApplyDialog && (
+        <ApplyJobDialog 
+          isOpen={showApplyDialog}
+          onClose={() => setShowApplyDialog(false)}
+          job={job}
+          onApplicationSuccess={() => {
+            setShowApplyDialog(false);
+            toast.success("Application submitted successfully!");
+          }}
+        />
+      )}
     </div>
   );
 };

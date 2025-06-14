@@ -7,7 +7,7 @@ import { Sparkles } from "lucide-react";
 
 const TailoredResumes = () => {
   return (
-    <DashboardLayout>
+    <DashboardLayout userType="candidate">
       <div className="space-y-6">
         <Card>
           <CardHeader>

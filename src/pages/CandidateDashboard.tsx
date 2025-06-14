@@ -21,7 +21,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchCandidateApplications, fetchSavedJobs, fetchCandidateRecommendedJobs } from '@/utils/api';
+import { fetchCandidateApplications, fetchSavedJobs, fetchRecommendedJobs } from '@/utils/api/candidateApi';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { Link, useNavigate } from 'react-router-dom';
@@ -115,7 +115,7 @@ const CandidateDashboard = () => {
       setLoading(prev => ({ ...prev, recommendations: true }));
       setErrors(prev => ({ ...prev, recommendations: null }));
       
-      const recommendedData = await fetchCandidateRecommendedJobs(userId);
+      const recommendedData = await fetchRecommendedJobs(userId);
       console.log('📊 Dashboard: Recommendations loaded:', recommendedData.length);
       setData(prev => ({ ...prev, recommendedJobs: recommendedData }));
     } catch (error: any) {
@@ -445,12 +445,12 @@ const CandidateDashboard = () => {
                         {data.applications.slice(0, 5).map((app) => (
                           <div key={app.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                             <div className="space-y-1">
-                              <h4 className="font-medium">{app.position || "Position"}</h4>
+                              <h4 className="font-medium">{app.job?.title || "Position"}</h4>
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <Building className="mr-1 h-3 w-3" />
-                                <span>{app.company || "Company"}</span>
+                                <span>{app.job?.company || "Company"}</span>
                                 <MapPin className="ml-2 mr-1 h-3 w-3" />
-                                <span>{app.location || "Location"}</span>
+                                <span>{app.job?.location || "Location"}</span>
                               </div>
                               <div className="flex items-center text-xs text-muted-foreground">
                                 <Calendar className="mr-1 h-3 w-3" />
@@ -486,7 +486,7 @@ const CandidateDashboard = () => {
                 </Card>
               </div>
 
-              {/* Notifications - Keep the existing notification center for overview */}
+              {/* Notifications */}
               <div>
                 {user && <NotificationCenter userId={user.id} />}
               </div>
@@ -533,13 +533,13 @@ const CandidateDashboard = () => {
                           <MapPin className="mr-1 h-3 w-3" />
                           <span>{job.location}</span>
                         </div>
-                        {job.salary_min && job.salary_max && (
+                        {job.salary?.min && job.salary?.max && (
                           <p className="text-sm font-medium">
-                            ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}
+                            {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
                           </p>
                         )}
                         <div className="flex gap-2 pt-2">
-                          <Button size="sm" className="flex-1">Apply</Button>
+                          <Button size="sm" className="flex-1" onClick={() => navigate(`/jobs/${job.id}`)}>Apply</Button>
                           <Button size="sm" variant="outline">Save</Button>
                         </div>
                       </div>

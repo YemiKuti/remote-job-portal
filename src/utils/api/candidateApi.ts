@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SavedJob, Application, TailoredResume } from '@/types/api';
 import { transformDatabaseJobToFrontendJob } from '@/utils/jobTransformers';
@@ -60,7 +61,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
       .from('applications')
       .select(`
         *,
-        jobs!applications_job_id_fkey(*)
+        jobs (*)
       `)
       .eq('user_id', userId)
       .order('applied_date', { ascending: false });
@@ -107,14 +108,14 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
   }
 };
 
-// Fetch saved jobs - fix the join query
+// Fetch saved jobs
 export const fetchSavedJobs = async (userId: string): Promise<SavedJob[]> => {
   try {
     const { data, error } = await supabase
       .from('saved_jobs')
       .select(`
         *,
-        jobs!saved_jobs_job_id_fkey(*)
+        jobs (*)
       `)
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
@@ -166,7 +167,7 @@ export const getProfileViewCount = async (profileId: string) => {
   }
 };
 
-// Update candidate profile - FIXED VERSION
+// Update candidate profile
 export const updateCandidateProfile = async (profileData: any) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -187,7 +188,7 @@ export const updateCandidateProfile = async (profileData: any) => {
   }
 };
 
-// Upload profile photo - FIXED VERSION
+// Upload profile photo
 export const uploadProfilePhoto = async (file: File) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -211,20 +212,29 @@ export const uploadProfilePhoto = async (file: File) => {
   }
 };
 
-// Fetch recommended jobs for candidate
-export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
+// Fetch recommended jobs for candidate - FIXED FUNCTION
+export const fetchRecommendedJobs = async (userId: string, limit = 6) => {
   try {
+    console.log('🔍 Fetching recommended jobs for user:', userId);
+    
+    // Get active jobs with a simple query
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
       .eq('status', 'active')
-      .limit(limit);
+      .limit(limit)
+      .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error fetching recommended jobs:', error);
+      throw error;
+    }
+    
+    console.log('✅ Recommended jobs fetched:', data?.length || 0);
     
     return (data || []).map(transformDatabaseJobToFrontendJob);
   } catch (error: any) {
-    console.error('Error fetching recommended jobs:', error);
+    console.error('❌ Error in fetchRecommendedJobs:', error);
     return [];
   }
 };

@@ -1,97 +1,71 @@
 
-import React, { useState } from "react";
+import React from "react";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UseFormReturn } from "react-hook-form";
 import { JobFormValues } from "./formSchema";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import RichTextEditor from "@/components/blog/RichTextEditor";
 
 interface JobDescriptionSectionProps {
   form: UseFormReturn<JobFormValues>;
 }
 
 export const JobDescriptionSection = ({ form }: JobDescriptionSectionProps) => {
-  const [requirement, setRequirement] = useState("");
-
-  const addRequirement = () => {
-    if (requirement.trim() === "") return;
-    const currentRequirements = form.getValues("requirements") || [];
-    form.setValue("requirements", [...currentRequirements, requirement.trim()]);
-    setRequirement("");
-  };
-
-  const removeRequirement = (index: number) => {
-    const currentRequirements = form.getValues("requirements") || [];
-    form.setValue("requirements", 
-      currentRequirements.filter((_, i) => i !== index)
-    );
-  };
-
   return (
-    <>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium">Job Description</h3>
+        <p className="text-sm text-muted-foreground">
+          Provide detailed information about the role and requirements
+        </p>
+      </div>
+
       <FormField
         control={form.control}
         name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Job Description*</FormLabel>
+            <FormLabel>Job Description *</FormLabel>
             <FormControl>
-              <Textarea 
-                placeholder="Describe the job responsibilities, benefits, and other relevant information"
-                className="min-h-[150px]"
-                {...field} 
+              <RichTextEditor
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Describe the role, responsibilities, and what makes this position exciting..."
+                className="min-h-[300px]"
               />
             </FormControl>
+            <FormDescription>
+              Use rich formatting to create an engaging job description. Include responsibilities, qualifications, and company culture.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <div>
-        <FormLabel>Job Requirements*</FormLabel>
-        <div className="flex mt-2 mb-2">
-          <Input
-            placeholder="Add a requirement"
-            value={requirement}
-            onChange={(e) => setRequirement(e.target.value)}
-            className="mr-2"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addRequirement();
-              }
-            }}
-          />
-          <Button type="button" onClick={addRequirement}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {form.watch("requirements")?.map((req, index) => (
-            <Badge key={index} variant="secondary" className="px-2 py-1 text-sm">
-              {req}
-              <X 
-                className="ml-1 h-3 w-3 cursor-pointer" 
-                onClick={() => removeRequirement(index)} 
+      <FormField
+        control={form.control}
+        name="requirements"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Requirements *</FormLabel>
+            <FormControl>
+              <RichTextEditor
+                value={Array.isArray(field.value) ? field.value.join('\n') : field.value || ''}
+                onChange={(value) => {
+                  // Convert rich text to array of requirements
+                  const requirements = value.split('\n').filter(req => req.trim().length > 0);
+                  field.onChange(requirements);
+                }}
+                placeholder="List the key requirements and qualifications for this position..."
+                className="min-h-[200px]"
               />
-            </Badge>
-          ))}
-        </div>
-        {form.formState.errors.requirements && (
-          <p className="text-sm font-medium text-destructive mt-2">
-            {form.formState.errors.requirements.message}
-          </p>
+            </FormControl>
+            <FormDescription>
+              List the essential skills, experience, and qualifications needed for this role.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
         )}
-      </div>
-    </>
+      />
+    </div>
   );
 };

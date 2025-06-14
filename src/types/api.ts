@@ -1,73 +1,66 @@
 
-// Common interfaces for API data
-export interface Application {
-  id: string;
-  job_id: string;
-  user_id: string;
-  status: string;
-  applied_date: string;
-  position?: string;
-  company?: string;
-  location?: string;
-}
+import { Job } from './index';
 
 export interface SavedJob {
   id: string;
-  job_id: string;
   user_id: string;
+  job_id: string;
   saved_date: string;
-  job?: {
-    title: string;
-    company: string;
-    location: string;
-    description: string;
-    salary_min: number;
-    salary_max: number;
-    employment_type: string;
-    tech_stack: string[];
-  };
+  job: Job | null;
 }
 
-export interface Message {
+export interface Application {
   id: string;
-  conversation_id: string;
-  sender_id: string;
-  recipient_id: string;
-  content: string;
-  sent_at: string;
-  read: boolean;
-  seen: boolean;
-  sender_name?: string;
-  company?: string;
-  attachment_url?: string;
-  attachment_name?: string;
-  attachment_size?: number;
-}
-
-export interface Conversation {
-  id: string;
-  candidate_id: string;
+  user_id: string;
+  job_id: string;
   employer_id: string;
-  last_message_at: string;
-  unread_count: number;
-  employer_name?: string;
-  candidate_name?: string;
-  company?: string;
-  last_message?: string;
+  applied_date: string;
+  status: 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted' | 'withdrawn';
+  cover_letter?: string;
+  portfolio_url?: string;
+  additional_notes?: string;
+  resume_id?: string;
+  job?: Job;
+}
+
+export interface TailoredResume {
+  id: string;
+  user_id: string;
+  original_resume_id?: string;
+  job_id?: string;
+  tailored_content: string;
+  ai_suggestions?: any;
+  accepted_suggestions?: any;
+  tailoring_score?: number;
+  created_at: string;
+  updated_at: string;
+  job?: Job;
 }
 
 export interface Job {
   id: string;
   title: string;
   company: string;
+  logo?: string;
   location: string;
+  salary_min?: number;
+  salary_max?: number;
+  salary_currency?: string;
   description: string;
-  salary_min: number;
-  salary_max: number;
+  requirements: string[];
+  created_at: string;
   employment_type: string;
+  experience_level: string;
+  visa_sponsorship?: boolean;
+  company_size?: string;
   tech_stack: string[];
+  remote?: boolean;
+  application_type: string;
+  application_value?: string;
+  application_deadline?: string;
   status: string;
-  created_at?: string;
-  applications?: number;
+  is_featured?: boolean;
   views?: number;
+  applications?: number;
+  employer_id?: string;
 }

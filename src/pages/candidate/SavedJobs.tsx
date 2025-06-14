@@ -78,104 +78,109 @@ const SavedJobs = () => {
         </div>
 
         <div className="grid gap-6">
-          {savedJobs.map((job) => (
-            <Card key={job.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start space-x-3">
-                    <img
-                      src={job.logo || "/placeholder.svg"}
-                      alt={`${job.company} logo`}
-                      className="w-12 h-12 rounded object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 
-                        className="font-semibold text-lg mb-1 cursor-pointer hover:text-blue-600"
-                        onClick={() => navigate(`/jobs/${job.id}`)}
-                      >
-                        {job.title}
-                      </h3>
-                      <p className="text-gray-600 mb-2">{job.company}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {job.location}
-                        </div>
-                        <div className="flex items-center">
-                          <Building className="w-4 h-4 mr-1" />
-                          {job.employmentType}
-                        </div>
-                        {job.salary && (
+          {savedJobs.map((savedJob) => {
+            const job = savedJob.job;
+            if (!job) return null;
+
+            return (
+              <Card key={savedJob.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start space-x-3">
+                      <img
+                        src={job.logo || "/placeholder.svg"}
+                        alt={`${job.company} logo`}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                      <div className="flex-1">
+                        <h3 
+                          className="font-semibold text-lg mb-1 cursor-pointer hover:text-blue-600"
+                          onClick={() => navigate(`/jobs/${job.id}`)}
+                        >
+                          {job.title}
+                        </h3>
+                        <p className="text-gray-600 mb-2">{job.company}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <div className="flex items-center">
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            {formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {job.location}
                           </div>
-                        )}
+                          <div className="flex items-center">
+                            <Building className="w-4 h-4 mr-1" />
+                            {job.employmentType}
+                          </div>
+                          {job.salary && (
+                            <div className="flex items-center">
+                              <DollarSign className="w-4 h-4 mr-1" />
+                              {formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {job.isFeatured && (
+                        <Badge variant="secondary">Featured</Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    {job.isFeatured && (
-                      <Badge variant="secondary">Featured</Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
-                
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {job.techStack && job.techStack.slice(0, 3).map((tech) => (
-                    <Badge key={tech} variant="outline" className="text-xs">
-                      {tech}
-                    </Badge>
-                  ))}
-                  {job.techStack && job.techStack.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{job.techStack.length - 3} more
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {job.remote && (
-                      <Badge variant="secondary" className="text-xs">Remote</Badge>
-                    )}
-                    {job.visaSponsorship && (
-                      <Badge variant="outline" className="text-xs">Visa Sponsorship</Badge>
+                  
+                  <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {job.techStack && job.techStack.slice(0, 3).map((tech) => (
+                      <Badge key={tech} variant="outline" className="text-xs">
+                        {tech}
+                      </Badge>
+                    ))}
+                    {job.techStack && job.techStack.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{job.techStack.length - 3} more
+                      </Badge>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <CVTailoringDialog
-                      job={job}
-                      trigger={
-                        <Button variant="outline" size="sm">
-                          <Sparkles className="h-4 w-4 mr-1" />
-                          Tailor CV
-                        </Button>
-                      }
-                    />
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate(`/jobs/${job.id}`)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleSave(job.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Bookmark className="h-4 w-4 fill-current" />
-                    </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {job.remote && (
+                        <Badge variant="secondary" className="text-xs">Remote</Badge>
+                      )}
+                      {job.visaSponsorship && (
+                        <Badge variant="outline" className="text-xs">Visa Sponsorship</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <CVTailoringDialog
+                        job={job}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Sparkles className="h-4 w-4 mr-1" />
+                            Tailor CV
+                          </Button>
+                        }
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/jobs/${job.id}`)}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleSave(job.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Bookmark className="h-4 w-4 fill-current" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </DashboardLayout>

@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 import { Sparkles } from "lucide-react";
+import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -45,7 +46,8 @@ const JobDetail = () => {
         }
 
         if (data) {
-          setJob(data);
+          const transformedJob = transformDatabaseJobToFrontendJob(data);
+          setJob(transformedJob);
         } else {
           setJob(null);
         }

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -348,12 +349,12 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
                 className="hidden"
                 id="resume-upload"
               />
-              <label htmlFor="resume-upload">
-                <Button as="span" variant="outline">
+              <Button asChild variant="outline">
+                <label htmlFor="resume-upload" className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                   <Upload className="h-4 w-4 mr-2" />
                   Choose File
-                </Button>
-              </label>
+                </label>
+              </Button>
             </div>
 
             <div className="flex justify-end">

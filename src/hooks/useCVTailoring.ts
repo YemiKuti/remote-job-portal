@@ -13,22 +13,68 @@ export const useCVTailoring = () => {
       setLoading(true);
       console.log('🔍 Fetching tailored resumes...');
       
-      const { data, error } = await supabase
+      // First get the tailored resumes without joins to avoid foreign key issues
+      const { data: resumesData, error: resumesError } = await supabase
         .from('tailored_resumes')
-        .select(`
-          *,
-          jobs:job_id(title, company),
-          candidate_resumes:original_resume_id(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ Error fetching tailored resumes:', error);
-        throw error;
+      if (resumesError) {
+        console.error('❌ Error fetching tailored resumes:', resumesError);
+        throw resumesError;
       }
 
-      console.log('✅ Tailored resumes fetched:', data?.length || 0);
-      setTailoredResumes(data || []);
+      console.log('✅ Raw tailored resumes fetched:', resumesData?.length || 0);
+
+      // If we have resumes, enrich them with job and resume data
+      if (resumesData && resumesData.length > 0) {
+        const enrichedResumes = await Promise.all(
+          resumesData.map(async (resume) => {
+            const enrichedResume = { ...resume, jobs: null, candidate_resumes: null };
+
+            // Fetch job data if job_id exists
+            if (resume.job_id) {
+              try {
+                const { data: jobData } = await supabase
+                  .from('jobs')
+                  .select('title, company')
+                  .eq('id', resume.job_id)
+                  .single();
+                
+                if (jobData) {
+                  enrichedResume.jobs = jobData;
+                }
+              } catch (error) {
+                console.warn('Could not fetch job data for resume:', resume.id, error);
+              }
+            }
+
+            // Fetch resume data if original_resume_id exists
+            if (resume.original_resume_id) {
+              try {
+                const { data: resumeData } = await supabase
+                  .from('candidate_resumes')
+                  .select('name')
+                  .eq('id', resume.original_resume_id)
+                  .single();
+                
+                if (resumeData) {
+                  enrichedResume.candidate_resumes = resumeData;
+                }
+              } catch (error) {
+                console.warn('Could not fetch resume data for tailored resume:', resume.id, error);
+              }
+            }
+
+            return enrichedResume;
+          })
+        );
+
+        setTailoredResumes(enrichedResumes);
+      } else {
+        console.log('ℹ️ No tailored resumes found');
+        setTailoredResumes([]);
+      }
     } catch (error) {
       console.error('Error fetching tailored resumes:', error);
       toast.error('Failed to load tailored resumes');

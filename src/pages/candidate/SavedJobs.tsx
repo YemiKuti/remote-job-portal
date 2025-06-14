@@ -8,6 +8,7 @@ import { MapPin, Building, DollarSign, Briefcase, Bookmark, Sparkles } from "luc
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useNavigate } from "react-router-dom";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
+import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 
 const SavedJobs = () => {
   const { savedJobs, loading, handleToggleSave } = useSavedJobs();
@@ -78,8 +79,11 @@ const SavedJobs = () => {
 
         <div className="grid gap-6">
           {savedJobs.map((savedJob) => {
-            const job = savedJob.job;
-            if (!job) return null;
+            const dbJob = savedJob.job;
+            if (!dbJob) return null;
+
+            // Transform database job to frontend job format
+            const job = transformDatabaseJobToFrontendJob(dbJob);
 
             return (
               <Card key={savedJob.id} className="hover:shadow-md transition-shadow">
@@ -106,19 +110,19 @@ const SavedJobs = () => {
                           </div>
                           <div className="flex items-center">
                             <Building className="w-4 h-4 mr-1" />
-                            {job.employment_type}
+                            {job.employmentType}
                           </div>
-                          {job.salary_min && job.salary_max && (
+                          {job.salary.min && job.salary.max && (
                             <div className="flex items-center">
                               <DollarSign className="w-4 h-4 mr-1" />
-                              {job.salary_currency} {job.salary_min?.toLocaleString()} - {job.salary_max?.toLocaleString()}
+                              {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      {job.is_featured && (
+                      {job.isFeatured && (
                         <Badge variant="secondary">Featured</Badge>
                       )}
                     </div>
@@ -127,14 +131,14 @@ const SavedJobs = () => {
                   <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {job.tech_stack && job.tech_stack.slice(0, 3).map((tech) => (
+                    {job.techStack && job.techStack.slice(0, 3).map((tech) => (
                       <Badge key={tech} variant="outline" className="text-xs">
                         {tech}
                       </Badge>
                     ))}
-                    {job.tech_stack && job.tech_stack.length > 3 && (
+                    {job.techStack && job.techStack.length > 3 && (
                       <Badge variant="outline" className="text-xs">
-                        +{job.tech_stack.length - 3} more
+                        +{job.techStack.length - 3} more
                       </Badge>
                     )}
                   </div>
@@ -144,7 +148,7 @@ const SavedJobs = () => {
                       {job.remote && (
                         <Badge variant="secondary" className="text-xs">Remote</Badge>
                       )}
-                      {job.visa_sponsorship && (
+                      {job.visaSponsorship && (
                         <Badge variant="outline" className="text-xs">Visa Sponsorship</Badge>
                       )}
                     </div>

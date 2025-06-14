@@ -1,10 +1,9 @@
-
 export interface SavedJob {
   id: string;
   user_id: string;
   job_id: string;
   saved_date: string;
-  job: Job | null;
+  job: any | null; // Make this more flexible to handle database job format
 }
 
 export interface Application {
@@ -18,7 +17,7 @@ export interface Application {
   portfolio_url?: string;
   additional_notes?: string;
   resume_id?: string;
-  job?: Job;
+  job?: any; // Make this more flexible to handle database job format
 }
 
 export interface TailoredResume {

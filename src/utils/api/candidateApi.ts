@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SavedJob, Application, TailoredResume } from '@/types/api';
 import { transformDatabaseJobToFrontendJob } from '@/utils/jobTransformers';
@@ -61,7 +60,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
       .from('applications')
       .select(`
         *,
-        job:jobs(*)
+        jobs!applications_job_id_fkey(*)
       `)
       .eq('user_id', userId)
       .order('applied_date', { ascending: false });
@@ -71,7 +70,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
     return (data || []).map(application => ({
       ...application,
       status: application.status as 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted' | 'withdrawn',
-      job: application.job ? application.job : undefined
+      job: application.jobs ? application.jobs : undefined
     }));
   } catch (error: any) {
     console.error('Error fetching applications:', error);
@@ -115,7 +114,7 @@ export const fetchSavedJobs = async (userId: string): Promise<SavedJob[]> => {
       .from('saved_jobs')
       .select(`
         *,
-        job:jobs(*)
+        jobs!saved_jobs_job_id_fkey(*)
       `)
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
@@ -124,7 +123,7 @@ export const fetchSavedJobs = async (userId: string): Promise<SavedJob[]> => {
 
     return (data || []).map(savedJob => ({
       ...savedJob,
-      job: savedJob.job ? savedJob.job : null
+      job: savedJob.jobs ? savedJob.jobs : null
     }));
   } catch (error: any) {
     console.error('Error fetching saved jobs:', error);

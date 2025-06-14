@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Building, Calendar, FileText, Loader2, X } from 'lucide-react';
 import { fetchCandidateApplications, withdrawApplication } from '@/utils/api/candidateApi';
 import { useAuth } from '@/components/AuthProvider';
+import { ApplicationDetailDialog } from '@/components/candidate/ApplicationDetailDialog';
 
 const CandidateApplications = () => {
   const { user } = useAuth();
@@ -94,10 +95,10 @@ const CandidateApplications = () => {
         {apps.map((app) => (
           <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-6 last:border-0 last:pb-0">
             <div className="space-y-1">
-              <h3 className="font-medium">{app.position || "Position"}</h3>
+              <h3 className="font-medium">{app.job?.title || "Position"}</h3>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Building className="mr-1 h-4 w-4" />
-                <span>{app.company || "Company"}</span>
+                <span>{app.job?.company || "Company"}</span>
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Calendar className="mr-1 h-4 w-4" />
@@ -111,10 +112,12 @@ const CandidateApplications = () => {
             </div>
             
             <div className="flex gap-2 mt-4 sm:mt-0">
-              <Button variant="outline" size="sm" className="flex items-center">
-                <FileText className="mr-1 h-4 w-4" />
-                View Details
-              </Button>
+              <ApplicationDetailDialog application={app}>
+                <Button variant="outline" size="sm" className="flex items-center">
+                  <FileText className="mr-1 h-4 w-4" />
+                  View Details
+                </Button>
+              </ApplicationDetailDialog>
               {app.status === 'pending' && (
                 <Button 
                   variant="outline" 

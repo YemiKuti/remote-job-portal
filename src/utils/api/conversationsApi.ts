@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Conversation, Message } from '@/types/api';
 
@@ -33,6 +32,7 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
         
       enhancedConversations.push({
         ...conv,
+        created_at: conv.last_message_at, // Use last_message_at as created_at if not available
         employer_name: employerProfile && !empError ? employerProfile.full_name || employerProfile.username : 'Employer',
         candidate_name: candidateProfile && !candError ? candidateProfile.full_name || candidateProfile.username : 'Candidate',
         company: employerProfile && !empError ? employerProfile.username : undefined,

@@ -23,6 +23,8 @@ export const transformDatabaseJobToFrontendJob = (dbJob: any): Job => {
     companySize: dbJob.company_size as 'Startup' | 'Small' | 'Medium' | 'Large' | 'Enterprise',
     techStack: dbJob.tech_stack || [],
     remote: dbJob.remote || false,
+    applicationType: dbJob.application_type as 'internal' | 'external' | 'email' | 'phone' || 'internal',
+    applicationValue: dbJob.application_value,
     applicationDeadline: dbJob.application_deadline,
     status: dbJob.status as 'active' | 'expired' | 'filled' | 'draft',
     isFeatured: dbJob.is_featured || false,

@@ -1,3 +1,4 @@
+
 import { Job } from "../types";
 import { formatSalary, getTimeAgo } from "../data/jobs";
 import { MapPin, Briefcase, Clock, DollarSign } from "lucide-react";
@@ -9,6 +10,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import ApplyJobDialog from "./ApplyJobDialog";
 import SaveJobButton from "./SaveJobButton";
+import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
 
 interface JobCardProps {
   job: Job;
@@ -24,7 +26,12 @@ const JobCard = ({ job }: JobCardProps) => {
   const handleApplyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowApplyDialog(true);
+    
+    // Handle different application types
+    const shouldShowDialog = handleJobApplication(job);
+    if (shouldShowDialog) {
+      setShowApplyDialog(true);
+    }
   };
 
   return (
@@ -103,7 +110,7 @@ const JobCard = ({ job }: JobCardProps) => {
                 className="flex-1 bg-job-green hover:bg-job-darkGreen"
                 size="sm"
               >
-                Apply Now
+                {getApplicationButtonText(job.applicationType)}
               </Button>
               <SaveJobButton 
                 jobId={job.id}
@@ -117,16 +124,17 @@ const JobCard = ({ job }: JobCardProps) => {
         )}
       </div>
 
-      {/* Apply Dialog */}
-      <ApplyJobDialog
-        isOpen={showApplyDialog}
-        onClose={() => setShowApplyDialog(false)}
-        job={job}
-        onApplicationSuccess={() => {
-          // Could add toast notification here
-          console.log('Application submitted successfully!');
-        }}
-      />
+      {/* Apply Dialog - only for internal applications */}
+      {job.applicationType === 'internal' && (
+        <ApplyJobDialog
+          isOpen={showApplyDialog}
+          onClose={() => setShowApplyDialog(false)}
+          job={job}
+          onApplicationSuccess={() => {
+            console.log('Application submitted successfully!');
+          }}
+        />
+      )}
     </>
   );
 };

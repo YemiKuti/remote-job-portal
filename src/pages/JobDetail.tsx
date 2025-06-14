@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Job } from "../types";
 import { formatSalary } from "@/data/jobs";
-import { MapPin, Briefcase, Clock, DollarSign, Building, Users } from "lucide-react";
+import { MapPin, Briefcase, Clock, DollarSign, Building, Users, ExternalLink, Mail, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -14,6 +14,7 @@ import ApplyJobDialog from "@/components/ApplyJobDialog";
 import SaveJobButton from "@/components/SaveJobButton";
 import { supabase } from "@/integrations/supabase/client";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
+import { handleJobApplication, getApplicationButtonText, getApplicationInstructions } from "@/utils/applicationHandler";
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -69,11 +70,51 @@ const JobDetail = () => {
 
   const handleApplyClick = () => {
     if (!user) {
-      // Redirect to auth page or show sign in dialog
       window.location.href = '/auth?role=candidate';
       return;
     }
-    setShowApplyDialog(true);
+
+    if (!job) return;
+
+    // Handle different application types
+    const shouldShowDialog = handleJobApplication(job);
+    if (shouldShowDialog) {
+      setShowApplyDialog(true);
+    }
+  };
+
+  const renderApplicationMethodInfo = () => {
+    if (!job) return null;
+
+    const getIcon = () => {
+      switch (job.applicationType) {
+        case 'external':
+          return <ExternalLink className="h-4 w-4" />;
+        case 'email':
+          return <Mail className="h-4 w-4" />;
+        case 'phone':
+          return <Phone className="h-4 w-4" />;
+        default:
+          return null;
+      }
+    };
+
+    if (job.applicationType === 'internal') return null;
+
+    return (
+      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-start gap-2">
+          {getIcon()}
+          <div>
+            <h3 className="font-medium text-blue-900 mb-1">How to Apply</h3>
+            <p className="text-sm text-blue-700">{getApplicationInstructions(job)}</p>
+            {job.applicationValue && (
+              <p className="text-sm font-medium text-blue-800 mt-1">{job.applicationValue}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -149,6 +190,9 @@ const JobDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* Application Method Information */}
+            {renderApplicationMethodInfo()}
             
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-4">Job Description</h2>
@@ -196,7 +240,7 @@ const JobDetail = () => {
                     onClick={handleApplyClick}
                     className="bg-job-green hover:bg-job-darkGreen"
                   >
-                    Apply Now
+                    {getApplicationButtonText(job.applicationType)}
                   </Button>
                   <SaveJobButton 
                     jobId={job.id}
@@ -208,7 +252,7 @@ const JobDetail = () => {
                   onClick={handleApplyClick}
                   className="w-full md:w-auto bg-job-green hover:bg-job-darkGreen"
                 >
-                  {user ? 'Apply Now' : 'Sign In to Apply'}
+                  {user ? getApplicationButtonText(job.applicationType) : 'Sign In to Apply'}
                 </Button>
               )}
             </div>
@@ -217,8 +261,8 @@ const JobDetail = () => {
       </div>
       <Footer />
 
-      {/* Apply Dialog */}
-      {job && (
+      {/* Apply Dialog - only for internal applications */}
+      {job && job.applicationType === 'internal' && (
         <ApplyJobDialog
           isOpen={showApplyDialog}
           onClose={() => setShowApplyDialog(false)}

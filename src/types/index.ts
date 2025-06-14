@@ -1,3 +1,4 @@
+
 export interface Job {
   id: string;
   title: string;
@@ -18,6 +19,9 @@ export interface Job {
   companySize: 'Startup' | 'Small' | 'Medium' | 'Large' | 'Enterprise';
   techStack: string[];
   remote: boolean;
+  // Application method fields
+  applicationType: 'internal' | 'external' | 'email' | 'phone';
+  applicationValue?: string;
   // New fields for enhanced job features
   applicationDeadline?: string;
   applyOptions?: {

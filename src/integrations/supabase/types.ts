@@ -377,6 +377,20 @@ export type Database = {
             referencedRelation: "candidate_resumes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_cv_tailoring_sessions_job_id"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cv_tailoring_sessions_original_resume_id"
+            columns: ["original_resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employer_notifications: {
@@ -830,7 +844,15 @@ export type Database = {
           saved_date?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_saved_jobs_job_id"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
@@ -918,6 +940,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_tailored_resumes_job_id"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tailored_resumes_original_resume_id"
+            columns: ["original_resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tailored_resumes_job_id_fkey"
             columns: ["job_id"]

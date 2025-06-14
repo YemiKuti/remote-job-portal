@@ -54,19 +54,26 @@ export const withdrawApplication = async (applicationId: string) => {
   }
 };
 
-// Fetch candidate applications
+// Fetch candidate applications with proper job data
 export const fetchCandidateApplications = async (userId: string): Promise<Application[]> => {
   try {
+    console.log('🔍 Fetching applications for user:', userId);
+    
     const { data, error } = await supabase
       .from('applications')
       .select(`
         *,
-        jobs (*)
+        jobs!fk_applications_job_id (*)
       `)
       .eq('user_id', userId)
       .order('applied_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error fetching applications:', error);
+      throw error;
+    }
+
+    console.log('✅ Applications fetched:', data?.length || 0);
 
     return (data || []).map(application => ({
       ...application,
@@ -74,7 +81,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
       job: application.jobs ? application.jobs : undefined
     }));
   } catch (error: any) {
-    console.error('Error fetching applications:', error);
+    console.error('❌ Error in fetchCandidateApplications:', error);
     throw error;
   }
 };
@@ -108,26 +115,33 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
   }
 };
 
-// Fetch saved jobs
+// Fetch saved jobs with proper job data using foreign key
 export const fetchSavedJobs = async (userId: string): Promise<SavedJob[]> => {
   try {
+    console.log('🔍 Fetching saved jobs for user:', userId);
+    
     const { data, error } = await supabase
       .from('saved_jobs')
       .select(`
         *,
-        jobs (*)
+        jobs!fk_saved_jobs_job_id (*)
       `)
       .eq('user_id', userId)
       .order('saved_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error fetching saved jobs:', error);
+      throw error;
+    }
+
+    console.log('✅ Saved jobs fetched:', data?.length || 0);
 
     return (data || []).map(savedJob => ({
       ...savedJob,
       job: savedJob.jobs ? savedJob.jobs : null
     }));
   } catch (error: any) {
-    console.error('Error fetching saved jobs:', error);
+    console.error('❌ Error in fetchSavedJobs:', error);
     throw error;
   }
 };

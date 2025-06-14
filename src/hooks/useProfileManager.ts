@@ -24,7 +24,6 @@ export function useProfileManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch profile data when component mounts
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!user) return;
@@ -98,7 +97,7 @@ export function useProfileManager() {
     setIsUploading(true);
     try {
       const file = fileInputRef.current.files[0];
-      const avatarUrl = await uploadProfilePhoto(user.id, file);
+      const avatarUrl = await uploadProfilePhoto(file);
       
       if (avatarUrl) {
         // Update local profile data immediately
@@ -172,7 +171,7 @@ export function useProfileManager() {
       
       console.log('📤 Sending profile data:', profileData);
       
-      const success = await updateCandidateProfile(user.id, profileData);
+      const success = await updateCandidateProfile(profileData);
       
       if (success) {
         // Update user metadata as well for consistency

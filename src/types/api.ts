@@ -1,6 +1,4 @@
 
-import { Job } from './index';
-
 export interface SavedJob {
   id: string;
   user_id: string;
@@ -63,4 +61,33 @@ export interface Job {
   views?: number;
   applications?: number;
   employer_id?: string;
+}
+
+export interface Conversation {
+  id: string;
+  candidate_id: string;
+  employer_id: string;
+  job_id?: string;
+  last_message?: string;
+  last_message_at: string;
+  unread_count: number;
+  created_at: string;
+  candidate_name?: string;
+  employer_name?: string;
+  company?: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  recipient_id: string;
+  content?: string;
+  attachment_url?: string;
+  attachment_name?: string;
+  attachment_size?: number;
+  sent_at: string;
+  read: boolean;
+  seen: boolean;
+  sender_name?: string;
 }

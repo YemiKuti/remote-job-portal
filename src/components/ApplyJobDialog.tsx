@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertCircle, Loader2, FileText, User, Mail, Phone } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { applyToJob } from '@/utils/api';
+import { applyToJob } from '@/utils/api/candidateApi';
 import { Job } from '@/types';
 
 interface ApplyJobDialogProps {
@@ -44,9 +44,13 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
     setErrorMessage('');
 
     try {
-      const success = await applyToJob(user.id, job.id, job.employerId, coverLetter);
+      const data = await applyToJob({
+        jobId: job.id,
+        employerId: job.employerId,
+        coverLetter: coverLetter
+      });
       
-      if (success) {
+      if (data) {
         setApplicationStatus('success');
         onApplicationSuccess?.();
         

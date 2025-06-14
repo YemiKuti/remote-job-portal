@@ -69,6 +69,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
 
     return (data || []).map(application => ({
       ...application,
+      status: application.status as 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted' | 'withdrawn',
       job: application.job ? transformDatabaseJobToFrontendJob(application.job) : undefined
     }));
   } catch (error: any) {

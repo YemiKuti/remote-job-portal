@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,7 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
     setErrorMessage('');
 
     try {
-      const success = await applyToJob(user.id, job.id, job.employerId);
+      const success = await applyToJob(user.id, job.id, job.employerId, coverLetter);
       
       if (success) {
         setApplicationStatus('success');

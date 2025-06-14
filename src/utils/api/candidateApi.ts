@@ -1,9 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Apply to a job
-export const applyToJob = async (userId: string, jobId: string, employerId?: string) => {
+export const applyToJob = async (userId: string, jobId: string, employerId?: string, coverLetter?: string) => {
   try {
-    console.log('🔄 Applying to job:', { userId, jobId, employerId });
+    console.log('🔄 Applying to job:', { userId, jobId, employerId, hasCoverLetter: !!coverLetter });
     
     // Check if user is authenticated
     const { data: { session } } = await supabase.auth.getSession();
@@ -54,14 +54,15 @@ export const applyToJob = async (userId: string, jobId: string, employerId?: str
       throw new Error('Employer ID is required but not provided');
     }
 
-    // Create the application with employer_id
+    // Create the application with employer_id and cover letter
     const { error } = await supabase
       .from('applications')
       .insert({
         user_id: userId,
         job_id: jobId,
         employer_id: finalEmployerId,
-        status: 'pending'
+        status: 'pending',
+        cover_letter: coverLetter || null
       });
 
     if (error) {
@@ -69,7 +70,7 @@ export const applyToJob = async (userId: string, jobId: string, employerId?: str
       throw error;
     }
 
-    console.log('✅ Successfully applied to job');
+    console.log('✅ Successfully applied to job with cover letter');
     return true;
   } catch (error: any) {
     console.error('❌ Error applying to job:', error);
@@ -148,7 +149,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       throw new Error('Authentication required');
     }
 
-    // If currentlySaved is provided and true, remove from saved jobs
     if (currentlySaved === true) {
       const { error } = await supabase
         .from('saved_jobs')
@@ -165,7 +165,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       return { saved: false };
     }
 
-    // Check if job is already saved (only if currentlySaved is not provided)
     if (currentlySaved === undefined) {
       const { data: existingSave, error: checkError } = await supabase
         .from('saved_jobs')
@@ -180,7 +179,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       }
 
       if (existingSave) {
-        // Remove from saved jobs
         const { error } = await supabase
           .from('saved_jobs')
           .delete()
@@ -196,7 +194,6 @@ export const toggleSaveJob = async (userId: string, jobId: string, currentlySave
       }
     }
 
-    // Add to saved jobs
     const { error } = await supabase
       .from('saved_jobs')
       .insert({
@@ -227,7 +224,6 @@ export const fetchSavedJobs = async (userId: string) => {
       throw new Error('Authentication required');
     }
 
-    // First get saved job IDs
     const { data: savedJobsData, error: savedJobsError } = await supabase
       .from('saved_jobs')
       .select('id, job_id, saved_date')
@@ -244,7 +240,6 @@ export const fetchSavedJobs = async (userId: string) => {
       return [];
     }
 
-    // Get job details for each saved job
     const jobIds = savedJobsData.map(sj => sj.job_id);
     const { data: jobsData, error: jobsError } = await supabase
       .from('jobs')
@@ -256,7 +251,6 @@ export const fetchSavedJobs = async (userId: string) => {
       throw jobsError;
     }
 
-    // Combine saved jobs with job details
     const result = savedJobsData.map(savedJob => {
       const jobData = jobsData?.find(job => job.id === savedJob.job_id);
       return {
@@ -295,7 +289,6 @@ export const trackProfileView = async (viewerId: string, profileId: string) => {
       throw new Error('Authentication required');
     }
 
-    // Don't track if viewing own profile
     if (viewerId === profileId) {
       return true;
     }
@@ -358,7 +351,6 @@ export const updateCandidateProfile = async (userId: string, profileData: any) =
       throw new Error('Authentication required');
     }
 
-    // Filter out undefined values and prepare the update data
     const updateData: any = {};
     
     if (profileData.full_name !== undefined) updateData.full_name = profileData.full_name;
@@ -399,12 +391,10 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
       throw new Error('Authentication required');
     }
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       throw new Error('Please select an image file (PNG, JPG, WebP)');
     }
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       throw new Error('Image size must be less than 5MB');
     }
@@ -433,7 +423,6 @@ export const uploadProfilePhoto = async (userId: string, file: File) => {
 
     console.log('🔗 Public URL:', data.publicUrl);
 
-    // Update profile with new photo URL
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ avatar_url: data.publicUrl })
@@ -462,7 +451,6 @@ export const fetchRecommendedJobs = async (userId: string) => {
       throw new Error('Authentication required');
     }
 
-    // For now, return active jobs - can be enhanced with ML recommendations later
     const { data, error } = await supabase
       .from('jobs')
       .select('*')

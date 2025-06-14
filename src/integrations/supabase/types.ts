@@ -328,6 +328,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cv_tailoring_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          job_id: string
+          original_resume_id: string | null
+          session_data: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          original_resume_id?: string | null
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          original_resume_id?: string | null
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv_tailoring_sessions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cv_tailoring_sessions_original_resume_id_fkey"
+            columns: ["original_resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employer_notifications: {
         Row: {
           created_at: string
@@ -828,6 +879,60 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      tailored_resumes: {
+        Row: {
+          accepted_suggestions: Json | null
+          ai_suggestions: Json | null
+          created_at: string
+          id: string
+          job_id: string | null
+          original_resume_id: string | null
+          tailored_content: string
+          tailoring_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_suggestions?: Json | null
+          ai_suggestions?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          original_resume_id?: string | null
+          tailored_content: string
+          tailoring_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_suggestions?: Json | null
+          ai_suggestions?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          original_resume_id?: string | null
+          tailored_content?: string
+          tailoring_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tailored_resumes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tailored_resumes_original_resume_id_fkey"
+            columns: ["original_resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

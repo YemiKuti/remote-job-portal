@@ -1,16 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Search, Filter, Briefcase, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Search, Filter, Briefcase, MapPin, Calendar, Loader2, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { fetchSavedJobs, toggleSaveJob } from '@/utils/api/candidateApi';
 import { SavedJob } from '@/types/api';
 import { useAuth } from '@/components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
+import { Sparkles } from "lucide-react";
 
 const SavedJobs = () => {
   const { user } = useAuth();
@@ -97,7 +98,7 @@ const SavedJobs = () => {
           <div className="space-y-4">
             {filteredJobs.length > 0 ? (
               filteredJobs.map(savedJob => (
-                <Card key={savedJob.id}>
+                <Card key={savedJob.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div>

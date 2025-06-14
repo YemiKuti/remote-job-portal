@@ -1,239 +1,243 @@
-
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MapPin, Building, DollarSign, Briefcase, GraduationCap } from "lucide-react";
+import { formatSalary } from "@/data/jobs";
+import { ApplyJobDialog } from "@/components/ApplyJobDialog";
+import { SaveJobButton } from "@/components/SaveJobButton";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SponsoredBadge } from "@/components/ui/sponsored-badge";
-import ApplyJobDialog from "@/components/ApplyJobDialog";
-import SaveJobButton from "@/components/SaveJobButton";
-import { mockJobs, formatSalary, getTimeAgo } from "@/data/jobs";
-import { Job } from "@/types";
-import { 
-  MapPin, 
-  Clock, 
-  Building, 
-  DollarSign, 
-  Users, 
-  Globe,
-  CheckCircle,
-  ArrowLeft,
-  Share2,
-  Bookmark
-} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { JobType } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
+import { Sparkles } from "lucide-react";
 
 const JobDetail = () => {
   const { id } = useParams();
+  const [job, setJob] = useState<JobType | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [job, setJob] = useState<Job | null>(null);
-  const [showApplyDialog, setShowApplyDialog] = useState(false);
 
   useEffect(() => {
-    const foundJob = mockJobs.find(j => j.id === id);
-    setJob(foundJob || null);
+    if (!id) {
+      console.error("Job ID is missing.");
+      toast.error("Job ID is missing.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchJob = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("jobs")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching job:", error);
+          toast.error("Failed to load job details.");
+        }
+
+        if (data) {
+          setJob(data);
+        } else {
+          setJob(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-md py-4">
+          <div className="max-w-4xl mx-auto px-4">
+            <Skeleton className="h-8 w-60" />
+          </div>
+        </header>
+
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full mt-4" />
+                  <Skeleton className="h-10 w-full mt-4" />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full mt-4" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!job) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Job Not Found</h1>
-            <p className="text-gray-600 mb-6">The job you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate("/jobs")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Jobs
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="text-center">
+          <CardContent className="p-8">
+            <h2 className="text-2xl font-semibold mb-4">Job Not Found</h2>
+            <p className="text-gray-600">
+              Sorry, the job you are looking for does not exist or has been removed.
+            </p>
+            <Button onClick={() => navigate("/")} className="mt-4">
+              Go to Homepage
             </Button>
-          </div>
-        </main>
-        <Footer />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <Button 
-              variant="ghost" 
-              className="mb-6"
-              onClick={() => navigate("/jobs")}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Jobs
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-md py-4">
+        <div className="max-w-4xl mx-auto px-4">
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            ← Back to Job Listings
+          </Button>
+        </div>
+      </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
-                        <img
-                          src={job.logo || "/placeholder.svg"}
-                          alt={`${job.company} logo`}
-                          className="w-16 h-16 rounded object-cover"
-                        />
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <CardTitle className="text-2xl">{job.title}</CardTitle>
-                            <SponsoredBadge />
-                          </div>
-                          <p className="text-xl text-gray-600 mb-2">{job.company}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-1" />
-                              {job.location}
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {getTimeAgo(job.postedDate)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="icon">
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                        <SaveJobButton jobId={job.id} />
-                      </div>
-                    </div>
-                  </CardHeader>
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Card className="space-y-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-semibold">{job.title}</CardTitle>
+                    <CardDescription>
+                      {job.company} - {job.location}
+                    </CardDescription>
+                  </div>
+                  {job.isFeatured && (
+                    <Badge variant="secondary">Featured</Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {job.location}
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Building className="w-4 h-4 mr-1" />
+                    {job.employment_type}
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <DollarSign className="w-4 h-4 mr-1" />
+                    {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
+                  </div>
+                  <div className="flex items-center text-gray-600">
+                    <Briefcase className="w-4 h-4 mr-1" />
+                    {job.experience_level}
+                  </div>
+                  {job.visa_sponsorship && (
+                    <Badge variant="outline">Visa Sponsorship</Badge>
+                  )}
+                  {job.remote && (
+                    <Badge variant="outline">Remote</Badge>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">Job Description</h3>
+                  <p className="text-gray-700">{job.description}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold">Requirements</h3>
+                  <ul className="list-disc pl-5 text-gray-700">
+                    {job.requirements.map((req, index) => (
+                      <li key={index}>{req}</li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <CardTitle className="text-lg font-semibold">Company Information</CardTitle>
+                <CardDescription>Learn more about {job.company}</CardDescription>
+
+                <div className="space-y-3 mt-6">
+                  <ApplyJobDialog 
+                    job={job}
+                    trigger={
+                      <Button className="w-full">
+                        Apply Now
+                      </Button>
+                    }
+                  />
                   
-                  <CardContent className="space-y-6">
-                    <div className="flex flex-wrap gap-2">
-                      {job.isFeatured && <Badge variant="secondary">Featured</Badge>}
-                      {job.remote && <Badge variant="outline">Remote</Badge>}
-                      {job.visaSponsorship && <Badge variant="outline">Visa Sponsorship</Badge>}
-                      <Badge variant="outline">{job.employmentType}</Badge>
-                      <Badge variant="outline">{job.experienceLevel}</Badge>
-                    </div>
+                  <CVTailoringDialog
+                    job={job}
+                    trigger={
+                      <Button variant="outline" className="w-full">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Tailor My CV
+                      </Button>
+                    }
+                  />
 
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Job Description</h3>
-                      <div 
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: job.description }}
-                      />
-                    </div>
+                  <SaveJobButton jobId={job.id} />
+                </div>
+              </CardContent>
+            </Card>
 
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Requirements</h3>
-                      <ul className="space-y-2">
-                        {job.requirements.map((req, index) => (
-                          <li key={index} className="flex items-start">
-                            <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            <Card>
+              <CardContent className="p-6">
+                <CardTitle className="text-lg font-semibold">Job Details</CardTitle>
+                <CardDescription>Additional information about this job</CardDescription>
 
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Tech Stack</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {job.techStack.map((tech) => (
-                          <Badge key={tech} variant="secondary">{tech}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Sidebar */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Job Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Salary</span>
-                      <span className="font-semibold">
-                        {formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Employment Type</span>
-                      <span className="font-semibold">{job.employmentType}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Experience Level</span>
-                      <span className="font-semibold">{job.experienceLevel}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Company Size</span>
-                      <span className="font-semibold">{job.companySize}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Remote</span>
-                      <span className="font-semibold">{job.remote ? "Yes" : "No"}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Visa Sponsorship</span>
-                      <span className="font-semibold">{job.visaSponsorship ? "Available" : "Not Available"}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <Button 
-                      className="w-full mb-3" 
-                      size="lg"
-                      onClick={() => setShowApplyDialog(true)}
-                    >
-                      Apply Now
-                    </Button>
-                    <p className="text-xs text-center text-gray-500">
-                      This is a sponsored job posting
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Job Stats</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Views</span>
-                      <span className="font-semibold">{job.views?.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Applications</span>
-                      <span className="font-semibold">{job.applications?.toLocaleString()}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                <div className="space-y-3 mt-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Posted Date:</span>
+                    <span>{new Date(job.created_at || "").toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Employment Type:</span>
+                    <span>{job.employment_type}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Experience Level:</span>
+                    <span>{job.experience_level}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>
-
-      <Footer />
-
-      <ApplyJobDialog
-        isOpen={showApplyDialog}
-        onClose={() => setShowApplyDialog(false)}
-        job={job}
-      />
     </div>
   );
 };

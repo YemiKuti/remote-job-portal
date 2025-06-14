@@ -1,177 +1,115 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { QueryClient } from 'react-query';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
-import { AuthProvider } from "./components/AuthProvider";
-import AdminRoute from "./components/AdminRoute";
-import Index from "./pages/Index";
-import Pricing from "./pages/Pricing";
-import JobScraper from "./pages/JobScraper";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import AdminDashboard from "./pages/AdminDashboard";
-import BlogManagement from "./pages/admin/BlogManagement";
-import BlogEditor from "./pages/admin/BlogEditor";
-import UsersAdmin from "./pages/admin/Users";
-import JobsAdmin from "./pages/admin/Jobs";
-import CreateJob from "./pages/admin/CreateJob";
-import EditJob from "./pages/admin/EditJob";
-import CompaniesAdmin from "./pages/admin/Companies";
-import SettingsAdmin from "./pages/admin/Settings";
-import AdminProfile from "./pages/admin/Profile";
-import CandidateDashboard from "./pages/CandidateDashboard";
-import EmployerDashboard from "./pages/EmployerDashboard"; 
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import AdminSignIn from "./pages/AdminSignIn";
-import AuthPage from "./pages/Auth";
-import Profile from "./pages/Profile"; // This is for the logged-in user's own account
-import UserProfilePage from "./pages/UserProfilePage"; // New public profile page
-import Account from "./pages/Account";
-import NotFound from "./pages/NotFound";
-import CheckoutSuccess from "./pages/CheckoutSuccess";
-import CandidateProfile from "./pages/candidate/Profile";
-import CandidateApplications from "./pages/candidate/Applications";
-import CandidateMessages from "./pages/candidate/Messages";
-import CandidateSavedJobs from "./pages/candidate/SavedJobs";
-import CandidateSettings from "./pages/candidate/Settings";
-import EmployerJobs from "./pages/employer/Jobs";
-import PostJob from "./pages/employer/PostJob";
-import EditJobPage from "./pages/employer/EditJob";
-import EmployerCandidates from "./pages/employer/Candidates";
-import EmployerCompany from "./pages/employer/Company";
-import EmployerMessages from "./pages/employer/Messages";
-import EmployerSettings from "./pages/employer/Settings";
-import JobDetail from "./pages/JobDetail";
-import FAQ from "./pages/FAQ";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import JobsBrowse from "./pages/JobsBrowse";
-import { ProtectedEmployerRoute } from "./components/employer/ProtectedEmployerRoute";
+import Home from './pages/Home';
+import Jobs from './pages/Jobs';
+import JobDetail from './pages/JobDetail';
+import Signin from './pages/Signin';
+import Signup from './pages/Signup';
+import Pricing from './pages/Pricing';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Blog from './pages/Blog';
+import PostDetail from './pages/PostDetail';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import NotFound from './pages/NotFound';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60000, // 1 minute
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+import EmployerDashboard from './pages/employer/Dashboard';
+import EmployerJobs from './pages/employer/Jobs';
+import EmployerNewJob from './pages/employer/NewJob';
+import EmployerEditJob from './pages/employer/EditJob';
+import EmployerApplications from './pages/employer/Applications';
+import EmployerProfile from './pages/employer/Profile';
+import EmployerMessages from './pages/employer/Messages';
+import EmployerSettings from './pages/employer/Settings';
 
-const App = () => {
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminJobs from './pages/admin/Jobs';
+import AdminCompanies from './pages/admin/Companies';
+import AdminUsers from './pages/admin/Users';
+import AdminSettings from './pages/admin/Settings';
+import AdminJobDetail from './pages/admin/JobDetail';
+import AdminCompanyDetail from './pages/admin/CompanyDetail';
+import AdminUserDetail from './pages/admin/UserDetail';
+import AdminNewCompany from './pages/admin/NewCompany';
+import AdminEditCompany from './pages/admin/EditCompany';
+import AdminNewJob from './pages/admin/NewJob';
+import AdminEditJob from './pages/admin/EditJob';
+import AdminNewUser from './pages/admin/NewUser';
+import AdminEditUser from './pages/admin/EditUser';
+
+import CandidateProfile from './pages/candidate/Profile';
+import CandidateApplications from './pages/candidate/Applications';
+import CandidateSavedJobs from './pages/candidate/SavedJobs';
+import CandidateMessages from './pages/candidate/Messages';
+import CandidateSettings from './pages/candidate/Settings';
+import TailoredResumes from "@/pages/candidate/TailoredResumes";
+
+import { AuthProvider } from './components/AuthProvider';
+
+function App() {
   return (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <BrowserRouter>
-            <AuthProvider>
-              <div className="w-full">
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/jobs" element={<JobsBrowse />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/job-scraper" element={<JobScraper />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/blog/:id" element={<BlogPost />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/admin-signin" element={<AdminSignIn />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  {/* Route for logged-in user's own profile/account page */}
-                  <Route path="/profile" element={<Profile />} /> 
-                  {/* New route for public user profiles */}
-                  <Route path="/users/:userId" element={<UserProfilePage />} /> 
-                  <Route path="/account" element={<Account />} />
-                  <Route path="/jobs/:jobId" element={<JobDetail />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/terms-of-service" element={<TermsOfService />} />
-                  
-                  {/* Protected Admin Routes */}
-                  <Route element={<AdminRoute />}>
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/profile" element={<AdminProfile />} />
-                    <Route path="/admin/blog" element={<BlogManagement />} />
-                    <Route path="/admin/blog/create" element={<BlogEditor />} />
-                    <Route path="/admin/blog/edit/:id" element={<BlogEditor />} />
-                    <Route path="/admin/users" element={<UsersAdmin />} />
-                    <Route path="/admin/jobs" element={<JobsAdmin />} />
-                    <Route path="/admin/create-job" element={<CreateJob />} />
-                    <Route path="/admin/edit-job/:jobId" element={<EditJob />} />
-                    <Route path="/admin/companies" element={<CompaniesAdmin />} />
-                    <Route path="/admin/settings" element={<SettingsAdmin />} />
-                  </Route>
-                  
-                  {/* Candidate Routes */}
-                  <Route path="/candidate" element={<CandidateDashboard />} />
-                  <Route path="/candidate/profile" element={<CandidateProfile />} />
-                  <Route path="/candidate/applications" element={<CandidateApplications />} />
-                  <Route path="/candidate/messages" element={<CandidateMessages />} />
-                  <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
-                  <Route path="/candidate/settings" element={<CandidateSettings />} />
-                  
-                  {/* Protected Employer Routes */}
-                  <Route path="/employer" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerDashboard />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/jobs" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerJobs />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/post-job" element={
-                    <ProtectedEmployerRoute>
-                      <PostJob />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/edit-job/:jobId" element={
-                    <ProtectedEmployerRoute>
-                      <EditJobPage />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/candidates" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerCandidates />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/company" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerCompany />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/messages" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerMessages />
-                    </ProtectedEmployerRoute>
-                  } />
-                  <Route path="/employer/settings" element={
-                    <ProtectedEmployerRoute>
-                      <EmployerSettings />
-                    </ProtectedEmployerRoute>
-                  } />
-                  
-                  {/* Redirect old PostJob route to employer route */}
-                  <Route path="/post-job" element={<Navigate to="/employer/post-job" replace />} />
-                  
-                  <Route path="/checkout/success" element={<CheckoutSuccess />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
+    <QueryClient>
+      <BrowserRouter>
+        <AuthProvider>
+          <Toaster />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<PostDetail />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
+
+            {/* Employer Routes */}
+            <Route path="/employer" element={<EmployerDashboard />} />
+            <Route path="/employer/jobs" element={<EmployerJobs />} />
+            <Route path="/employer/jobs/new" element={<EmployerNewJob />} />
+            <Route path="/employer/jobs/:id/edit" element={<EmployerEditJob />} />
+            <Route path="/employer/applications" element={<EmployerApplications />} />
+            <Route path="/employer/profile" element={<EmployerProfile />} />
+            <Route path="/employer/messages" element={<EmployerMessages />} />
+            <Route path="/employer/settings" element={<EmployerSettings />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/jobs" element={<AdminJobs />} />
+            <Route path="/admin/jobs/:id" element={<AdminJobDetail />} />
+            <Route path="/admin/companies" element={<AdminCompanies />} />
+            <Route path="/admin/companies/new" element={<AdminNewCompany />} />
+            <Route path="/admin/companies/:id" element={<AdminCompanyDetail />} />
+            <Route path="/admin/companies/:id/edit" element={<AdminEditCompany />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/new" element={<AdminNewUser />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+            <Route path="/admin/users/:id/edit" element={<AdminEditUser />} />
+            <Route path="/admin/jobs/new" element={<AdminNewJob />} />
+            <Route path="/admin/jobs/:id/edit" element={<AdminEditJob />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+
+            {/* Candidate Routes */}
+            <Route path="/candidate/profile" element={<CandidateProfile />} />
+            <Route path="/candidate/applications" element={<CandidateApplications />} />
+            <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
+            <Route path="/candidate/tailored-resumes" element={<TailoredResumes />} />
+            <Route path="/candidate/messages" element={<CandidateMessages />} />
+            <Route path="/candidate/settings" element={<CandidateSettings />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClient>
   );
-};
+}
 
 export default App;

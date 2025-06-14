@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -20,7 +19,8 @@ import {
   User,
   Briefcase,
   Download,
-  ExternalLink
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 
 interface Resume {
@@ -114,6 +114,13 @@ export const ApplicationDetailModal = ({
     }
   };
 
+  const handleViewProfile = () => {
+    if (application.candidate?.id) {
+      // Open candidate profile in new tab
+      window.open(`/profile/${application.candidate.id}`, '_blank');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -140,6 +147,17 @@ export const ApplicationDetailModal = ({
               </span>
             </div>
             <div className="flex gap-2">
+              {application.candidate?.id && (
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={handleViewProfile}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Profile
+                </Button>
+              )}
               {application.status !== 'shortlisted' && (
                 <Button 
                   size="sm"
@@ -261,11 +279,24 @@ export const ApplicationDetailModal = ({
 
           <Separator />
 
-          {/* Candidate Profile Information */}
+          {/* Enhanced Candidate Profile Information */}
           <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Candidate Profile
+            <h3 className="text-lg font-semibold mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Candidate Profile
+              </span>
+              {application.candidate?.id && (
+                <Button 
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleViewProfile}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View Full Profile
+                </Button>
+              )}
             </h3>
             
             {!application.candidate?.full_name && !application.candidate?.username ? (
@@ -277,70 +308,80 @@ export const ApplicationDetailModal = ({
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                    <p className="mt-1">{application.candidate?.full_name || 'Not provided'}</p>
+                {/* Basic Information with Avatar */}
+                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                  <UserAvatar 
+                    userId={application.candidate?.id}
+                    fallbackText={getCandidateInitials(application.candidate)}
+                    className="h-16 w-16"
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <h4 className="font-semibold text-lg">
+                        {application.candidate?.full_name || application.candidate?.username || 'Name not provided'}
+                      </h4>
+                      {application.candidate?.title && (
+                        <p className="text-muted-foreground">{application.candidate.title}</p>
+                      )}
+                    </div>
+                    
+                    {/* Quick stats */}
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      {application.candidate?.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{application.candidate.location}</span>
+                        </div>
+                      )}
+                      {application.candidate?.experience !== null && application.candidate?.experience !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" />
+                          <span>{application.candidate.experience} years experience</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Username</label>
                     <p className="mt-1">{application.candidate?.username || 'Not provided'}</p>
                   </div>
                   
-                  {application.candidate?.title && (
+                  {application.candidate?.phone && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Professional Title</label>
-                      <p className="mt-1">{application.candidate.title}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                      <p className="mt-1 flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        {application.candidate.phone}
+                      </p>
                     </div>
                   )}
                   
-                  {application.candidate?.experience !== null && application.candidate?.experience !== undefined && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Experience</label>
-                      <p className="mt-1">{application.candidate.experience} years</p>
+                  {application.candidate?.website && (
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-medium text-muted-foreground">Website</label>
+                      <p className="mt-1">
+                        <a 
+                          href={application.candidate.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-2"
+                        >
+                          <Globe className="h-4 w-4" />
+                          {application.candidate.website}
+                        </a>
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Contact Information */}
-                {(application.candidate?.phone || application.candidate?.location || application.candidate?.website) && (
-                  <div>
-                    <h4 className="font-medium mb-2">Contact Information</h4>
-                    <div className="space-y-2">
-                      {application.candidate?.phone && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{application.candidate.phone}</span>
-                        </div>
-                      )}
-                      {application.candidate?.location && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span>{application.candidate.location}</span>
-                        </div>
-                      )}
-                      {application.candidate?.website && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          <a 
-                            href={application.candidate.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            {application.candidate.website}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* Bio */}
                 {application.candidate?.bio && (
                   <div>
-                    <h4 className="font-medium mb-2">Bio</h4>
-                    <p className="text-sm bg-gray-50 p-3 rounded-lg">
+                    <h4 className="font-medium mb-2">About</h4>
+                    <p className="text-sm bg-gray-50 p-3 rounded-lg leading-relaxed">
                       {application.candidate.bio}
                     </p>
                   </div>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +7,11 @@ import { useCVTailoring } from "@/hooks/useCVTailoring";
 import { formatDistanceToNow } from "date-fns";
 import { downloadTailoredResume } from "@/utils/resumeProcessor";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const TailoredResumesList = () => {
   const { tailoredResumes, loading, deleteTailoredResume } = useCVTailoring();
+  const navigate = useNavigate();
 
   const handleDownload = async (resume: any) => {
     try {
@@ -97,11 +98,9 @@ export const TailoredResumesList = () => {
           <p className="text-gray-600 mb-4">
             Start tailoring your resume to specific job opportunities to increase your chances of getting hired.
           </p>
-          <Button variant="outline" asChild>
-            <a href="/candidate">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Browse Jobs
-            </a>
+          <Button variant="outline" onClick={() => navigate('/candidate')}>
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Browse Jobs
           </Button>
         </CardContent>
       </Card>

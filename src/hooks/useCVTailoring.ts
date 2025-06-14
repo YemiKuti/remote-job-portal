@@ -13,10 +13,18 @@ export const useCVTailoring = () => {
       setLoading(true);
       console.log('🔍 Fetching tailored resumes...');
       
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        console.log('❌ User not authenticated');
+        setTailoredResumes([]);
+        return;
+      }
+
       // First get the tailored resumes without joins to avoid foreign key issues
       const { data: resumesData, error: resumesError } = await supabase
         .from('tailored_resumes')
         .select('*')
+        .eq('user_id', user.user.id)
         .order('created_at', { ascending: false });
 
       if (resumesError) {
@@ -88,10 +96,18 @@ export const useCVTailoring = () => {
     try {
       console.log('🔍 Fetching tailoring sessions...');
       
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        console.log('❌ User not authenticated');
+        setSessions([]);
+        return;
+      }
+
       // First get the sessions without joins to avoid foreign key issues
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('cv_tailoring_sessions')
         .select('*')
+        .eq('user_id', user.user.id)
         .order('created_at', { ascending: false });
 
       if (sessionsError) {

@@ -6,6 +6,7 @@ import { MapPin, Clock, Building, DollarSign, Users } from "lucide-react";
 import { formatSalary, getTimeAgo } from "@/data/jobs";
 import { Job } from "@/types";
 import { SponsoredBadge } from "@/components/ui/sponsored-badge";
+import { useNavigate } from "react-router-dom";
 
 interface JobCardProps {
   job: Job;
@@ -13,8 +14,18 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job, onClick }: JobCardProps) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/jobs/${job.id}`);
+    }
+  };
+
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start space-x-3">

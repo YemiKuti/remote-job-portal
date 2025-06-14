@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Building, DollarSign, Briefcase, Bookmark, Sparkles } from "lucide-react";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useNavigate } from "react-router-dom";
-import { formatSalary } from "@/data/jobs";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 
 const SavedJobs = () => {
@@ -107,19 +106,19 @@ const SavedJobs = () => {
                           </div>
                           <div className="flex items-center">
                             <Building className="w-4 h-4 mr-1" />
-                            {job.employmentType}
+                            {job.employment_type}
                           </div>
-                          {job.salary && (
+                          {job.salary_min && job.salary_max && (
                             <div className="flex items-center">
                               <DollarSign className="w-4 h-4 mr-1" />
-                              {formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
+                              {job.salary_currency} {job.salary_min?.toLocaleString()} - {job.salary_max?.toLocaleString()}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      {job.isFeatured && (
+                      {job.is_featured && (
                         <Badge variant="secondary">Featured</Badge>
                       )}
                     </div>
@@ -128,14 +127,14 @@ const SavedJobs = () => {
                   <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {job.techStack && job.techStack.slice(0, 3).map((tech) => (
+                    {job.tech_stack && job.tech_stack.slice(0, 3).map((tech) => (
                       <Badge key={tech} variant="outline" className="text-xs">
                         {tech}
                       </Badge>
                     ))}
-                    {job.techStack && job.techStack.length > 3 && (
+                    {job.tech_stack && job.tech_stack.length > 3 && (
                       <Badge variant="outline" className="text-xs">
-                        +{job.techStack.length - 3} more
+                        +{job.tech_stack.length - 3} more
                       </Badge>
                     )}
                   </div>
@@ -145,7 +144,7 @@ const SavedJobs = () => {
                       {job.remote && (
                         <Badge variant="secondary" className="text-xs">Remote</Badge>
                       )}
-                      {job.visaSponsorship && (
+                      {job.visa_sponsorship && (
                         <Badge variant="outline" className="text-xs">Visa Sponsorship</Badge>
                       )}
                     </div>

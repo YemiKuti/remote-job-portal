@@ -71,7 +71,7 @@ export const fetchCandidateApplications = async (userId: string): Promise<Applic
     return (data || []).map(application => ({
       ...application,
       status: application.status as 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted' | 'withdrawn',
-      job: application.job ? transformDatabaseJobToFrontendJob(application.job) : undefined
+      job: application.job ? application.job : undefined
     }));
   } catch (error: any) {
     console.error('Error fetching applications:', error);
@@ -124,7 +124,7 @@ export const fetchSavedJobs = async (userId: string): Promise<SavedJob[]> => {
 
     return (data || []).map(savedJob => ({
       ...savedJob,
-      job: savedJob.job ? transformDatabaseJobToFrontendJob(savedJob.job) : null
+      job: savedJob.job ? savedJob.job : null
     }));
   } catch (error: any) {
     console.error('Error fetching saved jobs:', error);

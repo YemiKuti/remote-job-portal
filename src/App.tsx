@@ -15,6 +15,7 @@ import BlogPost from './pages/BlogPost';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
+import AuthPage from './pages/Auth';
 
 import EmployerDashboard from './pages/EmployerDashboard';
 import Jobs from './pages/employer/Jobs';
@@ -33,6 +34,7 @@ import AdminJobs from './pages/admin/Jobs';
 import BlogManagement from './pages/admin/BlogManagement';
 import BlogEditor from './pages/admin/BlogEditor';
 
+import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfile from './pages/candidate/Profile';
 import CandidateApplications from './pages/candidate/Applications';
 import CandidateSavedJobs from './pages/candidate/SavedJobs';
@@ -57,6 +59,7 @@ function App() {
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
@@ -74,6 +77,7 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin-signin" element={<AdminDashboard />} />
             <Route path="/admin/jobs" element={<AdminJobs />} />
             <Route path="/admin/jobs/new" element={<CreateJob />} />
             <Route path="/admin/jobs/:id/edit" element={<AdminEditJob />} />
@@ -84,6 +88,7 @@ function App() {
             <Route path="/admin/settings" element={<AdminSettings />} />
 
             {/* Candidate Routes */}
+            <Route path="/candidate" element={<CandidateDashboard />} />
             <Route path="/candidate/profile" element={<CandidateProfile />} />
             <Route path="/candidate/applications" element={<CandidateApplications />} />
             <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -27,6 +26,7 @@ const AdminSignIn = () => {
   // Redirect if already authenticated and is admin
   useEffect(() => {
     if (user && adminVerified && isAdmin) {
+      console.log('Admin user already authenticated, redirecting to admin dashboard');
       navigate('/admin');
     }
   }, [user, adminVerified, isAdmin, navigate]);
@@ -101,6 +101,22 @@ const AdminSignIn = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading if checking admin status
+  if (user && !adminVerified) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1 bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-gray-600" />
+            <p className="text-lg font-medium">Checking admin privileges...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

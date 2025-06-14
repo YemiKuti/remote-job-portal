@@ -25,6 +25,7 @@ import Settings from './pages/employer/Settings';
 import Messages from './pages/employer/Messages';
 
 import AdminDashboard from './pages/AdminDashboard';
+import AdminSignIn from './pages/AdminSignIn';
 import Companies from './pages/admin/Companies';
 import Users from './pages/admin/Users';
 import AdminSettings from './pages/admin/Settings';
@@ -43,6 +44,8 @@ import CandidateSettings from './pages/candidate/Settings';
 import TailoredResumes from './pages/candidate/TailoredResumes';
 
 import { AuthProvider } from './components/AuthProvider';
+import AdminRoute from './components/AdminRoute';
+import { ProtectedEmployerRoute } from './components/employer/ProtectedEmployerRoute';
 
 const queryClient = new QueryClient();
 
@@ -67,25 +70,53 @@ function App() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="*" element={<NotFound />} />
 
-            {/* Employer Routes */}
-            <Route path="/employer" element={<EmployerDashboard />} />
-            <Route path="/employer/jobs" element={<Jobs />} />
-            <Route path="/employer/jobs/new" element={<PostJob />} />
-            <Route path="/employer/jobs/:id/edit" element={<EditJob />} />
-            <Route path="/employer/messages" element={<Messages />} />
-            <Route path="/employer/settings" element={<Settings />} />
+            {/* Admin Sign-in Route (Public but redirects if already admin) */}
+            <Route path="/admin-signin" element={<AdminSignIn />} />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin-signin" element={<AdminDashboard />} />
-            <Route path="/admin/jobs" element={<AdminJobs />} />
-            <Route path="/admin/jobs/new" element={<CreateJob />} />
-            <Route path="/admin/jobs/:id/edit" element={<AdminEditJob />} />
-            <Route path="/admin/companies" element={<Companies />} />
-            <Route path="/admin/users" element={<Users />} />
-            <Route path="/admin/blog" element={<BlogManagement />} />
-            <Route path="/admin/blog/create" element={<BlogEditor />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
+            {/* Protected Employer Routes */}
+            <Route path="/employer" element={
+              <ProtectedEmployerRoute>
+                <EmployerDashboard />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/jobs" element={
+              <ProtectedEmployerRoute>
+                <Jobs />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/jobs/new" element={
+              <ProtectedEmployerRoute>
+                <PostJob />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/jobs/:id/edit" element={
+              <ProtectedEmployerRoute>
+                <EditJob />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/messages" element={
+              <ProtectedEmployerRoute>
+                <Messages />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/settings" element={
+              <ProtectedEmployerRoute>
+                <Settings />
+              </ProtectedEmployerRoute>
+            } />
+
+            {/* Protected Admin Routes */}
+            <Route path="/admin" element={<AdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="jobs" element={<AdminJobs />} />
+              <Route path="jobs/new" element={<CreateJob />} />
+              <Route path="jobs/:id/edit" element={<AdminEditJob />} />
+              <Route path="companies" element={<Companies />} />
+              <Route path="users" element={<Users />} />
+              <Route path="blog" element={<BlogManagement />} />
+              <Route path="blog/create" element={<BlogEditor />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
 
             {/* Candidate Routes */}
             <Route path="/candidate" element={<CandidateDashboard />} />

@@ -116,8 +116,8 @@ export const ApplicationDetailModal = ({
 
   const handleViewProfile = () => {
     if (application.candidate?.id) {
-      // Open candidate profile in new tab
-      window.open(`/profile/${application.candidate.id}`, '_blank');
+      // Open candidate's public profile in new tab using the new route
+      window.open(`/users/${application.candidate.id}`, '_blank');
     }
   };
 

@@ -28,7 +28,8 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import AdminSignIn from "./pages/AdminSignIn";
 import AuthPage from "./pages/Auth";
-import Profile from "./pages/Profile";
+import Profile from "./pages/Profile"; // This is for the logged-in user's own account
+import UserProfilePage from "./pages/UserProfilePage"; // New public profile page
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -82,7 +83,10 @@ const App = () => {
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/admin-signin" element={<AdminSignIn />} />
                   <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/profile" element={<Profile />} />
+                  {/* Route for logged-in user's own profile/account page */}
+                  <Route path="/profile" element={<Profile />} /> 
+                  {/* New route for public user profiles */}
+                  <Route path="/users/:userId" element={<UserProfilePage />} /> 
                   <Route path="/account" element={<Account />} />
                   <Route path="/jobs/:jobId" element={<JobDetail />} />
                   <Route path="/faq" element={<FAQ />} />

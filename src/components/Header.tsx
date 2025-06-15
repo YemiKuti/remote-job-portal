@@ -48,6 +48,8 @@ export default function Header() {
     navigate('/signup');
   };
 
+  const userRole = user?.user_metadata?.role;
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -101,7 +103,7 @@ export default function Header() {
                     Employer Dashboard
                   </DropdownMenuItem>
                 )}
-                {!adminLoading && isAdmin && (
+                {!adminLoading && isAdmin && userRole !== 'employer' && (
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     Admin Dashboard
                   </DropdownMenuItem>

@@ -133,7 +133,7 @@ const AdminDashboard = () => {
                 className="flex flex-col h-24 items-center justify-center gap-2"
                 asChild
               >
-                <Link to="/admin/create-job">
+                <Link to="/admin/jobs/new">
                   <Briefcase className="h-6 w-6 text-green-500" />
                   <span>Create Job</span>
                 </Link>

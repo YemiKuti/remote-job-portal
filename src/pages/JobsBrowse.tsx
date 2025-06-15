@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { useSubscription } from '@/hooks/useSupabase';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
@@ -11,17 +12,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X, Briefcase, MapPin, Building, AlertCircle } from 'lucide-react';
+import { Filter, X, Briefcase, MapPin, Building, AlertCircle, Crown, ArrowRight } from 'lucide-react';
 import { Job } from '@/types';
 import { useActiveJobs } from '@/hooks/useActiveJobs';
+import { useNavigate } from 'react-router-dom';
 
 const JobsBrowse = () => {
   const { user } = useAuth();
+  const { subscribed, loading: subscriptionLoading } = useSubscription();
   const { jobs: allJobs, loading, error, refetch } = useActiveJobs();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [activeFilters, setActiveFilters] = useState<any>({});
+  const navigate = useNavigate();
+
+  // Job limit for free users
+  const FREE_JOB_LIMIT = 5;
+  const shouldLimitJobs = !subscribed && !subscriptionLoading;
+  const displayedJobs = shouldLimitJobs ? filteredJobs.slice(0, FREE_JOB_LIMIT) : filteredJobs;
+  const hasMoreJobs = shouldLimitJobs && filteredJobs.length > FREE_JOB_LIMIT;
 
   useEffect(() => {
     let filtered = allJobs;
@@ -79,6 +89,10 @@ const JobsBrowse = () => {
 
   const getActiveFilterCount = () => {
     return Object.values(activeFilters).flat().length;
+  };
+
+  const handleSubscribeClick = () => {
+    navigate('/pricing');
   };
 
   if (loading) {
@@ -172,7 +186,19 @@ const JobsBrowse = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h2 className="text-xl font-semibold">
-                {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} Found
+                {shouldLimitJobs && filteredJobs.length > FREE_JOB_LIMIT ? (
+                  <>
+                    {displayedJobs.length} of {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} 
+                    <Badge variant="outline" className="ml-2">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Free Preview
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    {filteredJobs.length} Job{filteredJobs.length !== 1 ? 's' : ''} Found
+                  </>
+                )}
               </h2>
               {searchQuery && (
                 <span className="text-sm text-muted-foreground">
@@ -198,11 +224,51 @@ const JobsBrowse = () => {
           <Separator />
 
           {/* Job Listings */}
-          {filteredJobs.length > 0 ? (
-            <div className="grid gap-4">
-              {filteredJobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
+          {displayedJobs.length > 0 ? (
+            <div className="space-y-6">
+              <div className="grid gap-4">
+                {displayedJobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+
+              {/* Subscription Prompt */}
+              {hasMoreJobs && (
+                <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardContent className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Crown className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Want to see more jobs?
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      You're viewing {FREE_JOB_LIMIT} of {filteredJobs.length} available jobs. 
+                      Subscribe to unlock all job listings and premium features.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                      <Button 
+                        onClick={handleSubscribeClick}
+                        className="bg-primary hover:bg-primary/90 text-white px-6 py-2"
+                      >
+                        Subscribe Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                      {!user && (
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate('/signin')}
+                        >
+                          Sign In to Continue
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-4">
+                      Join thousands of professionals finding their dream jobs
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           ) : !loading && (
             <Card>
@@ -229,7 +295,7 @@ const JobsBrowse = () => {
           )}
 
           {/* User-specific messaging */}
-          {user && user.user_metadata?.role === 'candidate' && (
+          {user && user.user_metadata?.role === 'candidate' && subscribed && (
             <Alert>
               <Briefcase className="h-4 w-4" />
               <AlertDescription>

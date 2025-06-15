@@ -242,16 +242,6 @@ const JobsBrowse = () => {
                 ))}
               </div>
 
-              {/* Debug info for troubleshooting */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md text-sm">
-                  <strong>Debug Info:</strong> hasMoreJobs: {hasMoreJobs.toString()}, 
-                  shouldLimitJobs: {shouldLimitJobs.toString()}, 
-                  filteredJobs: {filteredJobs.length}, 
-                  subscribed: {subscribed ? 'true' : 'false'}
-                </div>
-              )}
-
               {/* Subscription Prompt - This should always show when hasMoreJobs is true */}
               {hasMoreJobs && (
                 <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">

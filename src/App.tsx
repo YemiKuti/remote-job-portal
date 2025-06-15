@@ -17,6 +17,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
 import AuthPage from './pages/Auth';
+import Profile from './pages/Profile';
 
 import EmployerDashboard from './pages/EmployerDashboard';
 import Jobs from './pages/employer/Jobs';
@@ -64,6 +65,7 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/blog" element={<Blog />} />

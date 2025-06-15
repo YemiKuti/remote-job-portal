@@ -5,8 +5,9 @@ import JobForm from '@/components/JobForm';
 import { useParams } from 'react-router-dom';
 
 const AdminEditJob = () => {
-  const { jobId } = useParams();
-  
+  // Use "id" from route params, since the route is "/admin/jobs/:id/edit"
+  const { id } = useParams();
+
   return (
     <DashboardLayout userType="admin">
       <div className="space-y-6">
@@ -17,10 +18,11 @@ const AdminEditJob = () => {
           </p>
         </div>
         
-        <JobForm jobId={jobId} isAdmin={true} />
+        <JobForm jobId={id} isAdmin={true} />
       </div>
     </DashboardLayout>
   );
 };
 
 export default AdminEditJob;
+

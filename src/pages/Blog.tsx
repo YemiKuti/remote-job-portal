@@ -79,18 +79,10 @@ const Blog: React.FC = () => {
       
       console.log('Pagination:', { from, to, currentPage });
       
-      // Simplified query without profiles join for debugging
+      // Very simple query first - just get basic fields
       let query = supabase
         .from('posts')
-        .select(`
-          id, 
-          title, 
-          content, 
-          created_at, 
-          updated_at, 
-          user_id,
-          is_published
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('is_published', true);
       
       // Add search filter if search query exists
@@ -113,10 +105,10 @@ const Blog: React.FC = () => {
         throw error;
       }
       
-      // Transform data to match interface
+      // Transform data to match interface with mock profile data
       const transformedPosts = (data || []).map(post => ({
         ...post,
-        profiles: { full_name: 'AfricanTechJobs Editorial Team' } // Mock profile data
+        profiles: { full_name: 'AfricanTechJobs Editorial Team' }
       }));
       
       console.log('Transformed posts:', transformedPosts);

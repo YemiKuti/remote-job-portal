@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
+import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -217,9 +217,16 @@ const JobDetail = () => {
                 <div className="flex flex-col gap-3 mt-3">
                   <Button
                     className="w-full"
-                    onClick={() => setShowApplyDialog(true)}
+                    // On click: for internal -> open dialog; else -> call application handler
+                    onClick={() => {
+                      if (job.applicationType === "internal") {
+                        setShowApplyDialog(true);
+                      } else {
+                        handleJobApplication(job);
+                      }
+                    }}
                   >
-                    Apply Now
+                    {getApplicationButtonText(job.applicationType)}
                   </Button>
 
                   <CVTailoringDialog
@@ -266,7 +273,8 @@ const JobDetail = () => {
         </div>
       </main>
 
-      {showApplyDialog && (
+      {/* Only show the dialog for internal application type */}
+      {showApplyDialog && job.applicationType === "internal" && (
         <ApplyJobDialog
           isOpen={showApplyDialog}
           onClose={() => setShowApplyDialog(false)}
@@ -282,4 +290,3 @@ const JobDetail = () => {
 };
 
 export default JobDetail;
-

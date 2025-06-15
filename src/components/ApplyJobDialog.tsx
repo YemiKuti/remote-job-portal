@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -237,7 +236,7 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
                 <div className="flex items-center mt-2 gap-1 text-gray-700 text-sm bg-gray-100 border rounded px-2 py-1 w-fit">
                   <Paperclip className="h-4 w-4 mr-1" />
                   <span className="truncate max-w-[160px]">{resumeFile.name}</span>
-                  <Button size="xs" type="button" variant="ghost" onClick={handleRemoveResume} aria-label="Remove file">
+                  <Button size="sm" type="button" variant="ghost" onClick={handleRemoveResume} aria-label="Remove file">
                     <X className="h-3 w-3" />
                   </Button>
                 </div>

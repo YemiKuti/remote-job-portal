@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
+import RichTextRenderer from "@/components/RichTextRenderer";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -184,16 +185,32 @@ const JobDetail = () => {
 
                 <div className="space-y-1 md:space-y-2">
                   <h3 className="text-lg md:text-xl font-semibold">Job Description</h3>
-                  <div className="text-gray-700 whitespace-pre-line break-words">{job.description}</div>
+                  <RichTextRenderer content={job.description} />
                 </div>
 
-                {job.techStack && job.techStack.length > 0 && (
+                {job.requirements && job.requirements.length > 0 && (
                   <div className="space-y-1 md:space-y-2">
                     <h3 className="text-lg md:text-xl font-semibold">Requirements</h3>
                     <div className="text-gray-700">
+                      {Array.isArray(job.requirements) ? (
+                        <ul className="list-disc pl-5">
+                          {job.requirements.map((req, index) => (
+                            <li key={index}><RichTextRenderer content={req} /></li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <RichTextRenderer content={job.requirements} />
+                      )}
+                    </div>
+                  </div>
+                )}
+                {job.techStack && job.techStack.length > 0 && (
+                  <div className="space-y-1 md:space-y-2">
+                    <h3 className="text-lg md:text-xl font-semibold">Tech Stack</h3>
+                    <div className="text-gray-700">
                       <ul className="list-disc pl-5">
-                        {job.techStack.map((req, index) => (
-                          <li key={index}>{req}</li>
+                        {job.techStack.map((tech: string, index: number) => (
+                          <li key={index}>{tech}</li>
                         ))}
                       </ul>
                     </div>

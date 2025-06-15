@@ -37,6 +37,8 @@ const BLOG_CATEGORIES = [
 const POSTS_PER_PAGE = 6;
 
 const Blog: React.FC = () => {
+  console.log('Blog component rendering...');
+  
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -50,6 +52,8 @@ const Blog: React.FC = () => {
 
   // Calculate total pages
   const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+
+  console.log('Blog state:', { loading, error, postsCount: posts.length, totalPosts, totalPages });
 
   // Update URL when filters change
   const updateUrlParams = useCallback(() => {
@@ -65,14 +69,15 @@ const Blog: React.FC = () => {
   // Fetch posts based on filters
   const fetchPosts = useCallback(async () => {
     try {
+      console.log('Starting to fetch posts...');
       setLoading(true);
       setError(null);
-      
-      console.log('Fetching blog posts...');
       
       // Calculate pagination offsets
       const from = (currentPage - 1) * POSTS_PER_PAGE;
       const to = from + POSTS_PER_PAGE - 1;
+      
+      console.log('Pagination:', { from, to, currentPage });
       
       // Simplified query without profiles join for debugging
       let query = supabase
@@ -90,6 +95,7 @@ const Blog: React.FC = () => {
       
       // Add search filter if search query exists
       if (searchQuery) {
+        console.log('Adding search filter:', searchQuery);
         query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
       }
       
@@ -97,9 +103,10 @@ const Blog: React.FC = () => {
       query = query.order('created_at', { ascending: false })
         .range(from, to);
       
+      console.log('About to execute query...');
       const { data, error, count } = await query;
       
-      console.log('Blog posts query result:', { data, error, count });
+      console.log('Query result:', { data, error, count });
       
       if (error) {
         console.error('Database error:', error);
@@ -112,6 +119,8 @@ const Blog: React.FC = () => {
         profiles: { full_name: 'AfricanTechJobs Editorial Team' } // Mock profile data
       }));
       
+      console.log('Transformed posts:', transformedPosts);
+      
       // Update posts and total count
       setPosts(transformedPosts);
       if (count !== null) setTotalPosts(count);
@@ -122,12 +131,14 @@ const Blog: React.FC = () => {
       console.error('Error fetching posts:', err);
       setError('Failed to load blog posts. Please try again later.');
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   }, [currentPage, searchQuery, activeCategory]);
 
   // Effect to fetch posts when filters change
   useEffect(() => {
+    console.log('useEffect triggered, calling fetchPosts');
     fetchPosts();
   }, [fetchPosts]);
   
@@ -166,7 +177,12 @@ const Blog: React.FC = () => {
     category: BLOG_CATEGORIES[index % BLOG_CATEGORIES.length].name
   }));
 
-  console.log('Blog component render state:', { loading, error, postsCount: posts.length });
+  console.log('About to render, final state:', { 
+    loading, 
+    error, 
+    postsCount: posts.length, 
+    postsWithCategoriesCount: postsWithCategories.length 
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -208,6 +224,11 @@ const Blog: React.FC = () => {
             activeCategory={activeCategory}
             onSelectCategory={handleCategorySelect}
           />
+        </div>
+        
+        {/* Debug info - remove this once working */}
+        <div className="mb-4 p-4 bg-gray-100 rounded text-sm">
+          <strong>Debug Info:</strong> Loading: {loading.toString()}, Error: {error || 'none'}, Posts: {posts.length}, Total: {totalPosts}
         </div>
         
         {loading ? (

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ interface AuthProps {
   initialProvider?: string | null;
 }
 
-export default function Auth({ initialRole = 'candidate', initialProvider = null }: AuthProps) {
+export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
@@ -27,12 +28,6 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
   const [fullName, setFullName] = useState("");
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [rateLimited, setRateLimited] = useState(false);
-
-  useEffect(() => {
-    if (initialProvider === 'linkedin_oidc') {
-      handleLinkedInAuth();
-    }
-  }, [initialProvider]);
 
   const validateInputs = (isSignUp: boolean = false): boolean => {
     const errors: {[key: string]: string} = {};
@@ -160,22 +155,6 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
       toast.error("Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleLinkedInAuth = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'linkedin_oidc',
-        options: {
-          redirectTo: `${window.location.origin}/auth?role=${selectedRole}`,
-        },
-      });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Error with LinkedIn auth:", error);
-      toast.error("LinkedIn authentication failed. Please try again.");
     }
   };
 
@@ -340,26 +319,6 @@ export default function Auth({ initialRole = 'candidate', initialProvider = null
               Too many attempts. Please wait before trying again.
             </div>
           )}
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleLinkedInAuth}
-              disabled={isLoading || rateLimited}
-              className="w-full mt-4"
-            >
-              <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
-              Continue with LinkedIn
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -57,14 +57,6 @@ const SignUp = () => {
     }
   };
 
-  const handleLinkedInSignUp = () => {
-    navigate('/auth?provider=linkedin_oidc');
-  };
-
-  const handleEmailSignUp = () => {
-    navigate('/auth?tab=signup');
-  };
-
   // Use uploaded image for the carousel
   const carouselImages = [
     "/lovable-uploads/e5694a2a-74ac-4d8c-b3dd-3625fbec54c0.png"
@@ -128,7 +120,7 @@ const SignUp = () => {
               className="w-[220px] mx-auto block bg-[#007A55] hover:bg-[#00694A] mb-6 h-12 font-helvetica font-medium"
             >
               <Upload className="mr-2 h-5 w-5" />
-              Upload
+              Upload CV & Continue
             </Button>
 
             <div className="text-center mb-6 flex items-center">
@@ -139,25 +131,15 @@ const SignUp = () => {
 
             <Button 
               variant="outline" 
-              onClick={handleLinkedInSignUp}
-              className="w-[220px] mx-auto block mb-4 flex items-center justify-center h-12 border-gray-300 font-helvetica"
-            >
-              <img src="/lovable-uploads/9405a07c-077e-4655-ba6c-5c796119dfcc.png" alt="LinkedIn" className="h-5 w-5 mr-2" />
-              Continue with LinkedIn
-            </Button>
-
-            <Button 
-              variant="outline" 
-              onClick={handleEmailSignUp}
+              onClick={() => navigate('/auth?tab=signup')}
               className="w-[220px] mx-auto block mb-8 flex items-center justify-center h-12 border-gray-300 font-helvetica"
             >
-              <img src="/lovable-uploads/b725dadd-2089-4320-94b3-9bd8af324d78.png" alt="Email" className="h-5 w-5 mr-2" />
               Sign up with email
             </Button>
 
             <div className="text-center">
               <p className="text-sm text-gray-600 font-helvetica">
-                Already have an account? <Link to="/auth" className="text-[#007A55] font-medium">click here to login</Link>
+                Already have an account? <Link to="/auth" className="text-[#007A55] font-medium">Sign in here</Link>
               </p>
             </div>
 
@@ -195,7 +177,7 @@ const SignUp = () => {
             <h1 className="text-3xl font-bold text-[#26282B] mb-3 font-helvetica">
               Welcome, you're starting your new career journey here!
             </h1>
-            <p className="text-gray-600 font-helvetica">Upload your CV for a quick start.</p>
+            <p className="text-gray-600 font-helvetica">Upload your CV for a quick start or sign up with email.</p>
           </div>
         </div>
       </div>

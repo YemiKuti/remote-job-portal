@@ -4,13 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Loader2, AlertCircle, User, ArrowLeft } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Filter, Loader2, AlertCircle, User, ArrowLeft, Grid, List } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ApplicationDetailModal } from '@/components/employer/ApplicationDetailModal';
+import { EnhancedApplicationDetailModal } from '@/components/employer/EnhancedApplicationDetailModal';
+import { ApplicationCard } from '@/components/employer/ApplicationCard';
 import { fetchEmployerApplications, updateApplicationStatus } from '@/utils/api/employerApi';
 import { useAuth } from '@/components/AuthProvider';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const EmployerCandidates = () => {
   const { user } = useAuth();
@@ -25,6 +27,8 @@ const EmployerCandidates = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
+  const [viewMode, setViewMode] = useState('cards');
   
   useEffect(() => {
     const loadApplications = async () => {
@@ -38,6 +42,7 @@ const EmployerCandidates = () => {
       } catch (err) {
         console.error('Error loading applications:', err);
         setError(err.message || 'Failed to load applications');
+        toast.error('Failed to load applications');
       } finally {
         setLoading(false);
       }
@@ -46,19 +51,20 @@ const EmployerCandidates = () => {
     loadApplications();
   }, [user]);
   
-  const handleUpdateStatus = async (applicationId: string, newStatus: string) => {
+  const handleUpdateStatus = async (applicationId: string, newStatus: string, notes?: string) => {
     try {
       const success = await updateApplicationStatus(applicationId, newStatus);
       
       if (success) {
-        // Update local state
         setApplications(applications.map(app => 
           app.id === applicationId ? { ...app, status: newStatus } : app
         ));
+        toast.success(`Application status updated to ${newStatus}`);
       }
     } catch (err) {
       console.error('Error updating application status:', err);
       setError('Failed to update application status');
+      toast.error('Failed to update application status');
     }
   };
 
@@ -72,13 +78,11 @@ const EmployerCandidates = () => {
     setSelectedApplication(null);
   };
   
-  // Helper function to get candidate display name
   const getCandidateDisplayName = (candidate) => {
     if (!candidate) return 'Unknown Candidate';
     return candidate.full_name || candidate.username || 'Candidate Profile Incomplete';
   };
   
-  // Helper function to get candidate initials for avatar
   const getCandidateInitials = (candidate) => {
     if (!candidate) return 'U';
     const name = candidate.full_name || candidate.username;
@@ -96,6 +100,7 @@ const EmployerCandidates = () => {
     ? jobFilteredApplications[0].job?.title 
     : null;
   
+  // Apply search and status filters
   const filteredApplications = jobFilteredApplications.filter(app => {
     const candidateName = getCandidateDisplayName(app.candidate);
     const matchesSearch = candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,6 +110,20 @@ const EmployerCandidates = () => {
     
     if (activeTab === 'all') return true;
     return app.status === activeTab;
+  });
+
+  // Sort applications
+  const sortedApplications = [...filteredApplications].sort((a, b) => {
+    switch (sortBy) {
+      case 'newest':
+        return new Date(b.applied_date).getTime() - new Date(a.applied_date).getTime();
+      case 'oldest':
+        return new Date(a.applied_date).getTime() - new Date(b.applied_date).getTime();
+      case 'name':
+        return getCandidateDisplayName(a.candidate).localeCompare(getCandidateDisplayName(b.candidate));
+      default:
+        return 0;
+    }
   });
 
   const renderApplicationTable = () => (
@@ -120,15 +139,13 @@ const EmployerCandidates = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredApplications.map(app => (
+          {sortedApplications.map(app => (
             <tr key={app.id} className="bg-white border-b">
               <td className="px-6 py-4 font-medium">
                 <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      {getCandidateInitials(app.candidate)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                    {getCandidateInitials(app.candidate)}
+                  </div>
                   <div>
                     <div className="font-medium">
                       {getCandidateDisplayName(app.candidate)}
@@ -180,6 +197,19 @@ const EmployerCandidates = () => {
     </div>
   );
 
+  const renderApplicationCards = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {sortedApplications.map(app => (
+        <ApplicationCard
+          key={app.id}
+          application={app}
+          onViewDetails={handleViewApplication}
+          onUpdateStatus={handleUpdateStatus}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <DashboardLayout userType="employer">
       <div className="space-y-6">
@@ -217,21 +247,55 @@ const EmployerCandidates = () => {
           </Alert>
         )}
         
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Input 
-              placeholder="Search candidates..."
-              className="max-w-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Button variant="outline" size="icon">
-              <Search className="h-4 w-4" />
+        {/* Enhanced Filters and Search */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-2 flex-1">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search candidates or positions..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="name">By Name</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('cards')}
+                className="flex items-center gap-1"
+              >
+                <Grid className="h-4 w-4" />
+                Cards
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className="flex items-center gap-1"
+              >
+                <List className="h-4 w-4" />
+                Table
+              </Button>
+            </div>
+            <Button variant="outline" size="sm">
+              <Filter className="mr-2 h-4 w-4" /> 
+              Filters
             </Button>
           </div>
-          <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" /> Advanced Filters
-          </Button>
         </div>
         
         <Card>
@@ -256,45 +320,32 @@ const EmployerCandidates = () => {
                 <TabsTrigger value="shortlisted">
                   Shortlisted ({jobFilteredApplications.filter(app => app.status === 'shortlisted').length})
                 </TabsTrigger>
+                <TabsTrigger value="interviewed">
+                  Interviewed ({jobFilteredApplications.filter(app => app.status === 'interviewed').length})
+                </TabsTrigger>
                 <TabsTrigger value="rejected">
                   Rejected ({jobFilteredApplications.filter(app => app.status === 'rejected').length})
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="all" className="space-y-4">
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      {jobFilteredApplications.length === 0 
-                        ? (jobId 
-                            ? "No applications found for this job posting." 
-                            : "No applications found. When candidates apply for your jobs, they will appear here.")
-                        : "No applications match your search criteria."}
-                    </p>
-                  </div>
-                ) : (
-                  renderApplicationTable()
-                )}
-              </TabsContent>
-              
-              {['pending', 'shortlisted', 'rejected'].map(status => (
+              {['all', 'pending', 'shortlisted', 'interviewed', 'rejected'].map(status => (
                 <TabsContent key={status} value={status} className="space-y-4">
                   {loading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
-                  ) : filteredApplications.length === 0 ? (
+                  ) : sortedApplications.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">
-                        No {status} applications found{jobId ? ' for this job' : ''}.
+                        {jobFilteredApplications.length === 0 
+                          ? (jobId 
+                              ? "No applications found for this job posting." 
+                              : "No applications found. When candidates apply for your jobs, they will appear here.")
+                          : "No applications match your search criteria."}
                       </p>
                     </div>
                   ) : (
-                    renderApplicationTable()
+                    viewMode === 'cards' ? renderApplicationCards() : renderApplicationTable()
                   )}
                 </TabsContent>
               ))}
@@ -302,8 +353,8 @@ const EmployerCandidates = () => {
           </CardContent>
         </Card>
 
-        {/* Application Detail Modal */}
-        <ApplicationDetailModal
+        {/* Enhanced Application Detail Modal */}
+        <EnhancedApplicationDetailModal
           application={selectedApplication}
           isOpen={isModalOpen}
           onClose={handleCloseModal}

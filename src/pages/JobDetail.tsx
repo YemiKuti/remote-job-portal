@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building, DollarSign, Briefcase, GraduationCap } from "lucide-react";
+import { MapPin, Building, DollarSign, Briefcase, GraduationCap, Sparkles } from "lucide-react";
 import { formatSalary } from "@/data/jobs";
 import ApplyJobDialog from "@/components/ApplyJobDialog";
 import SaveJobButton from "@/components/SaveJobButton";
@@ -11,10 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Job } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
-import { Sparkles } from "lucide-react";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 
 const JobDetail = () => {
@@ -63,33 +61,33 @@ const JobDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-md py-4">
-          <div className="max-w-4xl mx-auto px-4">
-            <Skeleton className="h-8 w-60" />
+        <header className="bg-white shadow-md py-3 px-2 md:px-4">
+          <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-8 w-40 md:w-60" />
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-24 w-full" />
+        <main className="max-w-4xl mx-auto px-2 md:px-4 py-6 md:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6">
+              <Skeleton className="h-10 md:h-12 w-full" />
+              <Skeleton className="h-36 md:h-48 w-full" />
+              <Skeleton className="h-16 md:h-24 w-full" />
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <Card>
-                <CardContent className="p-6">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full mt-4" />
-                  <Skeleton className="h-10 w-full mt-4" />
+                <CardContent className="p-4 md:p-6">
+                  <Skeleton className="h-8 md:h-10 w-full" />
+                  <Skeleton className="h-8 md:h-10 w-full mt-3 md:mt-4" />
+                  <Skeleton className="h-8 md:h-10 w-full mt-3 md:mt-4" />
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full mt-4" />
+                <CardContent className="p-4 md:p-6">
+                  <Skeleton className="h-6 md:h-8 w-full" />
+                  <Skeleton className="h-6 md:h-8 w-full mt-3 md:mt-4" />
                 </CardContent>
               </Card>
             </div>
@@ -101,14 +99,14 @@ const JobDetail = () => {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="text-center">
-          <CardContent className="p-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-2">
+        <Card className="text-center w-full max-w-lg mx-auto">
+          <CardContent className="p-6 md:p-8">
             <h2 className="text-2xl font-semibold mb-4">Job Not Found</h2>
             <div className="text-gray-600">
               Sorry, the job you are looking for does not exist or has been removed.
             </div>
-            <Button onClick={() => navigate("/")} className="mt-4">
+            <Button onClick={() => navigate("/")} className="mt-4 w-full sm:w-auto">
               Go to Homepage
             </Button>
           </CardContent>
@@ -119,94 +117,115 @@ const JobDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-md py-4">
-        <div className="max-w-4xl mx-auto px-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+      {/* Header: Back to listing */}
+      <header className="bg-white shadow-md py-3 px-2 md:px-4">
+        <div className="max-w-4xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="text-sm md:text-base"
+          >
             ← Back to Job Listings
           </Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-4xl mx-auto px-2 md:px-4 py-6 md:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          {/* Main job info (left on desktop, top on mobile) */}
           <div className="lg:col-span-2">
-            <Card className="space-y-4">
+            <Card className="space-y-3 md:space-y-4">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
-                    <CardTitle className="text-2xl font-semibold">{job.title}</CardTitle>
+                    <CardTitle className="text-xl md:text-2xl font-semibold break-words">
+                      {job.title}
+                    </CardTitle>
                     <CardDescription>
                       {job.company} - {job.location}
                     </CardDescription>
                   </div>
                   {job.isFeatured && (
-                    <Badge variant="secondary">Featured</Badge>
+                    <Badge variant="secondary" className="self-start sm:self-center mt-2 sm:mt-0">
+                      Featured
+                    </Badge>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center text-gray-600">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="flex flex-wrap gap-2 md:gap-4 items-center text-gray-600">
+                  <span className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
                     {job.location}
-                  </div>
-                  <div className="flex items-center text-gray-600">
+                  </span>
+                  <span className="flex items-center">
                     <Building className="w-4 h-4 mr-1" />
                     {job.employmentType}
-                  </div>
-                  <div className="flex items-center text-gray-600">
+                  </span>
+                  <span className="flex items-center">
                     <DollarSign className="w-4 h-4 mr-1" />
                     {job.salary && formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
-                  </div>
-                  <div className="flex items-center text-gray-600">
+                  </span>
+                  <span className="flex items-center">
                     <Briefcase className="w-4 h-4 mr-1" />
                     {job.experienceLevel}
-                  </div>
+                  </span>
                   {job.visaSponsorship && (
-                    <Badge variant="outline">Visa Sponsorship</Badge>
+                    <Badge variant="outline" className="ml-2">
+                      Visa Sponsorship
+                    </Badge>
                   )}
                   {job.remote && (
-                    <Badge variant="outline">Remote</Badge>
+                    <Badge variant="outline" className="ml-2">
+                      Remote
+                    </Badge>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">Job Description</h3>
-                  <div className="text-gray-700">{job.description}</div>
+                <div className="space-y-1 md:space-y-2">
+                  <h3 className="text-lg md:text-xl font-semibold">Job Description</h3>
+                  <div className="text-gray-700 whitespace-pre-line break-words">{job.description}</div>
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">Requirements</h3>
-                  <div className="text-gray-700">
-                    <ul className="list-disc pl-5">
-                      {job.techStack && job.techStack.map((req, index) => (
-                        <li key={index}>{req}</li>
-                      ))}
-                    </ul>
+                {job.techStack && job.techStack.length > 0 && (
+                  <div className="space-y-1 md:space-y-2">
+                    <h3 className="text-lg md:text-xl font-semibold">Requirements</h3>
+                    <div className="text-gray-700">
+                      <ul className="list-disc pl-5">
+                        {job.techStack.map((req, index) => (
+                          <li key={index}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          <div className="space-y-6">
+          {/* Sidebar actions (right on desktop, bottom on mobile) */}
+          <div className="flex flex-col gap-4 md:gap-6">
             <Card>
-              <CardContent className="p-6">
-                <CardTitle className="text-lg font-semibold">Company Information</CardTitle>
-                <CardDescription>Learn more about {job.company}</CardDescription>
+              <CardContent className="p-4 md:p-6 flex flex-col gap-4">
+                <CardTitle className="text-base md:text-lg font-semibold">
+                  Company Information
+                </CardTitle>
+                <CardDescription>
+                  Learn more about {job.company}
+                </CardDescription>
 
-                <div className="space-y-3 mt-6">
-                  <Button 
+                <div className="flex flex-col gap-3 mt-3">
+                  <Button
                     className="w-full"
                     onClick={() => setShowApplyDialog(true)}
                   >
                     Apply Now
                   </Button>
-                  
+
                   <CVTailoringDialog
                     job={job}
                     trigger={
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full flex items-center">
                         <Sparkles className="h-4 w-4 mr-2" />
                         Tailor My CV
                       </Button>
@@ -219,11 +238,15 @@ const JobDetail = () => {
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <CardTitle className="text-lg font-semibold">Job Details</CardTitle>
-                <CardDescription>Additional information about this job</CardDescription>
+              <CardContent className="p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg font-semibold">
+                  Job Details
+                </CardTitle>
+                <CardDescription>
+                  Additional information about this job
+                </CardDescription>
 
-                <div className="space-y-3 mt-6">
+                <div className="space-y-2 md:space-y-3 mt-4">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Posted Date:</span>
                     <span>{new Date(job.postedDate || "").toLocaleDateString()}</span>
@@ -244,7 +267,7 @@ const JobDetail = () => {
       </main>
 
       {showApplyDialog && (
-        <ApplyJobDialog 
+        <ApplyJobDialog
           isOpen={showApplyDialog}
           onClose={() => setShowApplyDialog(false)}
           job={job}
@@ -259,3 +282,4 @@ const JobDetail = () => {
 };
 
 export default JobDetail;
+

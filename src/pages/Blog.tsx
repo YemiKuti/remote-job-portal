@@ -7,7 +7,6 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import BlogSearch from '@/components/blog/BlogSearch';
 import BlogCategories from '@/components/blog/BlogCategories';
 import BlogCard from '@/components/blog/BlogCard';
-import BlogPagination from '@/components/blog/BlogPagination';
 import BlogSEO from '@/components/blog/BlogSEO';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
@@ -75,7 +74,7 @@ const Blog: React.FC = () => {
       const from = (currentPage - 1) * POSTS_PER_PAGE;
       const to = from + POSTS_PER_PAGE - 1;
       
-      // Start building the query
+      // Simplified query without profiles join for debugging
       let query = supabase
         .from('posts')
         .select(`
@@ -85,8 +84,7 @@ const Blog: React.FC = () => {
           created_at, 
           updated_at, 
           user_id,
-          is_published,
-          profiles (full_name)
+          is_published
         `, { count: 'exact' })
         .eq('is_published', true);
       
@@ -108,11 +106,17 @@ const Blog: React.FC = () => {
         throw error;
       }
       
+      // Transform data to match interface
+      const transformedPosts = (data || []).map(post => ({
+        ...post,
+        profiles: { full_name: 'AfricanTechJobs Editorial Team' } // Mock profile data
+      }));
+      
       // Update posts and total count
-      setPosts(data || []);
+      setPosts(transformedPosts);
       if (count !== null) setTotalPosts(count);
       
-      console.log('Successfully loaded posts:', data?.length || 0);
+      console.log('Successfully loaded posts:', transformedPosts.length);
       
     } catch (err: any) {
       console.error('Error fetching posts:', err);
@@ -246,11 +250,29 @@ const Blog: React.FC = () => {
             
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
-                <BlogPagination 
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  
+                  <span className="px-3 py-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
           </>

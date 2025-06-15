@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,11 +16,10 @@ type SubscriptionAccessResult = {
   refresh: () => void;
 };
 
-const TIER_LIMITS: Record<EmployerSubscriptionTier, number | null> = {
+const TIER_LIMITS: Record<Exclude<EmployerSubscriptionTier, null>, number | null> = {
   Basic: 5,
   Pro: 15,
   Enterprise: null,
-  null: 0,
 };
 
 export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
@@ -33,7 +31,7 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
 
   // Determine the current tier and post limit
   const tier = (subscription_tier as EmployerSubscriptionTier) || null;
-  const postLimit = TIER_LIMITS[tier];
+  const postLimit = tier ? TIER_LIMITS[tier] : 0;
 
   const fetchActivePostCount = async () => {
     if (!user) return;

@@ -67,6 +67,9 @@ const Blog: React.FC = () => {
   const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('Fetching blog posts...');
       
       // Calculate pagination offsets
       const from = (currentPage - 1) * POSTS_PER_PAGE;
@@ -92,25 +95,26 @@ const Blog: React.FC = () => {
         query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
       }
       
-      // Add category filter (this is a mock - you would need to add a category field to your posts table)
-      if (activeCategory) {
-        // This is a placeholder - in a real implementation, you would filter by category
-        // query = query.eq('category', activeCategory);
-      }
-      
       // Add pagination
       query = query.order('created_at', { ascending: false })
         .range(from, to);
       
       const { data, error, count } = await query;
       
-      if (error) throw error;
+      console.log('Blog posts query result:', { data, error, count });
+      
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
       
       // Update posts and total count
       setPosts(data || []);
       if (count !== null) setTotalPosts(count);
       
-    } catch (err) {
+      console.log('Successfully loaded posts:', data?.length || 0);
+      
+    } catch (err: any) {
       console.error('Error fetching posts:', err);
       setError('Failed to load blog posts. Please try again later.');
     } finally {
@@ -157,6 +161,8 @@ const Blog: React.FC = () => {
     ...post,
     category: BLOG_CATEGORIES[index % BLOG_CATEGORIES.length].name
   }));
+
+  console.log('Blog component render state:', { loading, error, postsCount: posts.length });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -238,13 +244,15 @@ const Blog: React.FC = () => {
               ))}
             </div>
             
-            <div className="mt-8 flex justify-center">
-              <BlogPagination 
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <BlogPagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
           </>
         )}
       </main>

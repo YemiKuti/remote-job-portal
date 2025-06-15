@@ -90,7 +90,7 @@ const validateAndCleanupSession = async (session: Session | null) => {
 };
 
 // Enhanced session retrieval with retry logic
-const getSessionWithRetry = async (maxRetries = 2) => {
+const getSessionWithRetry = async (maxRetries = 1) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🔐 AuthProvider: Getting session (attempt ${attempt}/${maxRetries})`);
@@ -100,18 +100,18 @@ const getSessionWithRetry = async (maxRetries = 2) => {
         console.error(`🔐 AuthProvider: Session error on attempt ${attempt}:`, error);
         if (attempt === maxRetries) throw error;
         
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        // Short backoff
+        await new Promise(resolve => setTimeout(resolve, 500));
         continue;
       }
       
       return await validateAndCleanupSession(session);
     } catch (error) {
       console.error(`🔐 AuthProvider: Exception on attempt ${attempt}:`, error);
-      if (attempt === maxRetries) throw error;
+      if (attempt === maxRetries) return null;
       
-      // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      // Short backoff
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
   return null;
@@ -145,6 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('🔐 AuthProvider: Starting auth initialization');
     let authTimeout: NodeJS.Timeout;
     let mounted = true;
+    let authSubscription: any = null;
     
     const initializeAuth = async () => {
       try {
@@ -173,6 +174,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         });
 
+        authSubscription = subscription;
+
         // THEN get initial session with retry logic
         const initialSession = await getSessionWithRetry();
         
@@ -189,17 +192,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
 
-        return () => {
-          console.log('🔐 AuthProvider: Cleaning up auth subscription');
-          subscription.unsubscribe();
-        };
       } catch (error) {
         console.error('🔐 AuthProvider: Exception during initialization:', error);
         if (mounted) {
-          setAuthError('Failed to initialize authentication');
+          // Don't set an error for timeout - just proceed without auth
+          console.log('🔐 AuthProvider: Proceeding without authentication due to initialization error');
           cleanupAuthState();
         }
-        return () => {};
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -208,27 +207,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Set reduced timeout for auth initialization (5 seconds instead of 10)
+    // Set timeout for auth initialization (reduced to 3 seconds)
     authTimeout = setTimeout(() => {
       if (isLoading && mounted) {
-        console.warn('🔐 AuthProvider: Auth initialization timed out, cleaning up and proceeding');
+        console.warn('🔐 AuthProvider: Auth initialization timed out, proceeding without auth');
         setIsLoading(false);
-        setAuthError('Authentication initialization timed out');
+        // Don't set authError for timeout - just proceed
         cleanupAuthState();
       }
-    }, 5000);
+    }, 3000);
 
     // Initialize auth
-    initializeAuth().then(cleanup => {
-      if (cleanup && mounted) {
-        // Store cleanup function for component unmount
-        return cleanup;
-      }
-    });
+    initializeAuth();
 
     return () => {
       mounted = false;
       clearTimeout(authTimeout);
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
     };
   }, []);
 

@@ -20,7 +20,7 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { EmployerNotificationCenter } from '@/components/employer/EmployerNotificationCenter';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,12 +43,17 @@ const EmployerDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
       fetchDashboardStats();
+    } else if (!authLoading && !user) {
+      // If auth is done loading and there's no user, redirect to auth
+      console.log('🔒 No user found, redirecting to auth');
+      navigate('/auth?role=employer');
     }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   const fetchDashboardStats = async () => {
     if (!user) return;
@@ -86,6 +91,14 @@ const EmployerDashboard = () => {
     }
   };
 
+  const handleRetry = () => {
+    if (user) {
+      fetchDashboardStats();
+    } else {
+      navigate('/auth?role=employer');
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <DashboardLayout userType="employer">
@@ -97,7 +110,7 @@ const EmployerDashboard = () => {
     );
   }
 
-  if (authError || error) {
+  if (authError || error || !user) {
     return (
       <DashboardLayout userType="employer">
         <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -105,12 +118,12 @@ const EmployerDashboard = () => {
           <Alert className="max-w-md">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {authError || error}
+              {authError || error || 'Authentication required. Please sign in to continue.'}
             </AlertDescription>
           </Alert>
-          <Button onClick={fetchDashboardStats}>
+          <Button onClick={handleRetry}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Retry
+            {user ? 'Retry' : 'Sign In'}
           </Button>
         </div>
       </DashboardLayout>
@@ -128,7 +141,7 @@ const EmployerDashboard = () => {
               Manage your job postings and track applications.
             </p>
           </div>
-          <Link to="/employer/post-job">
+          <Link to="/employer/jobs/new">
             <Button className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Post New Job

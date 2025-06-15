@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/AuthProvider";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ export default function Header() {
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -99,7 +101,7 @@ export default function Header() {
                     Employer Dashboard
                   </DropdownMenuItem>
                 )}
-                {user.user_metadata?.role === 'admin' && (
+                {!adminLoading && isAdmin && (
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     Admin Dashboard
                   </DropdownMenuItem>

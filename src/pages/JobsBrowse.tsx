@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSubscription } from '@/hooks/useSupabase';
@@ -32,6 +31,17 @@ const JobsBrowse = () => {
   const shouldLimitJobs = !subscribed && !subscriptionLoading;
   const displayedJobs = shouldLimitJobs ? filteredJobs.slice(0, FREE_JOB_LIMIT) : filteredJobs;
   const hasMoreJobs = shouldLimitJobs && filteredJobs.length > FREE_JOB_LIMIT;
+
+  // Debug logging
+  console.log('JobsBrowse Debug:', {
+    subscribed,
+    subscriptionLoading,
+    shouldLimitJobs,
+    filteredJobsLength: filteredJobs.length,
+    displayedJobsLength: displayedJobs.length,
+    hasMoreJobs,
+    FREE_JOB_LIMIT
+  });
 
   useEffect(() => {
     let filtered = allJobs;
@@ -232,7 +242,17 @@ const JobsBrowse = () => {
                 ))}
               </div>
 
-              {/* Subscription Prompt */}
+              {/* Debug info for troubleshooting */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md text-sm">
+                  <strong>Debug Info:</strong> hasMoreJobs: {hasMoreJobs.toString()}, 
+                  shouldLimitJobs: {shouldLimitJobs.toString()}, 
+                  filteredJobs: {filteredJobs.length}, 
+                  subscribed: {subscribed ? 'true' : 'false'}
+                </div>
+              )}
+
+              {/* Subscription Prompt - This should always show when hasMoreJobs is true */}
               {hasMoreJobs && (
                 <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
                   <CardContent className="text-center py-8">
@@ -265,6 +285,19 @@ const JobsBrowse = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-4">
                       Join thousands of professionals finding their dream jobs
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Force show subscription prompt for testing if there are more than 5 jobs total */}
+              {!hasMoreJobs && filteredJobs.length > FREE_JOB_LIMIT && (
+                <Card className="border-2 border-orange-200 bg-orange-50">
+                  <CardContent className="text-center py-4">
+                    <p className="text-orange-800 text-sm">
+                      <strong>Test Mode:</strong> You should see the subscription prompt above, but conditions aren't met. 
+                      Subscribed: {subscribed ? 'Yes' : 'No'}, 
+                      Jobs: {filteredJobs.length}
                     </p>
                   </CardContent>
                 </Card>

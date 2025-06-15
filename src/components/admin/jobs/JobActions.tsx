@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, CheckCircle, XCircle, History, MoreHorizontal } from "lucide-react";
@@ -50,7 +49,7 @@ export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
           variant="ghost" 
           size="icon" 
           className="h-8 w-8"
-          onClick={() => navigate(`/admin/edit-job/${job.id}`)}
+          onClick={() => navigate(`/admin/jobs/${job.id}/edit`)}
         >
           <Eye className="h-4 w-4" />
         </Button>
@@ -83,7 +82,7 @@ export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/admin/edit-job/${job.id}`)}>
+            <DropdownMenuItem onClick={() => navigate(`/admin/jobs/${job.id}/edit`)}>
               <Eye className="h-4 w-4 mr-2" />
               View Details
             </DropdownMenuItem>

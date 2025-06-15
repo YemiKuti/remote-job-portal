@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import JobCard from "@/components/JobCard";
@@ -15,7 +14,7 @@ import { Link } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSupabase";
 import { useActiveJobs } from "@/hooks/useActiveJobs";
 
-const MAX_JOBS_DEFAULT = 5;
+const MAX_JOBS_DEFAULT = 3; // Changed from 5 to 3
 const MAX_JOBS_SEARCH = 3;
 
 const Index = () => {
@@ -31,7 +30,7 @@ const Index = () => {
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
       
-      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
+      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT (now 3)
       setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
     }
   }, [allJobs, subscribed, loading]);
@@ -41,7 +40,6 @@ const Index = () => {
       const sortedJobs = [...allJobs].sort((a, b) => 
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
-      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
       setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
       setIsFiltering(false);
       return;
@@ -59,7 +57,6 @@ const Index = () => {
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
 
-    // If user is subscribed, show all results, otherwise limit to MAX_JOBS_SEARCH
     setFilteredJobs(subscribed ? sortedResults : sortedResults.slice(0, MAX_JOBS_SEARCH));
     
     if (searchResults.length === 0) {
@@ -118,7 +115,6 @@ const Index = () => {
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
     
-    // If user is subscribed, show all results, otherwise limit to MAX_JOBS_SEARCH
     setFilteredJobs(subscribed ? sortedResults : sortedResults.slice(0, MAX_JOBS_SEARCH));
     
     if (filteredResults.length === 0) {
@@ -132,7 +128,6 @@ const Index = () => {
     const sortedJobs = [...allJobs].sort((a, b) => 
       new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
     );
-    // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT
     setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
     setIsFiltering(false);
   };
@@ -287,16 +282,18 @@ const Index = () => {
                 </div>
               )}
               
-              {filteredJobs.length > 0 && !subscribed && (
+              {/* Subscription Prompt: if unsubscribed, more jobs exist than shown */}
+              {filteredJobs.length > 0 && !subscribed && allJobs.length > MAX_JOBS_DEFAULT && (
                 <div className="mt-10 text-center">
                   <p className="mb-4 text-gray-600">
-                    {isFiltering 
-                      ? "Want to see more search results?" 
-                      : "Want to see more jobs?"}
+                    Want to see more jobs?
                   </p>
                   <Button className="bg-job-green hover:bg-job-darkGreen">
                     <Link to="/pricing">Subscribe Now</Link>
                   </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Subscribe to unlock all available jobs and features.
+                  </p>
                 </div>
               )}
             </div>

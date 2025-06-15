@@ -25,6 +25,7 @@ import PostJob from './pages/employer/PostJob';
 import EditJob from './pages/employer/EditJob';
 import Settings from './pages/employer/Settings';
 import Messages from './pages/employer/Messages';
+import Candidates from './pages/employer/Candidates';
 
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSignIn from './pages/AdminSignIn';
@@ -96,6 +97,11 @@ function App() {
             <Route path="/employer/jobs/:id/edit" element={
               <ProtectedEmployerRoute>
                 <EditJob />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/candidates" element={
+              <ProtectedEmployerRoute>
+                <Candidates />
               </ProtectedEmployerRoute>
             } />
             <Route path="/employer/messages" element={

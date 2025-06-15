@@ -257,24 +257,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     setIsLoading(true);
     try {
-      console.log('🔐 AuthProvider: Signing out user');
+      console.log('🔐 AuthProvider: Starting sign out process');
       
-      // Clean up auth state first
-      cleanupAuthState();
-      
+      // First attempt to sign out with existing session
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      if (error) {
+        console.warn('🔐 AuthProvider: Sign out API error:', error.message);
+        
+        // If the error is session-related, it's expected - the session might already be invalid
+        if (error.message.includes('session') || error.message.includes('Auth session missing')) {
+          console.log('🔐 AuthProvider: Session already invalid, proceeding with cleanup');
+        } else {
+          // For other errors, we still want to clean up but also show the error
+          console.error('🔐 AuthProvider: Unexpected sign out error:', error);
+          toast.error('Sign out error: ' + error.message);
+        }
+      } else {
+        console.log('🔐 AuthProvider: Successfully signed out via API');
+      }
+      
+      // Clean up auth state after the API call (or if it failed with session error)
+      cleanupAuthState();
       
       // Clear local state
       setSession(null);
       setUser(null);
       setAuthError(null);
       
+      console.log('🔐 AuthProvider: Sign out complete, navigating to signin');
       navigate('/signin');
+      
     } catch (error: any) {
-      console.error('🔐 AuthProvider: Sign out error:', error);
+      console.error('🔐 AuthProvider: Exception during sign out:', error);
+      
+      // Even if there's an exception, try to clean up and navigate
+      cleanupAuthState();
+      setSession(null);
+      setUser(null);
       setAuthError(error.message);
-      toast.error(error.message);
+      
+      toast.error('Sign out failed, but local session cleared');
+      navigate('/signin');
     } finally {
       setIsLoading(false);
     }

@@ -26,6 +26,7 @@ import EditJob from './pages/employer/EditJob';
 import Settings from './pages/employer/Settings';
 import Messages from './pages/employer/Messages';
 import Candidates from './pages/employer/Candidates';
+import EmployerCompany from './pages/employer/Company';
 
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSignIn from './pages/AdminSignIn';
@@ -102,6 +103,11 @@ function App() {
             <Route path="/employer/candidates" element={
               <ProtectedEmployerRoute>
                 <Candidates />
+              </ProtectedEmployerRoute>
+            } />
+            <Route path="/employer/company" element={
+              <ProtectedEmployerRoute>
+                <EmployerCompany />
               </ProtectedEmployerRoute>
             } />
             <Route path="/employer/messages" element={

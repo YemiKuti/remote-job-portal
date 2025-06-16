@@ -218,11 +218,6 @@ const Blog: React.FC = () => {
           />
         </div>
         
-        {/* Debug info - remove this once working */}
-        <div className="mb-4 p-4 bg-gray-100 rounded text-sm">
-          <strong>Debug Info:</strong> Loading: {loading.toString()}, Error: {error || 'none'}, Posts: {posts.length}, Total: {totalPosts}
-        </div>
-        
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

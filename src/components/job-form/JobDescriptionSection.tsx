@@ -15,7 +15,7 @@ export const JobDescriptionSection = ({ form }: JobDescriptionSectionProps) => {
       <div className="space-y-2">
         <h3 className="text-lg font-medium">Job Description</h3>
         <p className="text-sm text-muted-foreground">
-          Provide detailed information about the role and requirements
+          Provide detailed information about the role and requirements using rich formatting
         </p>
       </div>
 
@@ -29,12 +29,24 @@ export const JobDescriptionSection = ({ form }: JobDescriptionSectionProps) => {
               <RichTextEditor
                 value={field.value}
                 onChange={field.onChange}
-                placeholder="Describe the role, responsibilities, and what makes this position exciting..."
-                className="min-h-[300px]"
+                placeholder="## About the Role
+
+Describe the position, key responsibilities, and what makes this opportunity exciting...
+
+### Key Responsibilities
+- Lead development of new features
+- Collaborate with cross-functional teams
+- Mentor junior developers
+
+### What We Offer
+- Competitive salary and benefits
+- Remote-first culture
+- Professional development opportunities"
+                className="min-h-[350px]"
               />
             </FormControl>
             <FormDescription>
-              Use rich formatting to create an engaging job description. Include responsibilities, qualifications, and company culture.
+              Use **bold**, *italic*, headers (## Header), bullet points, and other formatting to create an engaging job description. Include responsibilities, company culture, and benefits.
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -55,12 +67,27 @@ export const JobDescriptionSection = ({ form }: JobDescriptionSectionProps) => {
                   // This preserves formatting while still being compatible with the backend
                   field.onChange(value);
                 }}
-                placeholder="List the key requirements and qualifications for this position..."
-                className="min-h-[200px]"
+                placeholder="## Required Qualifications
+
+### Technical Skills
+- **3+ years** of experience with React and TypeScript
+- Experience with modern frontend tooling (Vite, Webpack)
+- Knowledge of state management (Redux, Zustand)
+
+### Soft Skills
+- Strong communication skills
+- Experience working in agile environments
+- Problem-solving mindset
+
+### Nice to Have
+- Experience with Node.js
+- DevOps knowledge (Docker, CI/CD)
+- Open source contributions"
+                className="min-h-[250px]"
               />
             </FormControl>
             <FormDescription>
-              List the essential skills, experience, and qualifications needed for this role. Use bullet points for better readability.
+              List the essential and preferred qualifications. Use formatting like **bold** for important skills, bullet points for lists, and headers (###) to organize different requirement categories.
             </FormDescription>
             <FormMessage />
           </FormItem>

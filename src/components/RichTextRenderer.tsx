@@ -1,14 +1,34 @@
 
 import React from "react";
 import { processMarkdown, sanitizeHtml } from "@/utils/markdownProcessor";
+import { cn } from "@/lib/utils";
 
-export const RichTextRenderer: React.FC<{ content: string }> = ({ content }) => {
+interface RichTextRendererProps {
+  content: string;
+  className?: string;
+  variant?: 'default' | 'compact' | 'blog' | 'job';
+}
+
+export const RichTextRenderer: React.FC<RichTextRendererProps> = ({ 
+  content, 
+  className,
+  variant = 'default'
+}) => {
   const processedHtml = processMarkdown(content || "");
   const sanitizedHtml = sanitizeHtml(processedHtml);
 
+  const baseClasses = "rich-text-content";
+  
+  const variantClasses = {
+    default: "prose max-w-none text-gray-700",
+    compact: "prose prose-sm max-w-none text-gray-700",
+    blog: "prose prose-lg max-w-none text-gray-800 prose-headings:text-gray-900 prose-a:text-primary prose-strong:text-gray-900",
+    job: "prose max-w-none text-gray-700 prose-headings:text-gray-800 prose-ul:my-3 prose-ol:my-3"
+  };
+
   return (
     <div
-      className="prose max-w-none text-gray-700"
+      className={cn(baseClasses, variantClasses[variant], className)}
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   );

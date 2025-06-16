@@ -125,7 +125,13 @@ const ApplyJobDialog = ({ isOpen, onClose, job, onApplicationSuccess }: ApplyJob
     } catch (error: any) {
       console.error('Error applying to job:', error);
       setApplicationStatus('error');
-      setErrorMessage(error.message || 'An unexpected error occurred');
+      
+      // Handle duplicate application error specifically
+      if (error.message.includes('already applied')) {
+        setErrorMessage('You have already applied to this job. Each candidate can only apply once per job posting.');
+      } else {
+        setErrorMessage(error.message || 'An unexpected error occurred');
+      }
     } finally {
       setIsSubmitting(false);
     }

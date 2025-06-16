@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building, DollarSign, Briefcase, GraduationCap, Sparkles } from "lucide-react";
+import { MapPin, Building, DollarSign, Briefcase, GraduationCap, Sparkles, CheckCircle } from "lucide-react";
 import { formatSalary } from "@/data/jobs";
 import ApplyJobDialog from "@/components/ApplyJobDialog";
 import SaveJobButton from "@/components/SaveJobButton";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
+import { checkExistingApplication } from "@/utils/api/candidateApi";
+import { useAuth } from "@/components/AuthProvider";
 import RichTextRenderer from "@/components/RichTextRenderer";
 
 const JobDetail = () => {
@@ -21,6 +23,9 @@ const JobDetail = () => {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [checkingApplication, setCheckingApplication] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +63,64 @@ const JobDetail = () => {
 
     fetchJob();
   }, [id]);
+
+  useEffect(() => {
+    const checkApplicationStatus = async () => {
+      if (!user || !id || !job) return;
+      
+      setCheckingApplication(true);
+      try {
+        const application = await checkExistingApplication(id);
+        setExistingApplication(application);
+      } catch (error) {
+        console.error('Error checking application status:', error);
+      } finally {
+        setCheckingApplication(false);
+      }
+    };
+
+    checkApplicationStatus();
+  }, [user, id, job]);
+
+  const handleApplyClick = () => {
+    if (!user) {
+      toast.error("Please sign in to apply for jobs");
+      navigate("/auth");
+      return;
+    }
+
+    if (existingApplication) {
+      toast.info(`You already applied to this job on ${new Date(existingApplication.applied_date).toLocaleDateString()}`);
+      return;
+    }
+
+    if (job?.applicationType === "internal") {
+      setShowApplyDialog(true);
+    } else {
+      handleJobApplication(job!);
+    }
+  };
+
+  const getApplyButtonContent = () => {
+    if (checkingApplication) {
+      return "Checking...";
+    }
+    
+    if (existingApplication) {
+      return (
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          Applied on {new Date(existingApplication.applied_date).toLocaleDateString()}
+        </div>
+      );
+    }
+
+    return job?.applicationType === "internal" ? "Apply Now" : getApplicationButtonText(job?.applicationType);
+  };
+
+  const isApplyButtonDisabled = () => {
+    return checkingApplication || !!existingApplication;
+  };
 
   if (loading) {
     return (
@@ -234,16 +297,11 @@ const JobDetail = () => {
                 <div className="flex flex-col gap-3 mt-3">
                   <Button
                     className="w-full"
-                    // On click: for internal -> open dialog; else -> call application handler
-                    onClick={() => {
-                      if (job.applicationType === "internal") {
-                        setShowApplyDialog(true);
-                      } else {
-                        handleJobApplication(job);
-                      }
-                    }}
+                    onClick={handleApplyClick}
+                    disabled={isApplyButtonDisabled()}
+                    variant={existingApplication ? "outline" : "default"}
                   >
-                    {getApplicationButtonText(job.applicationType)}
+                    {getApplyButtonContent()}
                   </Button>
 
                   <CVTailoringDialog
@@ -258,6 +316,17 @@ const JobDetail = () => {
 
                   <SaveJobButton jobId={job.id} />
                 </div>
+
+                {existingApplication && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="text-sm text-green-800">
+                      <div className="font-medium">Application Status: {existingApplication.status}</div>
+                      <div className="text-xs text-green-600 mt-1">
+                        Applied on {new Date(existingApplication.applied_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -298,6 +367,8 @@ const JobDetail = () => {
           job={job}
           onApplicationSuccess={() => {
             setShowApplyDialog(false);
+            // Refresh application status
+            checkExistingApplication(job.id).then(setExistingApplication);
             toast.success("Application submitted successfully!");
           }}
         />

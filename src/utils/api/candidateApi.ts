@@ -3,6 +3,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { SavedJob, Application, TailoredResume } from '@/types/api';
 import { transformDatabaseJobToFrontendJob } from '@/utils/jobTransformers';
 
+// Check if user has already applied to a job
+export const checkExistingApplication = async (jobId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('applications')
+      .select('id, applied_date, status')
+      .eq('user_id', user.id)
+      .eq('job_id', jobId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Error checking existing application:', error);
+    throw error;
+  }
+};
+
 // Apply to a job
 export const applyToJob = async (applicationData: {
   jobId: string;
@@ -15,6 +36,12 @@ export const applyToJob = async (applicationData: {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
+
+    // Check if user has already applied
+    const existingApplication = await checkExistingApplication(applicationData.jobId);
+    if (existingApplication) {
+      throw new Error('You have already applied to this job');
+    }
 
     const { data, error } = await supabase
       .from('applications')

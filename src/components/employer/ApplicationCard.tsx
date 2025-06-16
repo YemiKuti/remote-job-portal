@@ -12,7 +12,8 @@ import {
   Eye, 
   MessageSquare,
   Target,
-  Clock
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 
 interface ApplicationCardProps {
@@ -47,6 +48,15 @@ export const ApplicationCard = ({
       case 'hired': return 'bg-emerald-100 text-emerald-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'hired':
+        return <CheckCircle className="h-3 w-3" />;
+      default:
+        return null;
     }
   };
 
@@ -111,7 +121,8 @@ export const ApplicationCard = ({
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Badge className={getStatusColor(application.status)}>
+              <Badge className={`${getStatusColor(application.status)} flex items-center gap-1`}>
+                {getStatusIcon(application.status)}
                 {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
               </Badge>
               {matchScore > 0 && (

@@ -49,18 +49,18 @@ export const JobDescriptionSection = ({ form }: JobDescriptionSectionProps) => {
             <FormLabel>Requirements *</FormLabel>
             <FormControl>
               <RichTextEditor
-                value={Array.isArray(field.value) ? field.value.join('\n') : field.value || ''}
+                value={Array.isArray(field.value) ? field.value.join('\n\n') : field.value || ''}
                 onChange={(value) => {
-                  // Convert rich text to array of requirements
-                  const requirements = value.split('\n').filter(req => req.trim().length > 0);
-                  field.onChange(requirements);
+                  // Store as rich text string instead of converting to array
+                  // This preserves formatting while still being compatible with the backend
+                  field.onChange(value);
                 }}
                 placeholder="List the key requirements and qualifications for this position..."
                 className="min-h-[200px]"
               />
             </FormControl>
             <FormDescription>
-              List the essential skills, experience, and qualifications needed for this role.
+              List the essential skills, experience, and qualifications needed for this role. Use bullet points for better readability.
             </FormDescription>
             <FormMessage />
           </FormItem>

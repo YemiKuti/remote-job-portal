@@ -251,7 +251,7 @@ const JobDetail = () => {
                   <RichTextRenderer content={job.description} />
                 </div>
 
-                {job.requirements && job.requirements.length > 0 && (
+                {job.requirements && (
                   <div className="space-y-1 md:space-y-2">
                     <h3 className="text-lg md:text-xl font-semibold">Requirements</h3>
                     <div className="text-gray-700">
@@ -267,6 +267,7 @@ const JobDetail = () => {
                     </div>
                   </div>
                 )}
+
                 {job.techStack && job.techStack.length > 0 && (
                   <div className="space-y-1 md:space-y-2">
                     <h3 className="text-lg md:text-xl font-semibold">Tech Stack</h3>

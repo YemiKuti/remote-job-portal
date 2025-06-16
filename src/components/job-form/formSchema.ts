@@ -1,40 +1,25 @@
 
 import { z } from "zod";
 
-// Define the form schema with Zod
 export const jobFormSchema = z.object({
-  title: z.string().min(5, {
-    message: "Job title must be at least 5 characters.",
-  }),
-  company: z.string().min(2, {
-    message: "Company name must be at least 2 characters.",
-  }),
-  location: z.string().min(2, {
-    message: "Location must be at least 2 characters.",
-  }),
-  description: z.string().min(20, {
-    message: "Job description must be at least 20 characters.",
-  }),
-  requirements: z.array(z.string()).min(1, {
-    message: "Add at least one requirement.",
-  }),
-  salary_min: z.number().int().min(0).optional(),
-  salary_max: z.number().int().min(0).optional(),
+  title: z.string().min(1, "Job title is required"),
+  company: z.string().min(1, "Company name is required"),
+  location: z.string().min(1, "Location is required"),
+  description: z.string().min(1, "Job description is required"),
+  requirements: z.string().min(1, "Requirements are required"), // Changed from array to string
+  salary_min: z.number().optional(),
+  salary_max: z.number().optional(),
   salary_currency: z.string().default("USD"),
-  employment_type: z.string().min(1, {
-    message: "Employment type is required.",
-  }),
-  experience_level: z.string().min(1, {
-    message: "Experience level is required.",
-  }),
-  tech_stack: z.array(z.string()),
+  employment_type: z.string().min(1, "Employment type is required"),
+  experience_level: z.string().min(1, "Experience level is required"),
+  tech_stack: z.array(z.string()).default([]),
   visa_sponsorship: z.boolean().default(false),
   remote: z.boolean().default(false),
   company_size: z.string().optional(),
   application_deadline: z.string().optional(),
   logo: z.string().optional(),
-  status: z.string().default("draft"),
-  application_type: z.string().default("internal"),
+  status: z.enum(["draft", "active", "inactive", "pending"]).default("draft"),
+  application_type: z.enum(["internal", "external", "email"]).default("internal"),
   application_value: z.string().optional(),
 });
 

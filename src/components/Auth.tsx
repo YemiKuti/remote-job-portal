@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,9 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [fullName, setFullName] = useState("");
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [rateLimited, setRateLimited] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const validateInputs = (isSignUp: boolean = false): boolean => {
     const errors: {[key: string]: string} = {};
@@ -58,6 +60,46 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const rateLimitKey = `forgot_password_${resetEmail}`;
+    if (!checkRateLimit(rateLimitKey, 3, 60 * 60 * 1000)) {
+      toast.error("Too many password reset attempts. Please try again later.");
+      return;
+    }
+
+    try {
+      emailSchema.parse(resetEmail);
+    } catch (error: any) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    
+    try {
+      const sanitizedEmail = sanitizeInput(resetEmail);
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
+        redirectTo: redirectUrl
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset email sent! Check your inbox for instructions.");
+      setShowForgotPassword(false);
+      setResetEmail("");
+    } catch (error: any) {
+      console.error("Error sending password reset:", error);
+      // Generic message to prevent email enumeration
+      toast.success("If an account with that email exists, you will receive a password reset link.");
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -158,6 +200,65 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     }
   };
 
+  if (showForgotPassword) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh] px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your email address and we'll send you a link to reset your password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <SecureInput
+                  id="reset-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={resetEmail}
+                  onSecureChange={setResetEmail}
+                  disabled={isResettingPassword}
+                  required
+                />
+              </div>
+              <div className="space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isResettingPassword}
+                >
+                  {isResettingPassword ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending reset email...
+                    </>
+                  ) : (
+                    "Send Reset Email"
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetEmail("");
+                  }}
+                  disabled={isResettingPassword}
+                >
+                  Back to Sign In
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">
       <Card className="w-full max-w-md">
@@ -201,6 +302,16 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
                     onSecureChange={setPassword}
                     disabled={isLoading || rateLimited}
                   />
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      className="text-sm text-primary hover:underline"
+                      onClick={() => setShowForgotPassword(true)}
+                      disabled={isLoading || rateLimited}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                 </div>
                 <Button 
                   type="submit" 

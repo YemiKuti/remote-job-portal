@@ -328,6 +328,53 @@ export type Database = {
         }
         Relationships: []
       }
+      cv_analysis: {
+        Row: {
+          analysis_data: Json | null
+          created_at: string
+          experience_level: string | null
+          extracted_experience: string[] | null
+          extracted_skills: string[] | null
+          id: string
+          industry_keywords: string[] | null
+          resume_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_data?: Json | null
+          created_at?: string
+          experience_level?: string | null
+          extracted_experience?: string[] | null
+          extracted_skills?: string[] | null
+          id?: string
+          industry_keywords?: string[] | null
+          resume_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_data?: Json | null
+          created_at?: string
+          experience_level?: string | null
+          extracted_experience?: string[] | null
+          extracted_skills?: string[] | null
+          id?: string
+          industry_keywords?: string[] | null
+          resume_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv_analysis_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cv_tailoring_sessions: {
         Row: {
           completed_at: string | null
@@ -425,6 +472,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      job_recommendations: {
+        Row: {
+          created_at: string
+          cv_analysis_id: string | null
+          id: string
+          job_id: string | null
+          match_score: number | null
+          matching_keywords: string[] | null
+          recommendation_reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cv_analysis_id?: string | null
+          id?: string
+          job_id?: string | null
+          match_score?: number | null
+          matching_keywords?: string[] | null
+          recommendation_reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cv_analysis_id?: string | null
+          id?: string
+          job_id?: string | null
+          match_score?: number | null
+          matching_keywords?: string[] | null
+          recommendation_reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_recommendations_cv_analysis_id_fkey"
+            columns: ["cv_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "cv_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_recommendations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       jobs: {
         Row: {

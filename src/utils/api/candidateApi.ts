@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SavedJob, Application, TailoredResume } from '@/types/api';
 import { transformDatabaseJobToFrontendJob } from '@/utils/jobTransformers';

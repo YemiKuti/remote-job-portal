@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -239,8 +238,12 @@ const BlogPost = () => {
             <TableOfContents content={post.content} />
 
             {/* Article Content */}
-            <div className="prose max-w-none">
-              <RichTextRenderer content={post.content} />
+            <div className="mb-12">
+              <RichTextRenderer 
+                content={post.content} 
+                variant="blog"
+                className="max-w-none"
+              />
             </div>
           </article>
 
@@ -254,4 +257,3 @@ const BlogPost = () => {
 };
 
 export default BlogPost;
-

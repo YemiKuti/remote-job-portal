@@ -20,17 +20,29 @@ serve(async (req) => {
   }
 
   try {
+    // Create Supabase client with service role for RLS bypass
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     )
 
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
     
-    // Set the auth token for the client
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    // Verify the user token using the anon client
+    const anonClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    )
+    
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token)
     
     if (authError || !user) {
       console.error('❌ Auth error:', authError)
@@ -61,38 +73,32 @@ serve(async (req) => {
 
     // Create the prompt for OpenAI to analyze the CV
     const prompt = `
-Analyze the following resume/CV and extract relevant information for job matching:
+Analyze the following resume/CV and extract relevant information for job matching.
 
 RESUME CONTENT:
 ${resumeContent}
 
-Please provide a detailed analysis in the following JSON format:
+Please provide a detailed analysis in JSON format only (no markdown, no code blocks):
+
 {
-  "extractedSkills": [array of technical and soft skills mentioned],
-  "extractedExperience": [array of work experience with years if mentioned],
-  "industryKeywords": [array of industry-related terms and technologies],
+  "extractedSkills": ["array of technical and soft skills mentioned"],
+  "extractedExperience": ["array of work experience with years if mentioned"],
+  "industryKeywords": ["array of industry-related terms and technologies"],
   "experienceLevel": "entry|mid|senior|executive",
   "analysisData": {
     "summary": "brief professional summary",
-    "topSkills": [top 5 most relevant skills],
-    "industries": [relevant industries],
-    "jobTitles": [suggested job titles this person would be good for],
+    "topSkills": ["top 5 most relevant skills"],
+    "industries": ["relevant industries"],
+    "jobTitles": ["suggested job titles this person would be good for"],
     "careerLevel": "detailed assessment of career level",
-    "strengths": [key professional strengths],
-    "certifications": [any certifications mentioned],
-    "education": [education background],
-    "yearsOfExperience": number or null
+    "strengths": ["key professional strengths"],
+    "certifications": ["any certifications mentioned"],
+    "education": ["education background"],
+    "yearsOfExperience": "number or null"
   }
 }
 
-Focus on:
-1. Technical skills and technologies
-2. Industry experience and domain knowledge
-3. Years of experience and seniority level
-4. Relevant certifications and education
-5. Professional achievements and impact
-
-Provide accurate and specific information that can be used for job matching.
+Return only valid JSON without any markdown formatting or code blocks.
 `
 
     // Call OpenAI API
@@ -107,7 +113,7 @@ Provide accurate and specific information that can be used for job matching.
         messages: [
           {
             role: 'system',
-            content: 'You are an expert CV/resume analyzer and career counselor. Always respond with valid JSON in the exact format requested.'
+            content: 'You are an expert CV/resume analyzer. Always respond with valid JSON only, no markdown formatting or code blocks.'
           },
           {
             role: 'user',
@@ -126,11 +132,14 @@ Provide accurate and specific information that can be used for job matching.
     }
 
     const openAIData = await openAIResponse.json()
-    const aiContent = openAIData.choices[0]?.message?.content
+    let aiContent = openAIData.choices[0]?.message?.content
 
     if (!aiContent) {
       throw new Error('No response from AI service')
     }
+
+    // Clean up the AI response - remove any markdown code blocks
+    aiContent = aiContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
     // Parse the AI response
     let analysisResult
@@ -138,6 +147,7 @@ Provide accurate and specific information that can be used for job matching.
       analysisResult = JSON.parse(aiContent)
     } catch (parseError) {
       console.error('❌ Failed to parse AI response:', parseError)
+      console.error('❌ AI Content:', aiContent)
       // Provide a fallback response
       analysisResult = {
         extractedSkills: ["Communication", "Problem Solving", "Teamwork"],
@@ -158,12 +168,12 @@ Provide accurate and specific information that can be used for job matching.
       }
     }
 
-    // Save CV analysis to database
+    // Save CV analysis to database using service role client
     const { data: cvAnalysis, error: cvError } = await supabaseClient
       .from('cv_analysis')
       .insert({
         user_id: user.id,
-        resume_id: resumeId,
+        resume_id: resumeId === 'temp' ? null : resumeId,
         extracted_skills: analysisResult.extractedSkills,
         extracted_experience: analysisResult.extractedExperience,
         industry_keywords: analysisResult.industryKeywords,
@@ -235,7 +245,7 @@ Provide accurate and specific information that can be used for job matching.
             job_id: job.id,
             match_score: Math.min(matchScore, 100), // Cap at 100
             matching_keywords: matchingKeywords,
-            recommendation_reason: `${matchScore}% match based on ${matchingKeywords.length} matching skills and keywords`
+            recommendation_reason: `Strong match based on ${matchingKeywords.length} matching skills and keywords including: ${matchingKeywords.slice(0, 3).join(', ')}`
           })
         }
       }
@@ -244,7 +254,7 @@ Provide accurate and specific information that can be used for job matching.
       recommendations.sort((a, b) => b.match_score - a.match_score)
       const topRecommendations = recommendations.slice(0, 20)
 
-      // Save recommendations to database
+      // Save recommendations to database using service role client
       if (topRecommendations.length > 0) {
         const { error: recError } = await supabaseClient
           .from('job_recommendations')

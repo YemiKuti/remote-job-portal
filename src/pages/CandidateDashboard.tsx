@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +15,13 @@ import {
   TrendingUp,
   Bell,
   Users,
-  FileText,
   AlertCircle,
   RefreshCw,
   Search,
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
-import { fetchCandidateApplications, fetchSavedJobs, fetchRecommendedJobs } from '@/utils/api/candidateApi';
+import { fetchCandidateApplications, fetchSavedJobs } from '@/utils/api/candidateApi';
 import { NotificationCenter } from '@/components/candidate/NotificationCenter';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { Link, useNavigate } from 'react-router-dom';
@@ -30,20 +30,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 interface DashboardData {
   applications: any[];
   savedJobs: any[];
-  recommendedJobs: any[];
 }
 
 interface LoadingState {
   applications: boolean;
   savedJobs: boolean;
-  recommendations: boolean;
   overall: boolean;
 }
 
 interface ErrorState {
   applications: string | null;
   savedJobs: string | null;
-  recommendations: string | null;
   general: string | null;
 }
 
@@ -54,21 +51,18 @@ const CandidateDashboard = () => {
   
   const [data, setData] = useState<DashboardData>({
     applications: [],
-    savedJobs: [],
-    recommendedJobs: []
+    savedJobs: []
   });
   
   const [loading, setLoading] = useState<LoadingState>({
     applications: true,
     savedJobs: true,
-    recommendations: true,
     overall: true
   });
   
   const [errors, setErrors] = useState<ErrorState>({
     applications: null,
     savedJobs: null,
-    recommendations: null,
     general: null
   });
 
@@ -109,23 +103,6 @@ const CandidateDashboard = () => {
     }
   };
 
-  const loadRecommendations = async (userId: string) => {
-    try {
-      console.log('📊 Dashboard: Loading recommendations for user:', userId);
-      setLoading(prev => ({ ...prev, recommendations: true }));
-      setErrors(prev => ({ ...prev, recommendations: null }));
-      
-      const recommendedData = await fetchRecommendedJobs(userId);
-      console.log('📊 Dashboard: Recommendations loaded:', recommendedData.length);
-      setData(prev => ({ ...prev, recommendedJobs: recommendedData }));
-    } catch (error: any) {
-      console.error('📊 Dashboard: Error loading recommendations:', error);
-      setErrors(prev => ({ ...prev, recommendations: 'Failed to load recommendations' }));
-    } finally {
-      setLoading(prev => ({ ...prev, recommendations: false }));
-    }
-  };
-
   const loadDashboardData = async (userId: string, isRetry = false) => {
     if (isRetry) {
       console.log('📊 Dashboard: Retrying data load, attempt:', retryCount + 1);
@@ -139,8 +116,7 @@ const CandidateDashboard = () => {
     // Load data concurrently with individual error handling
     const loadPromises = [
       loadApplications(userId),
-      loadSavedJobs(userId),
-      loadRecommendations(userId)
+      loadSavedJobs(userId)
     ];
 
     try {
@@ -226,10 +202,6 @@ const CandidateDashboard = () => {
                 <div className={`w-2 h-2 rounded-full ${loading.savedJobs ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
                 <span>Saved jobs {loading.savedJobs ? 'loading...' : 'loaded'}</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${loading.recommendations ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
-                <span>Recommendations {loading.recommendations ? 'loading...' : 'loaded'}</span>
-              </div>
             </div>
           )}
         </div>
@@ -297,7 +269,7 @@ const CandidateDashboard = () => {
 
           <TabsContent value="overview" className="space-y-6">
             {/* Show individual section errors */}
-            {(errors.applications || errors.savedJobs || errors.recommendations) && (
+            {(errors.applications || errors.savedJobs) && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -491,72 +463,6 @@ const CandidateDashboard = () => {
                 {user && <NotificationCenter userId={user.id} />}
               </div>
             </div>
-
-            {/* Recommended Jobs */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recommended for You</CardTitle>
-                <CardDescription>
-                  Jobs that match your profile and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading.recommendations ? (
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse border rounded-lg p-4 space-y-2">
-                        <div className="h-5 bg-gray-200 rounded w-32"></div>
-                        <div className="h-4 bg-gray-200 rounded w-24"></div>
-                        <div className="h-4 bg-gray-200 rounded w-28"></div>
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : errors.recommendations ? (
-                  <div className="text-center py-8">
-                    <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-2" />
-                    <p className="text-red-600">Failed to load recommendations</p>
-                    <Button variant="outline" onClick={() => loadRecommendations(user?.id || '')} className="mt-2">
-                      Try Again
-                    </Button>
-                  </div>
-                ) : data.recommendedJobs.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {data.recommendedJobs.map((job) => (
-                      <div key={job.id} className="border rounded-lg p-4 space-y-2">
-                        <h4 className="font-medium">{job.title}</h4>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Building className="mr-1 h-3 w-3" />
-                          <span>{job.company}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <MapPin className="mr-1 h-3 w-3" />
-                          <span>{job.location}</span>
-                        </div>
-                        {job.salary?.min && job.salary?.max && (
-                          <p className="text-sm font-medium">
-                            {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
-                          </p>
-                        )}
-                        <div className="flex gap-2 pt-2">
-                          <Button size="sm" className="flex-1" onClick={() => navigate(`/jobs/${job.id}`)}>Apply</Button>
-                          <Button size="sm" variant="outline">Save</Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No recommendations available</p>
-                    <p className="text-sm text-muted-foreground mb-4">Complete your profile to get personalized job recommendations</p>
-                    <Link to="/jobs">
-                      <Button>Browse All Jobs</Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">

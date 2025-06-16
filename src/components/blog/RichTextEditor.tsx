@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { processMarkdown, sanitizeHtml } from '@/utils/markdownProcessor';
+import { RichTextRenderer } from '@/components/RichTextRenderer';
 
 interface RichTextEditorProps {
   value: string;
@@ -148,12 +149,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
     }
   ];
 
-  // Use the unified markdown processor for preview
-  const renderPreview = (markdown: string) => {
-    const processedHtml = processMarkdown(markdown);
-    return sanitizeHtml(processedHtml);
-  };
-
   return (
     <div className={className}>
       {/* Toolbar */}
@@ -257,10 +252,13 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
       {/* Editor Content */}
       <div className="border border-t-0 rounded-b-md">
         {showPreview ? (
-          <div 
-            className="min-h-[300px] p-3 prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: renderPreview(value) }}
-          />
+          <div className="min-h-[300px] p-3">
+            <RichTextRenderer 
+              content={value} 
+              variant="blog"
+              className="prose-headings:mt-0 prose-p:mb-2"
+            />
+          </div>
         ) : (
           <Textarea
             ref={textareaRef}

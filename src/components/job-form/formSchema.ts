@@ -19,7 +19,7 @@ export const jobFormSchema = z.object({
   application_deadline: z.string().optional(),
   logo: z.string().optional(),
   status: z.enum(["draft", "active", "inactive", "pending"]).default("draft"),
-  application_type: z.enum(["internal", "external", "email"]).default("internal"),
+  application_type: z.enum(["internal", "external", "email", "phone"]).default("internal"),
   application_value: z.string().optional(),
 });
 

@@ -34,7 +34,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
       company: "",
       location: "",
       description: "",
-      requirements: [],
+      requirements: "", // Fixed: Changed from [] to ""
       salary_min: undefined,
       salary_max: undefined,
       salary_currency: "USD",

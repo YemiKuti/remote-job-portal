@@ -32,13 +32,26 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         throw new Error("User not authenticated");
       }
 
+      // Convert requirements string to array for database compatibility
+      const processRequirements = (requirements: string): string[] => {
+        if (!requirements || requirements.trim() === '') {
+          return [];
+        }
+        
+        // Split by common separators and filter out empty items
+        return requirements
+          .split(/\n+/)
+          .map(req => req.trim())
+          .filter(req => req.length > 0);
+      };
+
       // Create a properly typed object for the job data
       const jobData = {
         title: values.title,
         company: values.company,
         location: values.location,
         description: values.description,
-        requirements: values.requirements,
+        requirements: processRequirements(values.requirements), // Convert string to string[]
         salary_min: values.salary_min,
         salary_max: values.salary_max,
         salary_currency: values.salary_currency,

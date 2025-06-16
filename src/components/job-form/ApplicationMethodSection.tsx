@@ -81,7 +81,7 @@ export const ApplicationMethodSection = ({ form }: ApplicationMethodSectionProps
         )}
       />
 
-      {(applicationType === "external" || applicationType === "email" || applicationType === "phone") && (
+      {applicationType !== "internal" && (
         <FormField
           control={form.control}
           name="application_value"
@@ -97,7 +97,7 @@ export const ApplicationMethodSection = ({ form }: ApplicationMethodSectionProps
                   placeholder={
                     applicationType === "external" ? "https://yourcompany.com/apply" :
                     applicationType === "email" ? "jobs@yourcompany.com" :
-                    "+12345678901"
+                    applicationType === "phone" ? "+12345678901" : ""
                   } 
                   {...field} 
                 />

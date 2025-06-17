@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -103,7 +102,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
 </html>`;
   };
 
-  const handleDownload = async (format: 'pdf' | 'docx' | 'txt' | 'html' = 'txt') => {
+  const handleDownload = async (format: 'pdf' | 'docx' | 'txt' | 'html') => {
     if (!tailoredResume) return;
 
     setDownloading(true);
@@ -136,6 +135,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
           }
           
           toast.success('Resume opened in new window. Use your browser\'s print function and select "Save as PDF"');
+          setDownloading(false);
           return;
         case 'docx':
           // For DOCX, we'll create a rich text format that can be opened in Word
@@ -165,9 +165,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
         .update({ download_count: (tailoredResume.download_count || 0) + 1 })
         .eq('id', tailoredResume.id);
 
-      if (format !== 'pdf') {
-        toast.success(`Resume downloaded as ${format.toUpperCase()}`);
-      }
+      toast.success(`Resume downloaded as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Error downloading resume:', error);
       toast.error('Failed to download resume');

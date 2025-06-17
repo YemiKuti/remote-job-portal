@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Menu,
   Search,
-  Sparkles 
+  Sparkles,
+  Globe
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -63,6 +64,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   };
 
   const candidateMenuItems = [
+    { title: "Website Home", icon: Globe, url: "/" },
     { title: "Dashboard", icon: Home, url: "/candidate" },
     { title: "Profile", icon: User, url: "/candidate/profile" },
     { title: "My Applications", icon: Briefcase, url: "/candidate/applications" },
@@ -73,6 +75,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   ];
 
   const employerMenuItems = [
+    { title: "Website Home", icon: Globe, url: "/" },
     { title: "Dashboard", icon: Home, url: "/employer" },
     { title: "Job Listings", icon: Briefcase, url: "/employer/jobs" },
     { title: "Candidates", icon: Users, url: "/employer/candidates" },
@@ -82,6 +85,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   ];
 
   const adminMenuItems = [
+    { title: "Website Home", icon: Globe, url: "/" },
     { title: "Dashboard", icon: Home, url: "/admin" },
     { title: "Users", icon: Users, url: "/admin/users" },
     { title: "Jobs", icon: Briefcase, url: "/admin/jobs" },
@@ -213,6 +217,12 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/" className="cursor-pointer">
+                      <Globe className="mr-2 h-4 w-4" />
+                      Website Home
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to={`/${userType}/profile`} className="cursor-pointer">Profile</Link>
                   </DropdownMenuItem>

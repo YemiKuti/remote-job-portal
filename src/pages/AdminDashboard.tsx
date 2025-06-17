@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +80,7 @@ const AdminDashboard = () => {
   };
 
   const handleReviewJob = (jobId: string) => {
-    navigate(`/admin/edit-job/${jobId}`);
+    navigate(`/admin/jobs/${jobId}/edit`);
   };
   
   if (loading) {

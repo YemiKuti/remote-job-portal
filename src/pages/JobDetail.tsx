@@ -186,7 +186,7 @@ const JobDetail = () => {
         <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/jobs")}
             className="text-sm md:text-base"
           >
             ← Back to Job Listings

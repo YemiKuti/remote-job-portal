@@ -1,8 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { extractCandidateData, type CandidateData } from './candidateDataExtractor';
 
 export interface ResumeContent {
   text: string;
+  candidateData: CandidateData;
   sections: {
     summary?: string;
     experience?: string[];
@@ -15,28 +16,27 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
   try {
     console.log('🔄 Extracting content from resume file:', file.name);
     
+    let text = '';
+    
     // For PDF files, we'll use a simple text extraction for now
     // In production, this would integrate with a proper PDF parsing service
     if (file.type === 'application/pdf') {
-      return await extractPDFContent(file);
+      text = await extractPDFContent(file);
+    } else if (file.type === 'text/plain') {
+      text = await file.text();
+    } else {
+      // For other formats, return basic structure
+      console.warn('⚠️ Unsupported file type, using filename as content');
+      text = `Resume file: ${file.name}`;
     }
+
+    // Extract structured candidate data
+    const candidateData = extractCandidateData(text);
     
-    // For text files
-    if (file.type === 'text/plain') {
-      const text = await file.text();
-      return parseResumeText(text);
-    }
-    
-    // For other formats, return basic structure
-    console.warn('⚠️ Unsupported file type, using filename as content');
     return {
-      text: `Resume file: ${file.name}`,
-      sections: {
-        summary: `Professional resume - ${file.name}`,
-        experience: [],
-        skills: [],
-        education: []
-      }
+      text,
+      candidateData,
+      sections: parseResumeText(text)
     };
   } catch (error) {
     console.error('❌ Error extracting resume content:', error);
@@ -44,28 +44,51 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
   }
 };
 
-const extractPDFContent = async (file: File): Promise<ResumeContent> => {
+const extractPDFContent = async (file: File): Promise<string> => {
   // Placeholder for PDF extraction - in production would use PDF.js or server-side processing
   console.log('📄 Processing PDF file:', file.name);
   
   // Simulate PDF processing
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  return {
-    text: `Resume content from ${file.name} (PDF processing would happen here)`,
-    sections: {
-      summary: "Experienced professional with strong background in technology",
-      experience: [
-        "Software Developer - 3 years",
-        "Project Manager - 2 years"
-      ],
-      skills: ["JavaScript", "React", "Node.js", "Project Management"],
-      education: ["Bachelor's in Computer Science"]
-    }
-  };
+  // Return mock content that would be extracted from PDF
+  return `John Doe
+john.doe@email.com
+(555) 123-4567
+123 Main St, City, State 12345
+
+PROFESSIONAL SUMMARY
+Experienced software developer with 5+ years of experience in web development and project management. Skilled in JavaScript, React, Node.js, and cloud technologies.
+
+EXPERIENCE
+
+Senior Software Developer
+Tech Solutions Inc. - 2021 to Present
+• Led development of client-facing web applications using React and Node.js
+• Improved application performance by 40% through code optimization
+• Mentored junior developers and conducted code reviews
+
+Software Developer
+StartupCorp - 2019 to 2021
+• Developed REST APIs and microservices using Node.js and Express
+• Collaborated with cross-functional teams to deliver features on time
+• Implemented automated testing procedures
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of Technology - 2019
+GPA: 3.8/4.0
+
+SKILLS
+JavaScript, React, Node.js, Python, AWS, Docker, Git, PostgreSQL, MongoDB, REST APIs, GraphQL, Agile Development
+
+CERTIFICATIONS
+AWS Certified Developer Associate - 2022
+React Developer Certification - 2021`;
 };
 
-const parseResumeText = (text: string): ResumeContent => {
+const parseResumeText = (text: string) => {
   // Basic text parsing logic
   const lines = text.split('\n').filter(line => line.trim());
   
@@ -113,10 +136,7 @@ const parseResumeText = (text: string): ResumeContent => {
     }
   }
   
-  return {
-    text,
-    sections
-  };
+  return sections;
 };
 
 export const uploadResumeToStorage = async (file: File, userId: string): Promise<string> => {

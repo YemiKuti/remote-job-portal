@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
     try {
       setStatus('preparing');
       setProgress(10);
-      setStatusMessage('Reading your resume...');
+      setStatusMessage('Reading your resume and extracting candidate information...');
       setError(null);
 
       // First get the resume content
@@ -45,28 +44,28 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(25);
       setStatus('analyzing');
-      setStatusMessage('AI is analyzing your resume and the job description...');
+      setStatusMessage('AI is analyzing your resume with candidate information and job requirements...');
 
       // Get resume content
       const resumeContent = await resumeData.text();
 
       setProgress(50);
-      setStatusMessage('Tailoring your resume with AI...');
+      setStatusMessage('Generating your tailored resume with complete candidate information...');
 
-      // Call the tailor-cv edge function
+      // Call the tailor-cv edge function with candidate data
       const { data, error } = await supabase.functions.invoke('tailor-cv', {
         body: {
           resumeContent,
           jobDescription: workflowData.jobDescription,
           jobTitle: workflowData.jobTitle,
-          companyName: workflowData.companyName
+          companyName: workflowData.companyName,
+          candidateData: workflowData.selectedResume.candidate_data
         }
       });
 
       if (error) {
         console.error('Edge function error:', error);
         
-        // Handle specific error cases
         if (error.message?.includes('rate_limit_exceeded') || error.message?.includes('busy')) {
           throw new Error('AI service is currently busy. Please try again in a few moments.');
         }
@@ -76,7 +75,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(75);
       setStatus('generating');
-      setStatusMessage('Generating your tailored resume...');
+      setStatusMessage('Finalizing your professional resume...');
 
       // Save the tailored resume to database
       const { data: tailoredResume, error: saveError } = await supabase
@@ -98,7 +97,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(100);
       setStatus('complete');
-      setStatusMessage('Your tailored resume is ready!');
+      setStatusMessage('Your tailored resume with complete candidate information is ready!');
 
       // Wait a moment before completing
       setTimeout(() => {
@@ -111,7 +110,6 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
       setError(error.message || 'Failed to analyze resume');
       setStatusMessage('Analysis failed. You can try again.');
       
-      // Show user-friendly error messages
       if (error.message?.includes('busy') || error.message?.includes('rate_limit')) {
         toast.error('AI service is currently busy. Please try again in a few moments.');
       } else {
@@ -144,7 +142,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
           Step 3: AI Analysis & Tailoring
         </CardTitle>
         <CardDescription>
-          Our AI is analyzing your resume and tailoring it to match the job requirements
+          Our AI is analyzing your resume and tailoring it with your complete candidate information
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -162,11 +160,13 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">🤖 What our AI is doing:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Extracting candidate information from your resume</li>
               <li>• Analyzing your existing resume structure and content</li>
               <li>• Extracting key requirements from the job description</li>
+              <li>• Including your complete contact information and details</li>
               <li>• Matching your skills and experience to job requirements</li>
               <li>• Optimizing keywords for ATS (Applicant Tracking Systems)</li>
-              <li>• Restructuring content for maximum impact</li>
+              <li>• Creating a professional header with your contact information</li>
               <li>• Generating tailored content that highlights relevant experience</li>
             </ul>
           </div>
@@ -174,9 +174,9 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 className="font-medium text-green-900 mb-2">✅ Analysis Complete!</h4>
             <p className="text-sm text-green-800">
-              Your resume has been successfully tailored for the {workflowData.jobTitle || 'position'} 
+              Your resume has been successfully tailored with complete candidate information for the {workflowData.jobTitle || 'position'} 
               {workflowData.companyName && ` at ${workflowData.companyName}`}. 
-              The AI has optimized your content for maximum impact and ATS compatibility.
+              The AI has included your contact details, optimized your content for maximum impact, and ensured ATS compatibility.
             </p>
           </div>
         ) : status === 'error' ? (

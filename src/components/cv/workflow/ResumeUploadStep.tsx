@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, CheckCircle } from 'lucide-react';
+import { Upload, FileText, CheckCircle, User, Mail, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ResumeUploadZone } from './ResumeUploadZone';
+import { Badge } from '@/components/ui/badge';
 
 interface ResumeUploadStepProps {
   userId: string;
@@ -111,16 +112,41 @@ export function ResumeUploadStep({ userId, onComplete }: ResumeUploadStepProps) 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <FileText className="h-8 w-8 text-blue-500" />
-                      <div>
-                        <div className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
                           <span className="font-medium">{resume.name}</span>
                           {resume.is_default && (
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            <Badge variant="secondary" className="text-xs">
                               Default
-                            </span>
+                            </Badge>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        
+                        {/* Show extracted candidate info if available */}
+                        {resume.candidate_data && (
+                          <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                            {resume.candidate_data.personalInfo?.name && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span>{resume.candidate_data.personalInfo.name}</span>
+                              </div>
+                            )}
+                            {resume.candidate_data.personalInfo?.email && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                <span>{resume.candidate_data.personalInfo.email}</span>
+                              </div>
+                            )}
+                            {resume.candidate_data.personalInfo?.phone && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                <span>{resume.candidate_data.personalInfo.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="text-sm text-gray-500 mt-1">
                           {new Date(resume.created_at).toLocaleDateString()}
                         </div>
                       </div>

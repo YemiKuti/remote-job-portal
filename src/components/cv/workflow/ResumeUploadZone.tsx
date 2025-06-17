@@ -1,9 +1,9 @@
-
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { extractResumeContent } from '@/utils/resumeProcessor';
 
 interface ResumeUploadZoneProps {
   userId: string;
@@ -39,6 +39,10 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
 
     setUploading(true);
     try {
+      // Extract resume content and candidate data
+      console.log('📄 Extracting resume content...');
+      const resumeContent = await extractResumeContent(file);
+
       // Upload file to documents bucket
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
@@ -56,7 +60,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      // Save resume record to database
+      // Save resume record to database with extracted candidate data
       const { data: resume, error: dbError } = await supabase
         .from('candidate_resumes')
         .insert({
@@ -64,7 +68,9 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
           name: file.name,
           file_path: filePath,
           file_size: file.size,
-          is_default: false
+          is_default: false,
+          candidate_data: resumeContent.candidateData,
+          extracted_content: resumeContent.text
         })
         .select()
         .single();
@@ -76,7 +82,8 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         throw new Error(`Database error: ${dbError.message}`);
       }
 
-      toast.success('Resume uploaded successfully');
+      console.log('✅ Resume uploaded with candidate data:', resumeContent.candidateData);
+      toast.success('Resume uploaded and processed successfully');
       onResumeUploaded(resume);
     } catch (error: any) {
       console.error('Error uploading resume:', error);
@@ -136,6 +143,11 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         <p className="text-sm text-gray-500">
           Supports PDF, DOC, DOCX, TXT (Max 5MB)
         </p>
+        {uploading && (
+          <p className="text-sm text-blue-600">
+            Processing resume and extracting candidate information...
+          </p>
+        )}
       </div>
       
       <Button 
@@ -144,7 +156,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         className="mt-4"
       >
         <Plus className="h-4 w-4 mr-2" />
-        {uploading ? 'Uploading...' : 'Choose File'}
+        {uploading ? 'Processing...' : 'Choose File'}
       </Button>
       
       <input

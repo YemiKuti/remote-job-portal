@@ -21,6 +21,7 @@ export const jobFormSchema = z.object({
   status: z.enum(["draft", "active", "inactive", "pending"]).default("draft"),
   application_type: z.enum(["internal", "external", "email", "phone"]).default("internal"),
   application_value: z.string().optional(),
+  sponsored: z.boolean().default(true),
 });
 
 export type JobFormValues = z.infer<typeof jobFormSchema>;

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Save, CheckCircle, ArrowLeft } from "lucide-react";
 import { SponsoredBadge } from "@/components/ui/sponsored-badge";
+import { useFormContext } from "react-hook-form";
+import { JobFormValues } from "./formSchema";
 
 interface FormButtonsProps {
   isAdmin?: boolean;
@@ -13,6 +15,8 @@ interface FormButtonsProps {
 
 export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
   const navigate = useNavigate();
+  const { watch } = useFormContext<JobFormValues>();
+  const isSponsored = watch("sponsored");
 
   const handleCancel = () => {
     if (isAdmin) {
@@ -24,14 +28,16 @@ export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
 
   return (
     <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <div className="flex items-center gap-2">
-          <SponsoredBadge size="md" />
-          <span className="text-sm text-gray-600">
-            All jobs posted on our platform are marked as sponsored to ensure maximum visibility
-          </span>
+      {isSponsored && (
+        <div className="flex items-center justify-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div className="flex items-center gap-2">
+            <SponsoredBadge size="md" />
+            <span className="text-sm text-gray-600">
+              This job will be marked as sponsored for maximum visibility
+            </span>
+          </div>
         </div>
-      </div>
+      )}
       
       <div className="flex justify-between items-center pt-4 border-t">
         <Button

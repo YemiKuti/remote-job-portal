@@ -66,6 +66,7 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         status: values.status,
         application_type: values.application_type,
         application_value: values.application_value,
+        sponsored: values.sponsored,
         // Always use the current user's ID as the employer_id
         employer_id: user.id
       };

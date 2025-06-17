@@ -50,7 +50,7 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <SponsoredBadge />
+            {job.sponsored && <SponsoredBadge />}
             {job.isFeatured && (
               <Badge variant="secondary">Featured</Badge>
             )}

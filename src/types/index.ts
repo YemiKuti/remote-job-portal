@@ -40,6 +40,7 @@ export interface Job {
   };
   status: 'active' | 'expired' | 'filled' | 'draft';
   isFeatured: boolean;
+  sponsored: boolean;
   views: number;
   applications: number;
   employerId: string;

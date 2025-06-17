@@ -13,6 +13,7 @@ import { DetailsSection } from "@/components/job-form/DetailsSection";
 import { JobPreferencesSection } from "@/components/job-form/JobPreferencesSection";
 import { ApplicationMethodSection } from "@/components/job-form/ApplicationMethodSection";
 import { JobStatusSection } from "@/components/job-form/JobStatusSection";
+import { SponsoredSection } from "@/components/job-form/SponsoredSection";
 import { Separator } from "@/components/ui/separator";
 import { useJobForm } from "@/hooks/useJobForm";
 import { useJobData } from "@/hooks/useJobData";
@@ -49,6 +50,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
       status: "draft",
       application_type: "internal",
       application_value: "",
+      sponsored: true,
     },
   });
 
@@ -84,6 +86,10 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
             <Separator />
             
             <JobPreferencesSection form={form} />
+            
+            <Separator />
+            
+            <SponsoredSection form={form} />
             
             <Separator />
             

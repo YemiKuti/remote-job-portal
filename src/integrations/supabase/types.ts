@@ -1001,11 +1001,17 @@ export type Database = {
         Row: {
           accepted_suggestions: Json | null
           ai_suggestions: Json | null
+          company_name: string | null
           created_at: string
+          download_count: number | null
+          file_format: string | null
           id: string
+          job_description: string | null
           job_id: string | null
+          job_title: string | null
           original_resume_id: string | null
           tailored_content: string
+          tailored_file_path: string | null
           tailoring_score: number | null
           updated_at: string
           user_id: string
@@ -1013,11 +1019,17 @@ export type Database = {
         Insert: {
           accepted_suggestions?: Json | null
           ai_suggestions?: Json | null
+          company_name?: string | null
           created_at?: string
+          download_count?: number | null
+          file_format?: string | null
           id?: string
+          job_description?: string | null
           job_id?: string | null
+          job_title?: string | null
           original_resume_id?: string | null
           tailored_content: string
+          tailored_file_path?: string | null
           tailoring_score?: number | null
           updated_at?: string
           user_id: string
@@ -1025,11 +1037,17 @@ export type Database = {
         Update: {
           accepted_suggestions?: Json | null
           ai_suggestions?: Json | null
+          company_name?: string | null
           created_at?: string
+          download_count?: number | null
+          file_format?: string | null
           id?: string
+          job_description?: string | null
           job_id?: string | null
+          job_title?: string | null
           original_resume_id?: string | null
           tailored_content?: string
+          tailored_file_path?: string | null
           tailoring_score?: number | null
           updated_at?: string
           user_id?: string

@@ -1,128 +1,70 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface TailorCVRequest {
-  resumeContent: string;
-  jobDescription: string;
-  jobRequirements: string[];
-  jobTitle: string;
-  jobCompany?: string;
-  test?: boolean;
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    const { resumeContent, jobDescription, jobTitle, companyName } = await req.json()
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Set the auth token for the client
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
-    
-    if (authError || !user) {
-      console.error('❌ Auth error:', authError)
-      throw new Error('Unauthorized')
-    }
-
-    const { 
-      resumeContent, 
-      jobDescription, 
-      jobRequirements, 
-      jobTitle, 
-      jobCompany,
-      test 
-    }: TailorCVRequest = await req.json()
-
-    // Handle test requests
-    if (test) {
+    if (!resumeContent || !jobDescription) {
       return new Response(
-        JSON.stringify({ 
-          status: 'ok', 
-          message: 'CV Tailoring service is available',
-          hasOpenAI: !!Deno.env.get('OPENAI_API_KEY')
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Resume content and job description are required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
 
-    console.log('🔄 Processing CV tailoring request for:', jobTitle, 'at', jobCompany)
-
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not configured')
-      throw new Error('AI service not configured. Please contact support.')
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    // Create the prompt for OpenAI
-    const prompt = `
-You are an expert resume writer and career coach. Analyze the following resume against a job posting and provide detailed feedback and suggestions.
+    const prompt = `You are a professional resume writer and ATS optimization expert. Your task is to tailor a resume for a specific job posting to maximize ATS compatibility and recruiter appeal.
 
-JOB POSTING:
-Title: ${jobTitle}
-Company: ${jobCompany || 'Not specified'}
-Description: ${jobDescription}
-Requirements: ${jobRequirements.join(', ')}
-
-RESUME CONTENT:
+ORIGINAL RESUME:
 ${resumeContent}
 
-Please provide a detailed analysis in the following JSON format:
-{
-  "analysis": {
-    "matchScore": [number between 0-100],
-    "strengths": [array of strings highlighting what matches well],
-    "gaps": [array of strings identifying missing or weak areas],
-    "keywords": [array of important keywords from job posting]
-  },
-  "suggestions": {
-    "summary": "A tailored professional summary for this specific role",
-    "skillsToHighlight": [array of skills to emphasize],
-    "experienceAdjustments": [
-      {
-        "section": "section name",
-        "suggestion": "specific improvement suggestion",
-        "reason": "why this change would help"
-      }
-    ],
-    "additionalSections": [
-      {
-        "title": "section title",
-        "content": "suggested content",
-        "reason": "why this section would be valuable"
-      }
-    ]
-  },
-  "tailoredContent": "A complete, tailored version of the resume optimized for this specific job"
-}
+JOB POSTING:
+Position: ${jobTitle || 'Not specified'}
+Company: ${companyName || 'Not specified'}
+Description: ${jobDescription}
 
-Focus on:
-1. Keyword optimization for ATS systems
-2. Quantifiable achievements and metrics
-3. Relevant skills and technologies
-4. Industry-specific language
-5. Role-specific accomplishments
+INSTRUCTIONS:
+1. Analyze the job requirements and extract key skills, technologies, and qualifications
+2. Tailor the resume to highlight relevant experience and skills that match the job
+3. Optimize keywords for ATS systems while maintaining natural language
+4. Restructure content to emphasize most relevant experience first
+5. Ensure the resume remains truthful and accurate to the original content
+6. Format for maximum ATS compatibility (clear sections, standard headings)
+7. Keep the same overall length and structure but optimize content
 
-Provide actionable, specific suggestions that will genuinely improve the candidate's chances.
-`
+REQUIREMENTS:
+- Maintain professional formatting
+- Use standard section headers (Summary, Experience, Education, Skills, etc.)
+- Include relevant keywords from the job description naturally
+- Emphasize quantifiable achievements
+- Ensure ATS-friendly format (no complex formatting, tables, or graphics)
 
-    // Call OpenAI API
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+Please provide the tailored resume content that would be most effective for this specific position.`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -133,7 +75,7 @@ Provide actionable, specific suggestions that will genuinely improve the candida
         messages: [
           {
             role: 'system',
-            content: 'You are an expert resume writer and career coach. Always respond with valid JSON in the exact format requested.'
+            content: 'You are an expert resume writer and ATS optimization specialist. Provide clear, professional, and ATS-optimized resume content.'
           },
           {
             role: 'user',
@@ -141,67 +83,68 @@ Provide actionable, specific suggestions that will genuinely improve the candida
           }
         ],
         max_tokens: 3000,
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     })
 
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text()
-      console.error('❌ OpenAI API error:', errorText)
-      throw new Error('AI analysis failed')
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('OpenAI API error:', error)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process resume with AI' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    const openAIData = await openAIResponse.json()
-    const aiContent = openAIData.choices[0]?.message?.content
+    const aiResponse = await response.json()
+    const tailoredResume = aiResponse.choices[0]?.message?.content
 
-    if (!aiContent) {
-      throw new Error('No response from AI service')
+    if (!tailoredResume) {
+      return new Response(
+        JSON.stringify({ error: 'No response from AI' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    // Parse the AI response
-    let analysisResult
-    try {
-      analysisResult = JSON.parse(aiContent)
-    } catch (parseError) {
-      console.error('❌ Failed to parse AI response:', parseError)
-      // Provide a fallback response
-      analysisResult = {
-        analysis: {
-          matchScore: 75,
-          strengths: ["Professional experience relevant to the role"],
-          gaps: ["Could benefit from more specific keywords"],
-          keywords: jobRequirements.slice(0, 5)
-        },
-        suggestions: {
-          summary: `Experienced professional seeking ${jobTitle} position at ${jobCompany}`,
-          skillsToHighlight: jobRequirements.slice(0, 3),
-          experienceAdjustments: [{
-            section: "Professional Experience",
-            suggestion: "Add more quantifiable achievements",
-            reason: "Numbers and metrics make impact more tangible"
-          }],
-          additionalSections: []
-        },
-        tailoredContent: `Tailored resume for ${jobTitle} position:\n\n${resumeContent}`
-      }
-    }
-
-    console.log('✅ CV tailoring completed successfully')
+    // Generate a simple score based on keyword matching
+    const jobKeywords = jobDescription.toLowerCase().match(/\b\w{3,}\b/g) || []
+    const resumeKeywords = tailoredResume.toLowerCase().match(/\b\w{3,}\b/g) || []
+    const matchedKeywords = jobKeywords.filter(keyword => 
+      resumeKeywords.includes(keyword)
+    )
+    const score = Math.min(95, Math.max(70, Math.round((matchedKeywords.length / jobKeywords.length) * 100)))
 
     return new Response(
-      JSON.stringify(analysisResult),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        tailoredResume,
+        score,
+        suggestions: {
+          keywordsMatched: matchedKeywords.length,
+          totalKeywords: jobKeywords.length,
+          recommendations: [
+            'Resume has been optimized for ATS compatibility',
+            'Keywords from job description have been naturally integrated',
+            'Content has been restructured to highlight relevant experience'
+          ]
+        }
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     )
 
   } catch (error) {
-    console.error('❌ Error in tailor-cv function:', error)
+    console.error('Error in tailor-cv function:', error)
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: 'Failed to process CV tailoring request'
-      }),
+      JSON.stringify({ error: 'Internal server error' }),
       { 
-        status: 500,
+        status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )

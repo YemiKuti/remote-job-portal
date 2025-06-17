@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SavedJob, Application, TailoredResume } from '@/types/api';
 import { transformDatabaseJobToFrontendJob } from '@/utils/jobTransformers';
@@ -246,13 +247,13 @@ export const uploadProfilePhoto = async (file: File) => {
 
     // Create unique filename with proper extension
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${user.id}/${Date.now()}-profile.${fileExt}`;
+    const fileName = `${user.id}/profile-${Date.now()}.${fileExt}`;
     
     console.log('🔄 Uploading file to:', fileName);
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage using correct bucket name
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from('profile-photos')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false
@@ -267,7 +268,7 @@ export const uploadProfilePhoto = async (file: File) => {
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
+      .from('profile-photos')
       .getPublicUrl(fileName);
 
     console.log('🔗 Public URL generated:', publicUrl);

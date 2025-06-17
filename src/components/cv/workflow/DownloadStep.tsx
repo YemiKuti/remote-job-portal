@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Download, FileText, RotateCcw, Eye, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 
 interface DownloadStepProps {
   workflowData: {
@@ -114,6 +115,123 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
     }
 
     return formattedSections;
+  };
+
+  const generatePDF = (content: string) => {
+    const sections = formatResumeContent(content);
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    // Find contact section
+    const contactSection = sections.find(s => s.title === 'CONTACT');
+    const otherSections = sections.filter(s => s.title !== 'CONTACT');
+    
+    let yPosition = 20;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    
+    // Header
+    if (contactSection) {
+      const contactLines = contactSection.content.split('\n');
+      const name = contactLines[0] || 'Professional Resume';
+      
+      // Name
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(name, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 8;
+      
+      // Contact info
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const contactInfo = contactLines.slice(1).join(' • ');
+      pdf.text(contactInfo, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 6;
+      
+      // Job info
+      const jobInfo = `${workflowData.jobTitle ? `Position: ${workflowData.jobTitle}` : ''}${workflowData.companyName ? ` • Company: ${workflowData.companyName}` : ''} • Generated: ${new Date().toLocaleDateString()}`;
+      pdf.text(jobInfo, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 10;
+    } else {
+      // Fallback header
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Professional Resume', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 8;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const jobInfo = `${workflowData.jobTitle ? `Position: ${workflowData.jobTitle}` : ''}${workflowData.companyName ? ` • Company: ${workflowData.companyName}` : ''} • Generated: ${new Date().toLocaleDateString()}`;
+      pdf.text(jobInfo, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 10;
+    }
+    
+    // Separator line
+    pdf.setDrawColor(44, 62, 80);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 8;
+
+    // Sections
+    otherSections.forEach(section => {
+      // Check if we need a new page
+      if (yPosition > 250) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      // Section title
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(section.title, margin, yPosition);
+      yPosition += 6;
+      
+      // Section content
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      
+      const contentLines = section.content.split('\n');
+      contentLines.forEach(line => {
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        const trimmedLine = line.trim();
+        if (trimmedLine.length === 0) return;
+        
+        // Format different types of content
+        if (trimmedLine.startsWith('- ')) {
+          // Bullet point
+          const bulletText = trimmedLine.substring(2);
+          const wrappedText = pdf.splitTextToSize(bulletText, contentWidth - 10);
+          pdf.text('•', margin + 5, yPosition);
+          pdf.text(wrappedText, margin + 10, yPosition);
+          yPosition += wrappedText.length * 4;
+        } else if (trimmedLine.match(/^[A-Z][a-zA-Z\s]+$/)) {
+          // Job title
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(trimmedLine, margin + 5, yPosition);
+          pdf.setFont('helvetica', 'normal');
+          yPosition += 5;
+        } else if (trimmedLine.includes(',') && (trimmedLine.includes('CA') || trimmedLine.includes('NY') || trimmedLine.includes('–') || trimmedLine.includes('-'))) {
+          // Company and date info
+          pdf.setFont('helvetica', 'italic');
+          pdf.text(trimmedLine, margin + 5, yPosition);
+          pdf.setFont('helvetica', 'normal');
+          yPosition += 5;
+        } else {
+          // Regular content
+          const wrappedText = pdf.splitTextToSize(trimmedLine, contentWidth);
+          pdf.text(wrappedText, margin + 5, yPosition);
+          yPosition += wrappedText.length * 4;
+        }
+      });
+      
+      yPosition += 5; // Space between sections
+    });
+
+    return pdf;
   };
 
   const generateHTMLContent = (content: string) => {
@@ -420,25 +538,14 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
       let blob: Blob;
 
       switch (format) {
+        case 'pdf':
+          const pdf = generatePDF(content);
+          blob = new Blob([pdf.output('blob')], { type: 'application/pdf' });
+          break;
         case 'html':
           const htmlContent = generateHTMLContent(content);
           blob = new Blob([htmlContent], { type: 'text/html' });
           break;
-        case 'pdf':
-          // For PDF, open formatted HTML in new window for printing
-          const pdfHtmlContent = generateHTMLContent(content);
-          const printWindow = window.open('', '_blank');
-          if (printWindow) {
-            printWindow.document.write(pdfHtmlContent);
-            printWindow.document.close();
-            setTimeout(() => {
-              printWindow.print();
-            }, 500);
-          }
-          
-          toast.success('Resume opened in new window. Use Ctrl+P (or Cmd+P) and select "Save as PDF"');
-          setDownloading(false);
-          return;
         case 'docx':
           // Create a more structured document for Word
           const docContent = generateFormattedText(content);
@@ -547,7 +654,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
               <Download className="h-6 w-6" />
               <div className="text-center">
                 <div className="font-medium">PDF</div>
-                <div className="text-xs opacity-75">Print to PDF</div>
+                <div className="text-xs opacity-75">Direct download</div>
               </div>
             </Button>
             
@@ -599,8 +706,8 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
                 <div>
                   <h4 className="font-medium text-blue-900 mb-1">PDF Download (Recommended)</h4>
                   <p className="text-sm text-blue-800">
-                    Opens a professionally formatted version in a new window. Use Ctrl+P (or Cmd+P) → 
-                    Select "Save as PDF" → Choose your destination and save.
+                    Downloads a professionally formatted PDF file directly to your device. 
+                    Perfect for job applications and maintains consistent formatting across all platforms.
                   </p>
                 </div>
               </div>
@@ -662,13 +769,13 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
 
           {/* Tips */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Enhanced Formatting Features:</h4>
+            <h4 className="font-medium text-blue-900 mb-2">💡 Enhanced PDF Features:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Professional header with clean contact information layout</li>
-              <li>• Improved typography with proper font hierarchy and spacing</li>
-              <li>• Visual section separators with accent colors</li>
-              <li>• Optimized bullet points and content alignment</li>
-              <li>• ATS-friendly structure with enhanced readability</li>
+              <li>• Direct PDF download without print dialogs</li>
+              <li>• Professional formatting with proper page breaks</li>
+              <li>• Optimized typography and spacing for readability</li>
+              <li>• ATS-friendly structure with enhanced visual appeal</li>
+              <li>• Consistent formatting across all devices and platforms</li>
             </ul>
           </div>
         </CardContent>

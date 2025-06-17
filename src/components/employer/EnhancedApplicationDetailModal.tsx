@@ -14,6 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { MessageCandidateButton } from './quick-actions/MessageCandidateButton';
+import { ResumeDownloadButton } from './quick-actions/ResumeDownloadButton';
+import { StatusUpdateButton } from './quick-actions/StatusUpdateButton';
+import { ViewProfileButton } from './quick-actions/ViewProfileButton';
 import { 
   Calendar, 
   MapPin, 
@@ -161,29 +165,12 @@ export const EnhancedApplicationDetailModal = ({
 
   const matchScore = calculateMatchScore();
 
-  const handleStatusUpdate = () => {
+  const handleStatusUpdate = async () => {
     if (newStatus && newStatus !== application.status) {
       onUpdateStatus(application.id, newStatus, statusNotes);
       setNewStatus('');
       setStatusNotes('');
     }
-  };
-
-  const handleDownloadResume = () => {
-    if (application.resume?.file_path) {
-      alert('Resume download functionality would be implemented here with proper file access controls.');
-    }
-  };
-
-  const handleViewProfile = () => {
-    if (application.candidate?.id) {
-      window.open(`/profile/${application.candidate.id}`, '_blank');
-    }
-  };
-
-  const handleStartConversation = () => {
-    // This would integrate with the messaging system
-    alert('Messaging integration would be implemented here');
   };
 
   return (
@@ -229,24 +216,14 @@ export const EnhancedApplicationDetailModal = ({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={handleViewProfile}
-                className="flex items-center gap-2"
-              >
-                <Eye className="h-4 w-4" />
-                View Profile
-              </Button>
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={handleStartConversation}
-                className="flex items-center gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Message
-              </Button>
+              <ViewProfileButton
+                candidateId={application.candidate?.id}
+                candidateName={getCandidateDisplayName(application.candidate)}
+              />
+              <MessageCandidateButton
+                candidateId={application.candidate?.id || ''}
+                candidateName={getCandidateDisplayName(application.candidate)}
+              />
             </div>
           </div>
 
@@ -453,15 +430,7 @@ export const EnhancedApplicationDetailModal = ({
                               Uploaded {new Date(application.resume.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleDownloadResume}
-                            className="flex items-center gap-2"
-                          >
-                            <Download className="h-4 w-4" />
-                            Download
-                          </Button>
+                          <ResumeDownloadButton resume={application.resume} />
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <p>✓ Resume uploaded and available for review</p>
@@ -703,42 +672,32 @@ export const EnhancedApplicationDetailModal = ({
                   <div className="space-y-4">
                     <h4 className="font-medium">Quick Actions</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStartConversation}
-                        className="flex items-center gap-2"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Send Message
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setNewStatus('shortlisted')}
-                        className="flex items-center gap-2"
-                      >
-                        <Star className="h-4 w-4" />
-                        Shortlist
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setNewStatus('interviewed')}
-                        className="flex items-center gap-2"
-                      >
-                        <User className="h-4 w-4" />
-                        Schedule Interview
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleViewProfile}
-                        className="flex items-center gap-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View Full Profile
-                      </Button>
+                      <MessageCandidateButton
+                        candidateId={application.candidate?.id || ''}
+                        candidateName={getCandidateDisplayName(application.candidate)}
+                        className="justify-start"
+                      />
+                      <StatusUpdateButton
+                        currentStatus={application.status}
+                        targetStatus="shortlisted"
+                        applicationId={application.id}
+                        onUpdateStatus={onUpdateStatus}
+                        candidateName={getCandidateDisplayName(application.candidate)}
+                        className="justify-start"
+                      />
+                      <StatusUpdateButton
+                        currentStatus={application.status}
+                        targetStatus="interviewed"
+                        applicationId={application.id}
+                        onUpdateStatus={onUpdateStatus}
+                        candidateName={getCandidateDisplayName(application.candidate)}
+                        className="justify-start"
+                      />
+                      <ViewProfileButton
+                        candidateId={application.candidate?.id}
+                        candidateName={getCandidateDisplayName(application.candidate)}
+                        className="justify-start"
+                      />
                     </div>
                   </div>
                 </CardContent>

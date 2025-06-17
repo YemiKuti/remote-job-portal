@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -16,9 +16,6 @@ import {
   Code,
   Link,
   Image,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   Eye,
   Edit
 } from 'lucide-react';
@@ -35,62 +32,105 @@ interface RichTextEditorProps {
 
 const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
   const [showPreview, setShowPreview] = useState(false);
-  const [selectedText, setSelectedText] = useState('');
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const insertText = (before: string, after: string = '') => {
+  const getSelectionInfo = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return { start: 0, end: 0, selectedText: '' };
+    
+    return {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+      selectedText: value.substring(textarea.selectionStart, textarea.selectionEnd)
+    };
+  }, [value]);
+
+  const insertTextAtCursor = useCallback((before: string, after: string = '', replaceSelection: boolean = false) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
+    const { start, end, selectedText } = getSelectionInfo();
     
-    const newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
+    let newText: string;
+    let newCursorPos: number;
+
+    if (replaceSelection && selectedText) {
+      // Wrap selected text
+      newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
+      newCursorPos = start + before.length + selectedText.length + after.length;
+    } else if (selectedText && !replaceSelection) {
+      // Insert at cursor, preserving selection
+      newText = value.substring(0, start) + before + after + value.substring(start);
+      newCursorPos = start + before.length;
+    } else {
+      // No selection, just insert
+      newText = value.substring(0, start) + before + after + value.substring(end);
+      newCursorPos = start + before.length;
+    }
+
     onChange(newText);
     
-    // Reset cursor position
+    // Restore focus and cursor position
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  };
+  }, [value, onChange, getSelectionInfo]);
 
-  const insertAtCursor = (text: string) => {
+  const wrapSelectedText = useCallback((before: string, after: string = '') => {
+    insertTextAtCursor(before, after, true);
+  }, [insertTextAtCursor]);
+
+  const insertAtNewLine = useCallback((text: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const { start } = getSelectionInfo();
+    const beforeCursor = value.substring(0, start);
+    const afterCursor = value.substring(start);
     
-    const newText = value.substring(0, start) + text + value.substring(end);
+    // Check if we're at the beginning of a line or need to add a newline
+    const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
+    const needsNewlineAfter = !afterCursor.startsWith('\n') && afterCursor.length > 0;
+    
+    const prefix = needsNewlineBefore ? '\n' : '';
+    const suffix = needsNewlineAfter ? '\n' : '';
+    
+    const newText = beforeCursor + prefix + text + suffix + afterCursor;
+    const newCursorPos = beforeCursor.length + prefix.length + text.length;
+    
     onChange(newText);
     
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + text.length, start + text.length);
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  };
+  }, [value, onChange, getSelectionInfo]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    // Let the default paste behavior work for now
+    // In the future, we could add smart paste formatting here
+  }, []);
 
   const formatButtons = [
     {
       icon: <Bold className="h-4 w-4" />,
-      action: () => insertText('**', '**'),
+      action: () => wrapSelectedText('**', '**'),
       tooltip: 'Bold'
     },
     {
       icon: <Italic className="h-4 w-4" />,
-      action: () => insertText('*', '*'),
+      action: () => wrapSelectedText('*', '*'),
       tooltip: 'Italic'
     },
     {
       icon: <Underline className="h-4 w-4" />,
-      action: () => insertText('<u>', '</u>'),
+      action: () => wrapSelectedText('<u>', '</u>'),
       tooltip: 'Underline'
     },
     {
       icon: <Strikethrough className="h-4 w-4" />,
-      action: () => insertText('~~', '~~'),
+      action: () => wrapSelectedText('~~', '~~'),
       tooltip: 'Strikethrough'
     }
   ];
@@ -98,17 +138,17 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const headingButtons = [
     {
       icon: <Heading1 className="h-4 w-4" />,
-      action: () => insertAtCursor('\n# '),
+      action: () => insertAtNewLine('# '),
       tooltip: 'Heading 1'
     },
     {
       icon: <Heading2 className="h-4 w-4" />,
-      action: () => insertAtCursor('\n## '),
+      action: () => insertAtNewLine('## '),
       tooltip: 'Heading 2'
     },
     {
       icon: <Heading3 className="h-4 w-4" />,
-      action: () => insertAtCursor('\n### '),
+      action: () => insertAtNewLine('### '),
       tooltip: 'Heading 3'
     }
   ];
@@ -116,12 +156,36 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const listButtons = [
     {
       icon: <List className="h-4 w-4" />,
-      action: () => insertAtCursor('\n- '),
+      action: () => {
+        const { selectedText } = getSelectionInfo();
+        if (selectedText) {
+          // Convert each line to a bullet point
+          const lines = selectedText.split('\n');
+          const bulletPoints = lines.map(line => line.trim() ? `- ${line.trim()}` : '').join('\n');
+          wrapSelectedText('', '');
+          insertTextAtCursor(bulletPoints);
+        } else {
+          insertAtNewLine('- ');
+        }
+      },
       tooltip: 'Bullet List'
     },
     {
       icon: <ListOrdered className="h-4 w-4" />,
-      action: () => insertAtCursor('\n1. '),
+      action: () => {
+        const { selectedText } = getSelectionInfo();
+        if (selectedText) {
+          // Convert each line to a numbered point
+          const lines = selectedText.split('\n');
+          const numberedPoints = lines.map((line, index) => 
+            line.trim() ? `${index + 1}. ${line.trim()}` : ''
+          ).join('\n');
+          wrapSelectedText('', '');
+          insertTextAtCursor(numberedPoints);
+        } else {
+          insertAtNewLine('1. ');
+        }
+      },
       tooltip: 'Numbered List'
     }
   ];
@@ -129,22 +193,47 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const insertButtons = [
     {
       icon: <Quote className="h-4 w-4" />,
-      action: () => insertText('\n> ', ''),
+      action: () => {
+        const { selectedText } = getSelectionInfo();
+        if (selectedText) {
+          const quotedText = selectedText.split('\n').map(line => `> ${line}`).join('\n');
+          wrapSelectedText('', '');
+          insertTextAtCursor(quotedText);
+        } else {
+          insertAtNewLine('> ');
+        }
+      },
       tooltip: 'Quote'
     },
     {
       icon: <Code className="h-4 w-4" />,
-      action: () => insertText('`', '`'),
-      tooltip: 'Inline Code'
+      action: () => {
+        const { selectedText } = getSelectionInfo();
+        if (selectedText.includes('\n')) {
+          // Multi-line code block
+          wrapSelectedText('```\n', '\n```');
+        } else {
+          // Inline code
+          wrapSelectedText('`', '`');
+        }
+      },
+      tooltip: 'Code'
     },
     {
       icon: <Link className="h-4 w-4" />,
-      action: () => insertText('[Link Text](', ')'),
+      action: () => {
+        const { selectedText } = getSelectionInfo();
+        if (selectedText) {
+          wrapSelectedText(`[${selectedText}](`, ')');
+        } else {
+          insertTextAtCursor('[Link Text](', ')');
+        }
+      },
       tooltip: 'Link'
     },
     {
       icon: <Image className="h-4 w-4" />,
-      action: () => insertText('![Alt Text](', ')'),
+      action: () => insertTextAtCursor('![Alt Text](', ')'),
       tooltip: 'Image'
     }
   ];
@@ -264,6 +353,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onPaste={handlePaste}
             placeholder={placeholder}
             className="min-h-[300px] border-0 resize-none focus-visible:ring-0 rounded-t-none"
           />

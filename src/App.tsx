@@ -18,6 +18,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
 import AuthPage from './pages/Auth';
 import Profile from './pages/Profile';
+import UserProfilePage from './pages/UserProfilePage';
 
 import EmployerDashboard from './pages/EmployerDashboard';
 import Jobs from './pages/employer/Jobs';
@@ -68,6 +69,7 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/user/:userId" element={<UserProfilePage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/blog" element={<Blog />} />

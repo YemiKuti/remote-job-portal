@@ -4,44 +4,64 @@ import { Conversation, Message } from '@/types/api';
 // Fetch conversations with latest messages
 export const fetchConversations = async (userId: string, userRole: 'candidate' | 'employer') => {
   try {
-    // Use the RLS-enabled query to get conversations for the current user
+    console.log('🔍 Fetching conversations for user:', userId, 'role:', userRole);
+    
+    // Get conversations based on user role
     const { data: conversations, error: convError } = await supabase
       .from('conversations')
       .select('*')
+      .or(userRole === 'employer' ? `employer_id.eq.${userId}` : `candidate_id.eq.${userId}`)
       .order('last_message_at', { ascending: false });
 
-    if (convError) throw convError;
+    if (convError) {
+      console.error('❌ Error fetching conversations:', convError);
+      throw convError;
+    }
+    
+    console.log('✅ Raw conversations fetched:', conversations?.length || 0);
     
     // Then get user profiles for each conversation
     const enhancedConversations: Conversation[] = [];
     
     for (const conv of conversations || []) {
-      // Get employer profile
-      const { data: employerProfile, error: empError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', conv.employer_id)
-        .single();
-        
-      // Get candidate profile
-      const { data: candidateProfile, error: candError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', conv.candidate_id)
-        .single();
-        
-      enhancedConversations.push({
-        ...conv,
-        created_at: conv.last_message_at, // Use last_message_at as created_at if not available
-        employer_name: employerProfile && !empError ? employerProfile.full_name || employerProfile.username : 'Employer',
-        candidate_name: candidateProfile && !candError ? candidateProfile.full_name || candidateProfile.username : 'Candidate',
-        company: employerProfile && !empError ? employerProfile.username : undefined,
-      });
+      try {
+        // Get employer profile
+        const { data: employerProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', conv.employer_id)
+          .single();
+          
+        // Get candidate profile
+        const { data: candidateProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', conv.candidate_id)
+          .single();
+          
+        enhancedConversations.push({
+          ...conv,
+          created_at: conv.last_message_at,
+          employer_name: employerProfile?.full_name || employerProfile?.username || 'Employer',
+          candidate_name: candidateProfile?.full_name || candidateProfile?.username || 'Candidate',
+          company: employerProfile?.username || undefined,
+        });
+      } catch (profileError) {
+        console.warn('⚠️ Error fetching profile for conversation:', conv.id, profileError);
+        // Still add the conversation with fallback names
+        enhancedConversations.push({
+          ...conv,
+          created_at: conv.last_message_at,
+          employer_name: 'Employer',
+          candidate_name: 'Candidate',
+        });
+      }
     }
     
+    console.log('✅ Enhanced conversations:', enhancedConversations.length);
     return enhancedConversations;
   } catch (error: any) {
-    console.error('Error fetching conversations:', error);
+    console.error('❌ Error fetching conversations:', error);
     return [];
   }
 };
@@ -49,34 +69,50 @@ export const fetchConversations = async (userId: string, userRole: 'candidate' |
 // Fetch messages for a conversation
 export const fetchMessages = async (conversationId: string) => {
   try {
-    // Get messages using RLS-enabled query
+    console.log('🔍 Fetching messages for conversation:', conversationId);
+    
+    // Get messages using direct query
     const { data: messages, error: msgError } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('sent_at', { ascending: true });
 
-    if (msgError) throw msgError;
+    if (msgError) {
+      console.error('❌ Error fetching messages:', msgError);
+      throw msgError;
+    }
+    
+    console.log('✅ Raw messages fetched:', messages?.length || 0);
     
     // Get sender profile for each message
     const enhancedMessages: Message[] = [];
     
     for (const msg of messages || []) {
-      const { data: senderProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', msg.sender_id)
-        .single();
-        
-      enhancedMessages.push({
-        ...msg,
-        sender_name: senderProfile && !profileError ? senderProfile.full_name || senderProfile.username : 'User'
-      });
+      try {
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', msg.sender_id)
+          .single();
+          
+        enhancedMessages.push({
+          ...msg,
+          sender_name: senderProfile?.full_name || senderProfile?.username || 'User'
+        });
+      } catch (profileError) {
+        console.warn('⚠️ Error fetching sender profile for message:', msg.id);
+        enhancedMessages.push({
+          ...msg,
+          sender_name: 'User'
+        });
+      }
     }
     
+    console.log('✅ Enhanced messages:', enhancedMessages.length);
     return enhancedMessages;
   } catch (error: any) {
-    console.error('Error fetching messages:', error);
+    console.error('❌ Error fetching messages:', error);
     return [];
   }
 };

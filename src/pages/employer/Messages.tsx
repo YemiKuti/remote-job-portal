@@ -4,7 +4,6 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Send, Loader2 } from 'lucide-react';
 import { 
@@ -38,11 +37,17 @@ const EmployerMessages = () => {
   
   useEffect(() => {
     const loadConversations = async () => {
-      if (!user) return;
+      if (!user?.id) {
+        console.log('⚠️ No user found, skipping conversation load');
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
       try {
+        console.log('🔄 Loading conversations for employer:', user.id);
         const convs = await fetchConversations(user.id, 'employer');
+        console.log('✅ Conversations loaded:', convs.length);
         setConversations(convs);
         
         if (convs.length > 0) {
@@ -54,17 +59,19 @@ const EmployerMessages = () => {
           await markMessagesAsSeen(convs[0].id);
         }
       } catch (error) {
-        console.error('Error loading conversations:', error);
-        toast.error('Failed to load conversations');
+        console.error('❌ Error loading conversations:', error);
+        toast.error('Failed to load conversations. Please check your permissions.');
       }
       
       setLoading(false);
     };
     
     loadConversations();
-  }, [user]);
+  }, [user?.id]);
   
   const handleConversationClick = async (conversation: Conversation) => {
+    if (!user?.id) return;
+    
     setActiveConversation(conversation);
     try {
       const msgs = await fetchMessages(conversation.id);
@@ -82,13 +89,13 @@ const EmployerMessages = () => {
         )
       );
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error('❌ Error loading messages:', error);
       toast.error('Failed to load messages');
     }
   };
   
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && !attachment) || !activeConversation || !user || sending) return;
+    if ((!newMessage.trim() && !attachment) || !activeConversation || !user?.id || sending) return;
     
     setSending(true);
     try {
@@ -118,7 +125,7 @@ const EmployerMessages = () => {
       
       toast.success('Message sent successfully');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       toast.error('Failed to send message');
     }
     setSending(false);
@@ -142,7 +149,22 @@ const EmployerMessages = () => {
     return (
       <DashboardLayout userType="employer">
         <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
-          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading conversations...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user?.id) {
+    return (
+      <DashboardLayout userType="employer">
+        <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+          <div className="text-center">
+            <p className="text-muted-foreground">Please sign in to view messages</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -203,6 +225,7 @@ const EmployerMessages = () => {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground">No conversations found</p>
+                  <p className="text-sm text-muted-foreground mt-2">Conversations will appear here when candidates message you</p>
                 </div>
               )}
             </div>
@@ -319,7 +342,7 @@ const EmployerMessages = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-muted-foreground">Select a conversation</p>
-                  <p className="text-sm text-muted-foreground mt-2">or start a new one</p>
+                  <p className="text-sm text-muted-foreground mt-2">or wait for candidates to message you</p>
                 </div>
               </div>
             )}

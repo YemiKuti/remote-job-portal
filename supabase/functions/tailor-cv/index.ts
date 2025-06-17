@@ -36,12 +36,12 @@ const smartTruncate = (text: string, maxLength: number): string => {
 const formatCandidateInfo = (candidateData: any): string => {
   if (!candidateData) return '';
   
-  let candidateSection = '\n\nCANDIDATE INFORMATION:\n';
+  let candidateSection = '\n\nCANDIDATE INFORMATION (USE THIS EXACT INFORMATION):\n';
   
   // Personal Information
   if (candidateData.personalInfo) {
     if (candidateData.personalInfo.name) {
-      candidateSection += `Name: ${candidateData.personalInfo.name}\n`;
+      candidateSection += `Full Name: ${candidateData.personalInfo.name}\n`;
     }
     if (candidateData.personalInfo.email) {
       candidateSection += `Email: ${candidateData.personalInfo.email}\n`;
@@ -129,7 +129,7 @@ serve(async (req) => {
     const truncatedJobDescription = smartTruncate(jobDescription, 2000);
     const candidateInfo = formatCandidateInfo(candidateData);
 
-    const prompt = `You are a professional resume writer and ATS optimization specialist. Create a tailored, professional resume based on the candidate information and job requirements.
+    const prompt = `You are a professional resume writer and ATS optimization specialist. Create a tailored, professional resume using the EXACT candidate information provided below.
 
 ${candidateInfo}
 
@@ -141,27 +141,27 @@ Position: ${jobTitle || 'Not specified'}
 Company: ${companyName || 'Not specified'}
 Description: ${truncatedJobDescription}
 
-INSTRUCTIONS:
-1. Create a complete, professional resume with proper formatting
-2. Include ALL candidate contact information in a professional header
-3. Write a compelling professional summary tailored to this specific role
-4. Highlight relevant experience that matches the job requirements
-5. Use keywords from the job description naturally throughout
-6. Ensure all sections are complete and professional (Contact, Summary, Experience, Education, Skills)
-7. Maintain truthful information while optimizing presentation
-8. Format for ATS compatibility with clear section headers
-9. Use professional language and industry-appropriate terminology
-10. Ensure the resume tells a cohesive career story
+CRITICAL INSTRUCTIONS:
+1. YOU MUST use the EXACT candidate information provided above - DO NOT use placeholders like [Your Name], [Your Email], etc.
+2. Start with a professional header containing the candidate's actual contact information
+3. Use the candidate's real name, email, phone, and address from the candidate information section
+4. Write a compelling professional summary tailored to this specific role using the candidate's actual experience
+5. Include the candidate's actual work experience, education, and skills
+6. Enhance and tailor the content to match the job requirements while keeping all information truthful
+7. Use keywords from the job description naturally throughout
+8. Ensure all sections are complete and professional
+9. Format for ATS compatibility with clear section headers
+10. DO NOT include any placeholders, brackets, or instructions for the user to fill in information
 
-Generate a complete, formatted resume that includes:
-- Professional header with contact information
-- Tailored professional summary
-- Detailed work experience with achievements
-- Education section
-- Skills section relevant to the role
-- Professional formatting with clear section breaks
+REQUIRED SECTIONS:
+- Professional header with actual contact information (name, email, phone, address, LinkedIn if available)
+- Professional summary tailored to the specific role
+- Work experience with actual companies, dates, and achievements
+- Education with actual degrees and institutions
+- Skills relevant to the role
+- Certifications if applicable
 
-Resume content:`;
+Generate a complete, ready-to-use resume with all actual candidate information filled in:`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -174,7 +174,7 @@ Resume content:`;
         messages: [
           {
             role: 'system',
-            content: 'You are an expert resume writer and ATS optimization specialist. Create professional, complete resumes that include all necessary sections with proper formatting. Always include complete contact information in the header and ensure the resume is ATS-friendly.'
+            content: 'You are an expert resume writer. You MUST use the exact candidate information provided in the prompt. Never use placeholders like [Your Name] or [Your Email]. Always use the actual candidate data provided. Create professional, complete resumes with real information that are ready to use immediately.'
           },
           {
             role: 'user',
@@ -238,11 +238,11 @@ Resume content:`;
           keywordsMatched: matchedKeywords.length,
           totalKeywords: jobKeywords.length,
           recommendations: [
-            'Resume has been optimized with candidate information',
-            'Contact information included in professional header',
-            'Keywords from job description have been naturally integrated',
-            'Content has been structured for ATS compatibility',
-            'Professional summary tailored to the specific role'
+            'Resume includes actual candidate contact information',
+            'Professional summary tailored to the specific role',
+            'Keywords from job description naturally integrated',
+            'Content structured for ATS compatibility',
+            'All candidate information properly included'
           ]
         }
       }),

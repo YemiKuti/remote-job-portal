@@ -90,16 +90,20 @@ export function useProfileManager() {
     fileInputRef.current?.click();
   };
   
-  // Upload the photo
+  // Upload the photo - IMPROVED VERSION
   const handleUploadPhoto = async () => {
     if (!fileInputRef.current?.files?.[0] || !user) return;
     
     setIsUploading(true);
     try {
       const file = fileInputRef.current.files[0];
+      console.log('🔄 Starting photo upload...', { fileName: file.name, fileSize: file.size });
+      
       const avatarUrl = await uploadProfilePhoto(file);
       
       if (avatarUrl) {
+        console.log('✅ Photo uploaded successfully:', avatarUrl);
+        
         // Update local profile data immediately
         setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
         
@@ -109,28 +113,33 @@ export function useProfileManager() {
         });
         
         if (metadataError) {
-          console.error('Error updating user metadata:', metadataError);
+          console.error('⚠️ Error updating user metadata:', metadataError);
+        } else {
+          console.log('✅ User metadata updated successfully');
         }
         
         // Refresh the session to get updated user metadata
         await refreshSession();
         
-        // Force a page reload to ensure all components get the new avatar
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-        
+        // Close dialog and reset form
         setShowPhotoDialog(false);
+        setPhotoPreview(null);
+        
         // Reset the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
         
         toast.success('Profile photo updated successfully');
+        
+        // Force a small delay then reload to ensure all components get the new avatar
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Error uploading photo:', error);
+      toast.error(error.message || 'Failed to upload photo. Please try again.');
     } finally {
       setIsUploading(false);
     }

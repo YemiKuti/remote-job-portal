@@ -228,27 +228,66 @@ export const updateCandidateProfile = async (profileData: any) => {
   }
 };
 
-// Upload profile photo
+// Upload profile photo - FIXED VERSION
 export const uploadProfilePhoto = async (file: File) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const fileName = `${user.id}/${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please select a valid image file (PNG, JPG, JPEG, WebP)');
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('File size must be less than 5MB');
+    }
+
+    // Create unique filename with proper extension
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${user.id}/${Date.now()}-profile.${fileExt}`;
+    
+    console.log('🔄 Uploading file to:', fileName);
+
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-    if (error) throw error;
+    if (uploadError) {
+      console.error('❌ Upload error:', uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
 
+    console.log('✅ File uploaded successfully:', uploadData);
+
+    // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(fileName);
 
+    console.log('🔗 Public URL generated:', publicUrl);
+
+    // Update profile with new avatar URL
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+
+    if (profileError) {
+      console.error('❌ Profile update error:', profileError);
+      // Don't throw here - the upload was successful
+      console.warn('⚠️ Avatar uploaded but profile update failed, continuing...');
+    }
+
     return publicUrl;
   } catch (error: any) {
-    console.error('Error uploading profile photo:', error);
-    throw error;
+    console.error('❌ Error uploading profile photo:', error);
+    throw new Error(error.message || 'Failed to upload profile photo');
   }
 };
 

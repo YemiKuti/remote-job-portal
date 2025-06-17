@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, RotateCcw, Eye, Share2 } from 'lucide-react';
+import { Download, FileText, RotateCcw, Eye, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -45,20 +45,115 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
     }
   };
 
-  const handleDownload = async (format: 'pdf' | 'docx' | 'txt' = 'pdf') => {
+  const generateFileName = (format: string) => {
+    const company = workflowData.companyName?.replace(/[^a-zA-Z0-9]/g, '_') || 'Company';
+    const job = workflowData.jobTitle?.replace(/[^a-zA-Z0-9]/g, '_') || 'Position';
+    return `${job}_${company}_Resume.${format}`;
+  };
+
+  const generateHTMLContent = (content: string) => {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Resume</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .content {
+            white-space: pre-wrap;
+        }
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Resume</h1>
+        <p><strong>Position:</strong> ${workflowData.jobTitle || 'N/A'}</p>
+        <p><strong>Company:</strong> ${workflowData.companyName || 'N/A'}</p>
+    </div>
+    <div class="content">${content.replace(/\n/g, '<br>')}</div>
+</body>
+</html>`;
+  };
+
+  const handleDownload = async (format: 'pdf' | 'docx' | 'txt' | 'html' = 'txt') => {
     if (!tailoredResume) return;
 
     setDownloading(true);
     try {
-      // Create a simple text file download for now
-      // In a real implementation, you'd generate proper PDF/DOCX files
       const content = tailoredResume.tailored_content;
-      const blob = new Blob([content], { type: 'text/plain' });
+      const fileName = generateFileName(format);
+      let blob: Blob;
+      let mimeType: string;
+
+      switch (format) {
+        case 'html':
+          const htmlContent = generateHTMLContent(content);
+          blob = new Blob([htmlContent], { type: 'text/html' });
+          mimeType = 'text/html';
+          break;
+        case 'pdf':
+          // For PDF, we'll create an HTML version that can be printed to PDF
+          const pdfHtmlContent = generateHTMLContent(content);
+          blob = new Blob([pdfHtmlContent], { type: 'text/html' });
+          mimeType = 'text/html';
+          
+          // Open in new window for printing to PDF
+          const printWindow = window.open('', '_blank');
+          if (printWindow) {
+            printWindow.document.write(pdfHtmlContent);
+            printWindow.document.close();
+            setTimeout(() => {
+              printWindow.print();
+            }, 250);
+          }
+          
+          toast.success('Resume opened in new window. Use your browser\'s print function and select "Save as PDF"');
+          return;
+        case 'docx':
+          // For DOCX, we'll create a rich text format that can be opened in Word
+          const docContent = `${workflowData.jobTitle || 'Resume'}\n${workflowData.companyName || ''}\n\n${content}`;
+          blob = new Blob([docContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+        default: // txt
+          blob = new Blob([content], { type: 'text/plain' });
+          mimeType = 'text/plain';
+      }
+
+      // Create download link
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${workflowData.jobTitle || 'tailored-resume'}-${workflowData.companyName || 'resume'}.${format === 'txt' ? 'txt' : format}`;
+      a.download = fileName;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -70,7 +165,9 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
         .update({ download_count: (tailoredResume.download_count || 0) + 1 })
         .eq('id', tailoredResume.id);
 
-      toast.success(`Resume downloaded as ${format.toUpperCase()}`);
+      if (format !== 'pdf') {
+        toast.success(`Resume downloaded as ${format.toUpperCase()}`);
+      }
     } catch (error) {
       console.error('Error downloading resume:', error);
       toast.error('Failed to download resume');
@@ -139,30 +236,71 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
           </div>
 
           {/* Download Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button onClick={() => handleDownload('pdf')} disabled={downloading} className="h-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button 
+              onClick={() => handleDownload('pdf')} 
+              disabled={downloading} 
+              className="h-16"
+            >
               <div className="text-center">
                 <Download className="h-5 w-5 mx-auto mb-1" />
                 <div className="text-sm">Download PDF</div>
-                <div className="text-xs opacity-75">Recommended</div>
+                <div className="text-xs opacity-75">Print to PDF</div>
               </div>
             </Button>
             
-            <Button onClick={() => handleDownload('docx')} disabled={downloading} variant="outline" className="h-16">
+            <Button 
+              onClick={() => handleDownload('html')} 
+              disabled={downloading} 
+              variant="outline" 
+              className="h-16"
+            >
+              <div className="text-center">
+                <Download className="h-5 w-5 mx-auto mb-1" />
+                <div className="text-sm">Download HTML</div>
+                <div className="text-xs opacity-75">Web format</div>
+              </div>
+            </Button>
+            
+            <Button 
+              onClick={() => handleDownload('docx')} 
+              disabled={downloading} 
+              variant="outline" 
+              className="h-16"
+            >
               <div className="text-center">
                 <Download className="h-5 w-5 mx-auto mb-1" />
                 <div className="text-sm">Download DOCX</div>
-                <div className="text-xs opacity-75">Editable</div>
+                <div className="text-xs opacity-75">Word format</div>
               </div>
             </Button>
             
-            <Button onClick={() => handleDownload('txt')} disabled={downloading} variant="outline" className="h-16">
+            <Button 
+              onClick={() => handleDownload('txt')} 
+              disabled={downloading} 
+              variant="outline" 
+              className="h-16"
+            >
               <div className="text-center">
                 <Download className="h-5 w-5 mx-auto mb-1" />
                 <div className="text-sm">Download TXT</div>
                 <div className="text-xs opacity-75">Plain text</div>
               </div>
             </Button>
+          </div>
+
+          {/* PDF Download Instructions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-blue-900 mb-1">PDF Download Instructions</h4>
+                <p className="text-sm text-blue-800">
+                  For PDF format: Click "Download PDF" → A new window will open → Use Ctrl+P (or Cmd+P) → 
+                  Select "Save as PDF" as the destination → Save your resume as PDF.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Additional Actions */}
@@ -205,6 +343,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
             <h4 className="font-medium text-blue-900 mb-2">💡 Next Steps:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Review the tailored content before submitting your application</li>
+              <li>• For best results, save as PDF using your browser's print function</li>
               <li>• Consider customizing the cover letter for this specific role</li>
               <li>• Save this version for future applications to similar positions</li>
               <li>• Track your applications to see which tailored versions perform best</li>

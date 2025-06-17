@@ -19,7 +19,7 @@ interface StatusUpdateButtonProps {
   currentStatus: string;
   targetStatus: 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
   applicationId: string;
-  onUpdateStatus: (applicationId: string, newStatus: string) => Promise<void>;
+  onUpdateStatus: (applicationId: string, newStatus: string, notes?: string) => void;
   candidateName: string;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive' | 'secondary';

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -84,7 +85,7 @@ interface EnhancedApplicationDetailModalProps {
   application: Application | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateStatus: (applicationId: string, newStatus: string, notes?: string) => void;
+  onUpdateStatus: (applicationId: string, newStatus: string, notes?: string) => Promise<void>;
 }
 
 export const EnhancedApplicationDetailModal = ({
@@ -167,10 +168,15 @@ export const EnhancedApplicationDetailModal = ({
 
   const handleStatusUpdate = async () => {
     if (newStatus && newStatus !== application.status) {
-      onUpdateStatus(application.id, newStatus, statusNotes);
+      await onUpdateStatus(application.id, newStatus, statusNotes);
       setNewStatus('');
       setStatusNotes('');
     }
+  };
+
+  // Wrapper function to handle the StatusUpdateButton's async calls
+  const handleStatusUpdateWrapper = async (applicationId: string, newStatus: string) => {
+    return onUpdateStatus(applicationId, newStatus);
   };
 
   return (
@@ -681,7 +687,7 @@ export const EnhancedApplicationDetailModal = ({
                         currentStatus={application.status}
                         targetStatus="shortlisted"
                         applicationId={application.id}
-                        onUpdateStatus={onUpdateStatus}
+                        onUpdateStatus={handleStatusUpdateWrapper}
                         candidateName={getCandidateDisplayName(application.candidate)}
                         className="justify-start"
                       />
@@ -689,7 +695,7 @@ export const EnhancedApplicationDetailModal = ({
                         currentStatus={application.status}
                         targetStatus="interviewed"
                         applicationId={application.id}
-                        onUpdateStatus={onUpdateStatus}
+                        onUpdateStatus={handleStatusUpdateWrapper}
                         candidateName={getCandidateDisplayName(application.candidate)}
                         className="justify-start"
                       />

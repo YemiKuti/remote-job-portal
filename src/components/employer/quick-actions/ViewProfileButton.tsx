@@ -25,7 +25,8 @@ export const ViewProfileButton: React.FC<ViewProfileButtonProps> = ({
       return;
     }
     
-    window.open(`/profile/${candidateId}`, '_blank');
+    // Open the candidate's public profile page in a new tab
+    window.open(`/user/${candidateId}`, '_blank');
   };
 
   return (

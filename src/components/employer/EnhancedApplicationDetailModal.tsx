@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -178,7 +177,7 @@ export const EnhancedApplicationDetailModal = ({
 
   const handleViewProfile = () => {
     if (application.candidate?.id) {
-      window.open(`/users/${application.candidate.id}`, '_blank');
+      window.open(`/profile/${application.candidate.id}`, '_blank');
     }
   };
 

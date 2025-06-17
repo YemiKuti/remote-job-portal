@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Brain, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Brain, ArrowLeft, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -23,6 +23,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
   const [status, setStatus] = useState<'preparing' | 'analyzing' | 'generating' | 'complete' | 'error'>('preparing');
   const [statusMessage, setStatusMessage] = useState('Preparing your resume for analysis...');
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     startAnalysis();
@@ -33,6 +34,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
       setStatus('preparing');
       setProgress(10);
       setStatusMessage('Reading your resume...');
+      setError(null);
 
       // First get the resume content
       const { data: resumeData, error: downloadError } = await supabase.storage
@@ -45,17 +47,32 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
       setStatus('analyzing');
       setStatusMessage('AI is analyzing your resume and the job description...');
 
+      // Get resume content
+      const resumeContent = await resumeData.text();
+
+      setProgress(50);
+      setStatusMessage('Tailoring your resume with AI...');
+
       // Call the tailor-cv edge function
       const { data, error } = await supabase.functions.invoke('tailor-cv', {
         body: {
-          resumeContent: await resumeData.text(),
+          resumeContent,
           jobDescription: workflowData.jobDescription,
           jobTitle: workflowData.jobTitle,
           companyName: workflowData.companyName
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        
+        // Handle specific error cases
+        if (error.message?.includes('rate_limit_exceeded') || error.message?.includes('busy')) {
+          throw new Error('AI service is currently busy. Please try again in a few moments.');
+        }
+        
+        throw error;
+      }
 
       setProgress(75);
       setStatus('generating');
@@ -92,9 +109,20 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
       console.error('Error during analysis:', error);
       setStatus('error');
       setError(error.message || 'Failed to analyze resume');
-      setStatusMessage('Analysis failed. Please try again.');
-      toast.error('Failed to analyze resume: ' + (error.message || 'Unknown error'));
+      setStatusMessage('Analysis failed. You can try again.');
+      
+      // Show user-friendly error messages
+      if (error.message?.includes('busy') || error.message?.includes('rate_limit')) {
+        toast.error('AI service is currently busy. Please try again in a few moments.');
+      } else {
+        toast.error('Failed to analyze resume: ' + (error.message || 'Unknown error'));
+      }
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    startAnalysis();
   };
 
   const getStatusIcon = () => {
@@ -105,17 +133,6 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
         return <AlertCircle className="h-8 w-8 text-red-500" />;
       default:
         return <Brain className="h-8 w-8 text-blue-500 animate-pulse" />;
-    }
-  };
-
-  const getProgressColor = () => {
-    switch (status) {
-      case 'complete':
-        return 'bg-green-500';
-      case 'error':
-        return 'bg-red-500';
-      default:
-        return 'bg-blue-500';
     }
   };
 
@@ -167,8 +184,9 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
             <h4 className="font-medium text-red-900 mb-2">❌ Analysis Failed</h4>
             <p className="text-sm text-red-800 mb-3">{error}</p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={startAnalysis}>
-                Try Again
+              <Button size="sm" onClick={handleRetry} disabled={retryCount >= 3}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {retryCount >= 3 ? 'Max retries reached' : 'Try Again'}
               </Button>
               <Button size="sm" variant="outline" onClick={onBack}>
                 Go Back

@@ -7,6 +7,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to truncate text while preserving important sections
+const smartTruncate = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text;
+  
+  // Try to preserve key sections
+  const lines = text.split('\n');
+  const importantSections = [];
+  let currentLength = 0;
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.length === 0) continue;
+    
+    // Prioritize lines that look like headers or key information
+    const isImportant = /^(summary|objective|experience|education|skills|work|employment|achievements?|projects?|certifications?)/i.test(trimmedLine) ||
+                       trimmedLine.length < 100; // Short lines are likely headers
+    
+    if (isImportant || currentLength + line.length < maxLength) {
+      importantSections.push(line);
+      currentLength += line.length + 1;
+    }
+    
+    if (currentLength >= maxLength) break;
+  }
+  
+  return importantSections.join('\n');
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -36,33 +64,28 @@ serve(async (req) => {
       )
     }
 
-    const prompt = `You are a professional resume writer and ATS optimization expert. Your task is to tailor a resume for a specific job posting to maximize ATS compatibility and recruiter appeal.
+    // Truncate content to fit within token limits (approximately 3000 chars for resume, 2000 for job description)
+    const truncatedResume = smartTruncate(resumeContent, 3000);
+    const truncatedJobDescription = smartTruncate(jobDescription, 2000);
 
-ORIGINAL RESUME:
-${resumeContent}
+    const prompt = `You are a professional resume writer. Tailor this resume for the job posting below.
+
+RESUME:
+${truncatedResume}
 
 JOB POSTING:
 Position: ${jobTitle || 'Not specified'}
 Company: ${companyName || 'Not specified'}
-Description: ${jobDescription}
+Description: ${truncatedJobDescription}
 
 INSTRUCTIONS:
-1. Analyze the job requirements and extract key skills, technologies, and qualifications
-2. Tailor the resume to highlight relevant experience and skills that match the job
-3. Optimize keywords for ATS systems while maintaining natural language
-4. Restructure content to emphasize most relevant experience first
-5. Ensure the resume remains truthful and accurate to the original content
-6. Format for maximum ATS compatibility (clear sections, standard headings)
-7. Keep the same overall length and structure but optimize content
+1. Keep the same format and structure as the original resume
+2. Highlight relevant skills and experience that match the job requirements
+3. Use keywords from the job description naturally
+4. Maintain all truthful information
+5. Focus on the most relevant sections for this role
 
-REQUIREMENTS:
-- Maintain professional formatting
-- Use standard section headers (Summary, Experience, Education, Skills, etc.)
-- Include relevant keywords from the job description naturally
-- Emphasize quantifiable achievements
-- Ensure ATS-friendly format (no complex formatting, tables, or graphics)
-
-Please provide the tailored resume content that would be most effective for this specific position.`
+Return the tailored resume content:`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -71,18 +94,18 @@ Please provide the tailored resume content that would be most effective for this
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert resume writer and ATS optimization specialist. Provide clear, professional, and ATS-optimized resume content.'
+            content: 'You are an expert resume writer and ATS optimization specialist. Provide clear, professional, and ATS-optimized resume content that maintains the original structure.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 3000,
+        max_tokens: 2000,
         temperature: 0.3,
       }),
     })
@@ -90,6 +113,18 @@ Please provide the tailored resume content that would be most effective for this
     if (!response.ok) {
       const error = await response.json()
       console.error('OpenAI API error:', error)
+      
+      // Provide more specific error messages
+      if (error.error?.code === 'rate_limit_exceeded') {
+        return new Response(
+          JSON.stringify({ error: 'AI service is currently busy. Please try again in a few moments.' }),
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to process resume with AI' }),
         { 
@@ -113,7 +148,7 @@ Please provide the tailored resume content that would be most effective for this
     }
 
     // Generate a simple score based on keyword matching
-    const jobKeywords = jobDescription.toLowerCase().match(/\b\w{3,}\b/g) || []
+    const jobKeywords = truncatedJobDescription.toLowerCase().match(/\b\w{3,}\b/g) || []
     const resumeKeywords = tailoredResume.toLowerCase().match(/\b\w{3,}\b/g) || []
     const matchedKeywords = jobKeywords.filter(keyword => 
       resumeKeywords.includes(keyword)

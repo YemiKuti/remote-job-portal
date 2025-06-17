@@ -52,19 +52,42 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
   };
 
   const formatResumeContent = (content: string) => {
-    // Split content into sections and format them properly
-    const lines = content.split('\n');
+    // Clean up the content and remove formatting artifacts
+    let cleanContent = content
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+      .replace(/^\s*---\s*$/gm, '') // Remove separator lines
+      .replace(/\[.*?\]/g, '') // Remove any remaining placeholders
+      .trim();
+
+    // Split into lines and process
+    const lines = cleanContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
     let formattedSections = [];
     let currentSection = '';
     let currentContent = [];
+    let isFirstSection = true;
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       
-      // Check if this is a section header (contains common resume section keywords)
-      const sectionKeywords = /^(SUMMARY|OBJECTIVE|EXPERIENCE|EDUCATION|SKILLS|WORK EXPERIENCE|EMPLOYMENT|ACHIEVEMENTS?|PROJECTS?|CERTIFICATIONS?|CONTACT|PROFESSIONAL SUMMARY|TECHNICAL SKILLS|WORK HISTORY|CAREER OBJECTIVE)/i;
+      // Check if this is a section header
+      const sectionKeywords = /^(PROFESSIONAL SUMMARY|SUMMARY|OBJECTIVE|PROFESSIONAL EXPERIENCE|EXPERIENCE|EDUCATION|SKILLS|WORK EXPERIENCE|EMPLOYMENT|ACHIEVEMENTS?|PROJECTS?|CERTIFICATIONS?|CONTACT|TECHNICAL SKILLS|WORK HISTORY|CAREER OBJECTIVE)$/i;
       
-      if (sectionKeywords.test(trimmedLine) && trimmedLine.length < 50) {
+      // Also check if it's the contact information (first few lines)
+      if (isFirstSection && i < 6 && (line.includes('@') || line.includes('(') || line.includes('St,') || line.includes('Ave,') || line.includes('linkedin'))) {
+        if (currentSection !== 'CONTACT') {
+          if (currentSection && currentContent.length > 0) {
+            formattedSections.push({
+              title: currentSection,
+              content: currentContent.join('\n')
+            });
+          }
+          currentSection = 'CONTACT';
+          currentContent = [];
+        }
+        currentContent.push(line);
+      } else if (sectionKeywords.test(line)) {
+        isFirstSection = false;
         // Save previous section if exists
         if (currentSection && currentContent.length > 0) {
           formattedSections.push({
@@ -74,12 +97,11 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
         }
         
         // Start new section
-        currentSection = trimmedLine.toUpperCase();
+        currentSection = line.toUpperCase();
         currentContent = [];
-      } else if (trimmedLine.length > 0) {
+      } else if (line.length > 0) {
+        isFirstSection = false;
         currentContent.push(line);
-      } else if (currentContent.length > 0) {
-        currentContent.push(''); // Preserve empty lines within content
       }
     }
     
@@ -97,12 +119,71 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
   const generateHTMLContent = (content: string) => {
     const sections = formatResumeContent(content);
     
-    const sectionsHTML = sections.map(section => `
-      <div class="section">
-        <h2 class="section-title">${section.title}</h2>
-        <div class="section-content">${section.content.replace(/\n/g, '<br>')}</div>
-      </div>
-    `).join('');
+    // Find contact section
+    const contactSection = sections.find(s => s.title === 'CONTACT');
+    const otherSections = sections.filter(s => s.title !== 'CONTACT');
+    
+    let headerHTML = '';
+    if (contactSection) {
+      const contactLines = contactSection.content.split('\n');
+      const name = contactLines[0] || 'Professional Resume';
+      const contactInfo = contactLines.slice(1).join(' • ');
+      
+      headerHTML = `
+        <div class="header">
+          <h1>${name}</h1>
+          <div class="contact-info">${contactInfo}</div>
+          <div class="job-info">
+            ${workflowData.jobTitle ? `Position: ${workflowData.jobTitle}` : ''}
+            ${workflowData.companyName ? ` • Company: ${workflowData.companyName}` : ''}
+            • Generated: ${new Date().toLocaleDateString()}
+          </div>
+        </div>
+      `;
+    } else {
+      headerHTML = `
+        <div class="header">
+          <h1>Professional Resume</h1>
+          <div class="job-info">
+            ${workflowData.jobTitle ? `Position: ${workflowData.jobTitle}` : ''}
+            ${workflowData.companyName ? ` • Company: ${workflowData.companyName}` : ''}
+            • Generated: ${new Date().toLocaleDateString()}
+          </div>
+        </div>
+      `;
+    }
+
+    const sectionsHTML = otherSections.map(section => {
+      const formattedContent = section.content
+        .split('\n')
+        .map(line => {
+          // Format job titles and company names
+          if (line.match(/^[A-Z][a-zA-Z\s]+$/)) {
+            return `<div class="job-title">${line}</div>`;
+          }
+          // Format company and date lines
+          if (line.includes(',') && (line.includes('CA') || line.includes('NY') || line.includes('–') || line.includes('-'))) {
+            return `<div class="company-info">${line}</div>`;
+          }
+          // Format bullet points
+          if (line.startsWith('- ')) {
+            return `<div class="bullet-point">${line.substring(2)}</div>`;
+          }
+          // Format education entries
+          if (line.includes('University') || line.includes('College') || line.includes('Graduated:')) {
+            return `<div class="education-item">${line}</div>`;
+          }
+          return `<div class="content-line">${line}</div>`;
+        })
+        .join('');
+
+      return `
+        <div class="section">
+          <h2 class="section-title">${section.title}</h2>
+          <div class="section-content">${formattedContent}</div>
+        </div>
+      `;
+    }).join('');
 
     return `
 <!DOCTYPE html>
@@ -119,8 +200,8 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
         }
         
         body {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            line-height: 1.6;
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.4;
             color: #333;
             max-width: 8.5in;
             margin: 0 auto;
@@ -137,18 +218,24 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
         }
         
         .header h1 {
-            font-size: 24pt;
+            font-size: 28pt;
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 8px;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+        }
+        
+        .contact-info {
+            font-size: 11pt;
+            color: #555;
+            margin-bottom: 8px;
+            line-height: 1.2;
         }
         
         .job-info {
-            font-size: 12pt;
-            color: #7f8c8d;
+            font-size: 10pt;
+            color: #777;
             font-style: italic;
-            margin-bottom: 5px;
         }
         
         .section {
@@ -161,10 +248,10 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
             font-weight: bold;
             color: #2c3e50;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             border-bottom: 1px solid #bdc3c7;
             padding-bottom: 5px;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             position: relative;
         }
         
@@ -173,20 +260,63 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
             position: absolute;
             bottom: -1px;
             left: 0;
-            width: 40px;
+            width: 60px;
             height: 2px;
             background-color: #3498db;
         }
         
         .section-content {
-            font-size: 11pt;
-            line-height: 1.5;
-            text-align: justify;
-            margin-left: 10px;
+            margin-left: 5px;
         }
         
-        .section-content br + br {
-            line-height: 2;
+        .job-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 15px;
+            margin-bottom: 3px;
+        }
+        
+        .company-info {
+            font-size: 10pt;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        
+        .bullet-point {
+            font-size: 11pt;
+            margin-bottom: 4px;
+            padding-left: 15px;
+            position: relative;
+            text-align: justify;
+        }
+        
+        .bullet-point::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .education-item {
+            font-size: 11pt;
+            margin-bottom: 5px;
+            font-weight: ${section => section.includes('Bachelor') || section.includes('Master') ? 'bold' : 'normal'};
+        }
+        
+        .content-line {
+            font-size: 11pt;
+            margin-bottom: 5px;
+            text-align: justify;
+        }
+        
+        /* Skills section special formatting */
+        .section:has(.section-title:contains("SKILLS")) .content-line {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 8px;
         }
         
         /* Print-specific styles */
@@ -196,13 +326,13 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
                 font-size: 10pt;
             }
             
+            .header h1 {
+                font-size: 24pt;
+            }
+            
             .section {
                 page-break-inside: avoid;
                 margin-bottom: 20px;
-            }
-            
-            .header {
-                margin-bottom: 25px;
             }
             
             .section-title {
@@ -218,7 +348,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
             }
             
             .header h1 {
-                font-size: 20pt;
+                font-size: 22pt;
             }
             
             .section-title {
@@ -228,15 +358,10 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Professional Resume</h1>
-        ${workflowData.jobTitle ? `<div class="job-info">Tailored for: ${workflowData.jobTitle}</div>` : ''}
-        ${workflowData.companyName ? `<div class="job-info">Company: ${workflowData.companyName}</div>` : ''}
-        <div class="job-info">Generated on: ${new Date().toLocaleDateString()}</div>
-    </div>
+    ${headerHTML}
     
     <div class="content">
-        ${sectionsHTML || `<div class="section"><div class="section-content">${content.replace(/\n/g, '<br>')}</div></div>`}
+        ${sectionsHTML}
     </div>
 </body>
 </html>`;
@@ -245,22 +370,41 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
   const generateFormattedText = (content: string) => {
     const sections = formatResumeContent(content);
     
-    let formattedText = `PROFESSIONAL RESUME\n`;
-    formattedText += `${'='.repeat(50)}\n\n`;
+    // Find contact section
+    const contactSection = sections.find(s => s.title === 'CONTACT');
+    const otherSections = sections.filter(s => s.title !== 'CONTACT');
     
+    let formattedText = '';
+    
+    if (contactSection) {
+      const contactLines = contactSection.content.split('\n');
+      formattedText += `${contactLines[0]}\n`;
+      formattedText += `${contactLines.slice(1).join(' • ')}\n\n`;
+    }
+    
+    formattedText += `${'='.repeat(80)}\n`;
     if (workflowData.jobTitle) {
-      formattedText += `Position: ${workflowData.jobTitle}\n`;
+      formattedText += `POSITION: ${workflowData.jobTitle.toUpperCase()}\n`;
     }
     if (workflowData.companyName) {
-      formattedText += `Company: ${workflowData.companyName}\n`;
+      formattedText += `COMPANY: ${workflowData.companyName.toUpperCase()}\n`;
     }
-    formattedText += `Generated: ${new Date().toLocaleDateString()}\n\n`;
-    formattedText += `${'='.repeat(50)}\n\n`;
+    formattedText += `GENERATED: ${new Date().toLocaleDateString()}\n`;
+    formattedText += `${'='.repeat(80)}\n\n`;
 
-    sections.forEach(section => {
+    otherSections.forEach(section => {
       formattedText += `${section.title}\n`;
-      formattedText += `${'-'.repeat(section.title.length)}\n`;
-      formattedText += `${section.content}\n\n`;
+      formattedText += `${'-'.repeat(section.title.length)}\n\n`;
+      
+      const lines = section.content.split('\n');
+      lines.forEach(line => {
+        if (line.startsWith('- ')) {
+          formattedText += `  • ${line.substring(2)}\n`;
+        } else {
+          formattedText += `${line}\n`;
+        }
+      });
+      formattedText += '\n';
     });
 
     return formattedText;
@@ -466,12 +610,12 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
               <div className="flex items-start gap-3">
                 <FileText className="h-5 w-5 text-amber-600 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-amber-900 mb-1">Format Benefits</h4>
+                  <h4 className="font-medium text-amber-900 mb-1">Enhanced Formatting</h4>
                   <ul className="text-sm text-amber-800 list-disc ml-4">
-                    <li>Professional typography and spacing</li>
-                    <li>Structured sections with clear headings</li>
-                    <li>ATS-friendly formatting</li>
-                    <li>Print-optimized layout</li>
+                    <li>Professional typography with proper hierarchy</li>
+                    <li>Clean contact information header</li>
+                    <li>Structured sections with visual separators</li>
+                    <li>Optimized spacing and bullet points</li>
                   </ul>
                 </div>
               </div>
@@ -500,7 +644,7 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
               <CardHeader>
                 <CardTitle>Resume Preview</CardTitle>
                 <CardDescription>
-                  Preview of your formatted resume content
+                  Preview of your professionally formatted resume
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -518,13 +662,13 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
 
           {/* Tips */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Next Steps:</h4>
+            <h4 className="font-medium text-blue-900 mb-2">💡 Enhanced Formatting Features:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Download as PDF for the best formatting and ATS compatibility</li>
-              <li>• Review all sections to ensure accuracy before submitting</li>
-              <li>• Save multiple formats for different application portals</li>
-              <li>• Consider creating variations for different types of roles</li>
-              <li>• Track which versions perform best for future optimization</li>
+              <li>• Professional header with clean contact information layout</li>
+              <li>• Improved typography with proper font hierarchy and spacing</li>
+              <li>• Visual section separators with accent colors</li>
+              <li>• Optimized bullet points and content alignment</li>
+              <li>• ATS-friendly structure with enhanced readability</li>
             </ul>
           </div>
         </CardContent>

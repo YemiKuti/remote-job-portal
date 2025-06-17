@@ -305,16 +305,6 @@ const JobDetail = () => {
                     {getApplyButtonContent()}
                   </Button>
 
-                  <CVTailoringDialog
-                    job={job}
-                    trigger={
-                      <Button variant="outline" className="w-full flex items-center">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Tailor My CV
-                      </Button>
-                    }
-                  />
-
                   <SaveJobButton jobId={job.id} />
                 </div>
 

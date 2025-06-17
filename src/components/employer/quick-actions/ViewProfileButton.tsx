@@ -20,13 +20,34 @@ export const ViewProfileButton: React.FC<ViewProfileButtonProps> = ({
   className = ''
 }) => {
   const handleViewProfile = () => {
+    console.log('ViewProfileButton: Attempting to view profile for candidateId:', candidateId);
+    
     if (!candidateId) {
+      console.error('ViewProfileButton: No candidate ID provided');
       toast.error('Candidate profile not available');
       return;
     }
     
-    // Open the candidate's public profile page in a new tab
-    window.open(`/user/${candidateId}`, '_blank');
+    // Validate that candidateId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(candidateId)) {
+      console.error('ViewProfileButton: Invalid candidate ID format:', candidateId);
+      toast.error('Invalid candidate profile ID');
+      return;
+    }
+    
+    try {
+      const profileUrl = `/user/${candidateId}`;
+      console.log('ViewProfileButton: Opening profile URL:', profileUrl);
+      
+      // Open the candidate's public profile page in a new tab
+      window.open(profileUrl, '_blank');
+      
+      toast.success(`Opening ${candidateName}'s profile`);
+    } catch (error) {
+      console.error('ViewProfileButton: Error opening profile:', error);
+      toast.error('Failed to open candidate profile');
+    }
   };
 
   return (

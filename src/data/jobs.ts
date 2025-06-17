@@ -1,3 +1,4 @@
+
 import { Job } from "../types";
 
 export const mockJobs: Job[] = [
@@ -25,6 +26,7 @@ export const mockJobs: Job[] = [
     applicationValue: undefined,
     status: "active" as const,
     isFeatured: true,
+    sponsored: true,
     views: 234,
     applications: 12,
     employerId: "emp1"
@@ -53,6 +55,7 @@ export const mockJobs: Job[] = [
     applicationValue: "https://startupkenyacareers.com/apply/backend-engineer",
     status: "active" as const,
     isFeatured: false,
+    sponsored: false,
     views: 189,
     applications: 8,
     employerId: "emp2"
@@ -81,6 +84,7 @@ export const mockJobs: Job[] = [
     applicationValue: "careers@innovatesa.com",
     status: "active" as const,
     isFeatured: true,
+    sponsored: true,
     views: 156,
     applications: 15,
     employerId: "emp3"
@@ -109,6 +113,7 @@ export const mockJobs: Job[] = [
     applicationValue: "+233-24-123-4567",
     status: "active" as const,
     isFeatured: false,
+    sponsored: false,
     views: 203,
     applications: 9,
     employerId: "emp4"
@@ -137,6 +142,7 @@ export const mockJobs: Job[] = [
     applicationValue: undefined,
     status: "active" as const,
     isFeatured: true,
+    sponsored: true,
     views: 178,
     applications: 11,
     employerId: "emp5"
@@ -165,6 +171,7 @@ export const mockJobs: Job[] = [
     applicationValue: "https://designstudio.ma/careers/ux-designer",
     status: "active" as const,
     isFeatured: false,
+    sponsored: false,
     views: 145,
     applications: 7,
     employerId: "emp6"
@@ -193,6 +200,7 @@ export const mockJobs: Job[] = [
     applicationValue: "jobs@techsolutions.tn",
     status: "active" as const,
     isFeatured: false,
+    sponsored: false,
     views: 167,
     applications: 13,
     employerId: "emp7"

@@ -1,4 +1,3 @@
-
 import { Job } from '../types';
 
 interface XMLJob {
@@ -70,11 +69,11 @@ export const parseXMLJobs = (xmlString: string): Job[] => {
           applicationValue: undefined,
           status: 'active' as const,
           isFeatured: false,
+          sponsored: false,
           views: 0,
           applications: 0,
           employerId: `xml-employer-${index}`,
-          plugins: job.plugins || []
-        } as Job;
+        };
         
         jobs.push(parsedJob);
       }

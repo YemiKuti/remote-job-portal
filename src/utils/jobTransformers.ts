@@ -28,6 +28,7 @@ export const transformDatabaseJobToFrontendJob = (dbJob: any): Job => {
     applicationDeadline: dbJob.application_deadline,
     status: dbJob.status as 'active' | 'expired' | 'filled' | 'draft',
     isFeatured: dbJob.is_featured || false,
+    sponsored: dbJob.sponsored || false,
     views: dbJob.views || 0,
     applications: dbJob.applications || 0,
     employerId: dbJob.employer_id,

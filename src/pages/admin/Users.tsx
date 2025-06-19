@@ -40,14 +40,22 @@ const UsersAdmin = () => {
   });
 
   const handleEditUser = (user: AdminUser) => {
+    console.log('Edit user clicked:', user);
     setEditingUser(user);
     setEditDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const handleDeleteConfirm = async (userId: string, userEmail: string) => {
+    const confirmMessage = `Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`;
+    if (window.confirm(confirmMessage)) {
+      console.log('Delete user confirmed:', userId);
       await handleDeleteUser(userId);
     }
+  };
+
+  const handleEditDialogClose = () => {
+    setEditDialogOpen(false);
+    setEditingUser(null);
   };
 
   const UserTable = ({ users }: { users: typeof filteredUsers }) => (
@@ -93,20 +101,24 @@ const UsersAdmin = () => {
             </TableCell>
             <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
             <TableCell className="text-right">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => handleEditUser(user)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => handleDeleteConfirm(user.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleEditUser(user)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleDeleteConfirm(user.id, user.email)}
+                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </TableCell>
           </TableRow>
         ))}
@@ -208,7 +220,7 @@ const UsersAdmin = () => {
         <EditUserDialog
           user={editingUser}
           open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
+          onOpenChange={handleEditDialogClose}
           onUpdateUser={handleUpdateUser}
         />
       </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -13,7 +12,6 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MessageCandidateButton } from './quick-actions/MessageCandidateButton';
 import { ResumeDownloadButton } from './quick-actions/ResumeDownloadButton';
@@ -168,9 +166,8 @@ export const EnhancedApplicationDetailModal = ({
 
   const handleStatusUpdate = async () => {
     if (newStatus && newStatus !== application.status) {
-      await onUpdateStatus(application.id, newStatus, statusNotes);
+      await onUpdateStatus(application.id, newStatus);
       setNewStatus('');
-      setStatusNotes('');
     }
   };
 
@@ -637,17 +634,6 @@ export const EnhancedApplicationDetailModal = ({
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">Status Update Notes (Optional)</Label>
-                      <Textarea
-                        id="notes"
-                        placeholder="Add any notes about this status change..."
-                        value={statusNotes}
-                        onChange={(e) => setStatusNotes(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-
                     <div className="flex gap-2">
                       <Button 
                         onClick={handleStatusUpdate}
@@ -662,7 +648,6 @@ export const EnhancedApplicationDetailModal = ({
                           variant="outline"
                           onClick={() => {
                             setNewStatus('rejected');
-                            setStatusNotes('Application did not meet requirements');
                           }}
                           className="flex items-center gap-2"
                         >

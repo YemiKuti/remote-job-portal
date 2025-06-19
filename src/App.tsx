@@ -49,7 +49,7 @@ import CandidateSettings from './pages/candidate/Settings';
 import TailoredResumes from './pages/candidate/TailoredResumes';
 
 import { AuthProvider } from './components/AuthProvider';
-import AdminRoute from './components/AdminRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { ProtectedEmployerRoute } from './components/employer/ProtectedEmployerRoute';
 
 const queryClient = new QueryClient();

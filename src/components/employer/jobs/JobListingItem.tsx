@@ -68,7 +68,7 @@ export const JobListingItem = ({
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => navigate(`/employer/edit-job/${job.id}`)}
+          onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
         >
           Edit
         </Button>

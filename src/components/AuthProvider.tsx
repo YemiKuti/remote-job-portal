@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +22,19 @@ export const useAuth = () => {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+};
+
+// Function to check if current URL contains recovery tokens
+const isRecoveryFlow = () => {
+  const hash = window.location.hash.substring(1);
+  const search = window.location.search.substring(1);
+  const hashParams = new URLSearchParams(hash);
+  const searchParams = new URLSearchParams(search);
+  
+  const type = hashParams.get('type') || searchParams.get('type');
+  const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+  
+  return type === 'recovery' && !!accessToken;
 };
 
 // Function to ensure user profile exists (deferred, non-blocking)
@@ -165,6 +177,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (event === 'SIGNED_IN' && validatedSession?.user) {
             console.log('🔐 AuthProvider: User signed in successfully');
+            
+            // Check if this is a recovery flow - if so, don't auto-redirect
+            if (isRecoveryFlow()) {
+              console.log('🔐 AuthProvider: Recovery flow detected, skipping auto-redirect');
+              // Defer profile creation to avoid blocking
+              setTimeout(() => {
+                ensureUserProfileDeferred(validatedSession.user);
+              }, 100);
+              return;
+            }
+            
+            // Normal sign-in flow - redirect based on role
+            const userRole = validatedSession.user.user_metadata?.role;
+            console.log('🔐 AuthProvider: Normal sign-in, redirecting based on role:', userRole);
+            
+            // Only redirect if we're on auth pages
+            const currentPath = window.location.pathname;
+            if (currentPath === '/auth' || currentPath === '/signin' || currentPath === '/admin-signin') {
+              setTimeout(() => {
+                if (userRole === 'admin') {
+                  navigate('/admin');
+                } else if (userRole === 'employer') {
+                  navigate('/employer');
+                } else if (userRole === 'candidate') {
+                  navigate('/candidate');
+                } else {
+                  navigate('/');
+                }
+              }, 100);
+            }
+            
             // Defer profile creation to avoid blocking
             setTimeout(() => {
               ensureUserProfileDeferred(validatedSession.user);
@@ -227,7 +270,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authSubscription.unsubscribe();
       }
     };
-  }, []);
+  }, [navigate]);
 
   const loginWithEmail = async (email: string, redirect_to?: string) => {
     setIsLoading(true);

@@ -36,16 +36,21 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
-    // Check if this is a password recovery flow and redirect to reset-password page
-    const urlParams = new URLSearchParams(location.search);
+    // Check if this is a password recovery flow and redirect to reset-password page immediately
     const hash = window.location.hash.substring(1);
+    const search = window.location.search;
     const hashParams = new URLSearchParams(hash);
+    const searchParams = new URLSearchParams(search);
     
-    const type = urlParams.get('type') || hashParams.get('type');
+    const type = hashParams.get('type') || searchParams.get('type');
+    const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
     
-    if (type === 'recovery') {
-      console.log('🔐 Recovery detected in Auth component, redirecting to reset-password');
-      navigate(`/reset-password${location.search}${location.hash}`);
+    console.log('🔐 Auth component: Checking for recovery flow', { type, hasAccessToken: !!accessToken });
+    
+    if (type === 'recovery' && accessToken) {
+      console.log('🔐 Auth component: Recovery flow detected, redirecting to reset-password immediately');
+      // Use replace to avoid adding to history stack
+      navigate(`/reset-password${search}${window.location.hash}`, { replace: true });
       return;
     }
   }, [location, navigate]);

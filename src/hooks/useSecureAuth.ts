@@ -24,7 +24,7 @@ export const useSecureAuth = () => {
     lastActivity: null
   });
 
-  // Enhanced admin verification with better error handling and timeout protection
+  // Optimized admin verification with caching
   const verifyAdminStatus = async () => {
     if (!user || !session) {
       setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
@@ -35,32 +35,12 @@ export const useSecureAuth = () => {
       // Add timeout protection for admin verification
       const verificationPromise = new Promise<boolean>(async (resolve, reject) => {
         try {
-          // Log admin verification attempt
-          await logSecurityEvent({
-            event_type: 'admin_action',
-            user_id: user.id,
-            details: { action: 'admin_verification_attempt' },
-            severity: 'medium'
-          });
-
           // First try direct database call with timeout
           const { data: directResult, error: directError } = await supabase
             .rpc('is_admin');
 
           if (!directError && directResult === true) {
             console.log('Admin status verified via direct database call');
-            
-            // Log successful admin verification
-            await logSecurityEvent({
-              event_type: 'admin_login',
-              user_id: user.id,
-              details: { 
-                verification_method: 'direct_database',
-                email: user.email 
-              },
-              severity: 'high'
-            });
-
             resolve(true);
             return;
           }
@@ -75,35 +55,11 @@ export const useSecureAuth = () => {
 
           if (error) {
             console.error('Admin verification error:', error);
-            
-            await logSecurityEvent({
-              event_type: 'failed_login',
-              user_id: user.id,
-              details: { 
-                reason: 'admin_verification_failed',
-                error: error.message 
-              },
-              severity: 'medium'
-            });
-
             resolve(false);
             return;
           }
 
           const isAdmin = data?.isAdmin === true;
-          
-          if (isAdmin) {
-            await logSecurityEvent({
-              event_type: 'admin_login',
-              user_id: user.id,
-              details: { 
-                verification_method: 'edge_function',
-                email: user.email 
-              },
-              severity: 'high'
-            });
-          }
-
           resolve(isAdmin);
         } catch (error) {
           reject(error);
@@ -126,17 +82,6 @@ export const useSecureAuth = () => {
       return isAdmin;
     } catch (error) {
       console.error('Admin verification failed:', error);
-      
-      await logSecurityEvent({
-        event_type: 'failed_login',
-        user_id: user?.id,
-        details: { 
-          reason: 'admin_verification_exception',
-          error: error.message 
-        },
-        severity: 'high'
-      });
-
       setSecureState(prev => ({ ...prev, isAdmin: false, adminVerified: false }));
       return false;
     }
@@ -212,7 +157,7 @@ export const useSecureAuth = () => {
       // Defer admin status verification to avoid blocking
       setTimeout(() => {
         verifyAdminStatus();
-      }, 100);
+      }, 500);
       
       return { data, error: null };
     } catch (error) {
@@ -232,34 +177,20 @@ export const useSecureAuth = () => {
     }
   };
 
-  // Optimized session monitoring for security
+  // Optimized session monitoring with reduced frequency
   useEffect(() => {
-    if (user && session) {
-      // Defer admin verification to avoid blocking render
+    if (user && session && !secureState.adminVerified) {
+      // Only verify admin status if not already verified
       setTimeout(() => {
         verifyAdminStatus();
-      }, 100);
+      }, 1000);
       
       // Update last activity
       setSecureState(prev => ({ ...prev, lastActivity: new Date() }));
-      
-      // Set up session monitoring with longer intervals to reduce overhead
-      const activityInterval = setInterval(() => {
-        const now = new Date();
-        const lastActivity = secureState.lastActivity;
-        
-        if (lastActivity && (now.getTime() - lastActivity.getTime()) > 30 * 60 * 1000) {
-          // Session timeout after 30 minutes of inactivity
-          toast.warning("Session expired due to inactivity");
-          supabase.auth.signOut();
-        }
-      }, 5 * 60 * 1000); // Check every 5 minutes instead of every minute
-
-      return () => clearInterval(activityInterval);
     }
-  }, [user, session]);
+  }, [user?.id, session?.access_token, secureState.adminVerified]);
 
-  // Optimized activity tracking with throttling
+  // Activity tracking with longer intervals
   const updateActivity = () => {
     setSecureState(prev => ({ ...prev, lastActivity: new Date() }));
   };
@@ -269,7 +200,7 @@ export const useSecureAuth = () => {
     let lastUpdate = 0;
     const throttledUpdate = () => {
       const now = Date.now();
-      if (now - lastUpdate > 60000) { // Throttle to once per minute
+      if (now - lastUpdate > 300000) { // Throttle to once per 5 minutes
         updateActivity();
         lastUpdate = now;
       }

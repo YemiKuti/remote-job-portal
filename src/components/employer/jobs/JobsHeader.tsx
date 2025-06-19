@@ -15,7 +15,7 @@ export const JobsHeader = () => {
           Manage your job postings and applications
         </p>
       </div>
-      <Button onClick={() => navigate('/employer/post-job')}>
+      <Button onClick={() => navigate('/employer/jobs/new')}>
         <Plus className="mr-2 h-4 w-4" /> Post New Job
       </Button>
     </div>

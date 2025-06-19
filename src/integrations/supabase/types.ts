@@ -210,7 +210,9 @@ export type Database = {
       }
       candidate_resumes: {
         Row: {
+          candidate_data: Json | null
           created_at: string
+          extracted_content: string | null
           file_path: string
           file_size: number
           id: string
@@ -220,7 +222,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          candidate_data?: Json | null
           created_at?: string
+          extracted_content?: string | null
           file_path: string
           file_size: number
           id?: string
@@ -230,7 +234,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          candidate_data?: Json | null
           created_at?: string
+          extracted_content?: string | null
           file_path?: string
           file_size?: number
           id?: string

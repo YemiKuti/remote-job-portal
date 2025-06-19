@@ -35,7 +35,7 @@ Describe the position, key responsibilities, and what makes this opportunity exc
 
 ### Key Responsibilities
 - Lead development of new features
-- Collaborate with cross-functional teams
+- Collaborate with cross-functional teams  
 - Mentor junior developers
 
 ### What We Offer
@@ -61,10 +61,9 @@ Describe the position, key responsibilities, and what makes this opportunity exc
             <FormLabel>Requirements *</FormLabel>
             <FormControl>
               <RichTextEditor
-                value={Array.isArray(field.value) ? field.value.join('\n\n') : field.value || ''}
+                value={field.value || ''}
                 onChange={(value) => {
-                  // Store as rich text string instead of converting to array
-                  // This preserves formatting while still being compatible with the backend
+                  // Store as rich text string to preserve formatting
                   field.onChange(value);
                 }}
                 placeholder="## Required Qualifications

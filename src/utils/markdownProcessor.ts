@@ -15,7 +15,7 @@ export const processMarkdown = (markdown: string): string => {
     // Enhanced text formatting
     .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em class="font-bold italic">$1</em></strong>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700">$1</em>')
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em class="italic text-gray-700">$1</em>')
     
     // Strikethrough and underline
     .replace(/~~(.*?)~~/g, '<del class="line-through text-gray-500">$1</del>')
@@ -49,7 +49,7 @@ export const processMarkdown = (markdown: string): string => {
     </div>`;
   });
 
-  // Process lists with better styling
+  // Process lists with better styling and proper nesting
   html = processEnhancedLists(html);
   
   // Process paragraphs and line breaks
@@ -61,31 +61,69 @@ export const processMarkdown = (markdown: string): string => {
   return html;
 };
 
-// Enhanced list processing with better styling
+// Enhanced list processing with better styling and nesting support
 const processEnhancedLists = (html: string): string => {
-  // Unordered lists
-  html = html
-    .replace(/^\* (.*$)/gm, '<li class="mb-2">$1</li>')
-    .replace(/^- (.*$)/gm, '<li class="mb-2">$1</li>')
-    .replace(/^\+ (.*$)/gm, '<li class="mb-2">$1</li>');
+  // Split into lines for processing
+  const lines = html.split('\n');
+  const processedLines = [];
+  let inList = false;
+  let listType = '';
+  let listLevel = 0;
 
-  // Ordered lists
-  html = html.replace(/^\d+\. (.*$)/gm, '<li-ordered class="mb-2">$1</li-ordered>');
-
-  // Group consecutive list items
-  html = html.replace(/(<li class="mb-2">.*?<\/li>)(\s*<li class="mb-2">.*?<\/li>)*/g, (match) => {
-    return `<ul class="list-disc pl-6 my-4 space-y-1 text-gray-700">${match}</ul>`;
-  });
-
-  html = html.replace(/(<li-ordered class="mb-2">.*?<\/li-ordered>)(\s*<li-ordered class="mb-2">.*?<\/li-ordered>)*/g, (match) => {
-    const orderedItems = match.replace(/<li-ordered class="mb-2">/g, '<li class="mb-2">').replace(/<\/li-ordered>/g, '</li>');
-    return `<ol class="list-decimal pl-6 my-4 space-y-1 text-gray-700">${orderedItems}</ol>`;
-  });
-
-  return html;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // Check for list items
+    const unorderedMatch = trimmedLine.match(/^(\s*)[*+-] (.+)$/);
+    const orderedMatch = trimmedLine.match(/^(\s*)\d+\. (.+)$/);
+    
+    if (unorderedMatch || orderedMatch) {
+      const indent = (unorderedMatch || orderedMatch)[1].length;
+      const content = (unorderedMatch || orderedMatch)[2];
+      const currentListType = unorderedMatch ? 'ul' : 'ol';
+      
+      if (!inList || listType !== currentListType) {
+        if (inList) {
+          processedLines.push(`</${listType}>`);
+        }
+        const listClass = currentListType === 'ul' 
+          ? 'list-disc pl-6 my-4 space-y-2 text-gray-700'
+          : 'list-decimal pl-6 my-4 space-y-2 text-gray-700';
+        processedLines.push(`<${currentListType} class="${listClass}">`);
+        inList = true;
+        listType = currentListType;
+        listLevel = indent;
+      }
+      
+      processedLines.push(`<li class="leading-relaxed">${content}</li>`);
+    } else {
+      if (inList && trimmedLine === '') {
+        // Empty line within list - continue
+        continue;
+      } else if (inList) {
+        // End of list
+        processedLines.push(`</${listType}>`);
+        inList = false;
+        listType = '';
+        listLevel = 0;
+      }
+      
+      if (trimmedLine !== '') {
+        processedLines.push(line);
+      }
+    }
+  }
+  
+  // Close any remaining list
+  if (inList) {
+    processedLines.push(`</${listType}>`);
+  }
+  
+  return processedLines.join('\n');
 };
 
-// Enhanced paragraph processing
+// Enhanced paragraph processing with better line break handling
 const processEnhancedParagraphs = (html: string): string => {
   const paragraphs = html.split(/\n\s*\n/);
   
@@ -99,8 +137,11 @@ const processEnhancedParagraphs = (html: string): string => {
         return trimmed.replace(/\n/g, ' ');
       }
       
+      // Handle single line breaks within paragraphs
+      const withLineBreaks = trimmed.replace(/\n(?!$)/g, '<br class="my-1">');
+      
       // Wrap regular text in styled paragraphs
-      return `<p class="mb-4 leading-relaxed text-gray-700 text-base">${trimmed.replace(/\n/g, '<br class="my-1">')}</p>`;
+      return `<p class="mb-4 leading-relaxed text-gray-700 text-base">${withLineBreaks}</p>`;
     })
     .filter(p => p)
     .join('\n');

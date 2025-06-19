@@ -38,9 +38,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { NotificationCenter } from "@/components/candidate/NotificationCenter";
+import { EmployerNotificationCenter } from "@/components/employer/EmployerNotificationCenter";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -53,6 +60,7 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
   const { toast } = useToast();
   const { signOut, user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   
   const handleLogout = async () => {
     await signOut();
@@ -110,6 +118,26 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
     candidate: 'bg-green-100 text-green-800',
     employer: 'bg-blue-100 text-blue-800',
     admin: 'bg-purple-100 text-purple-800'
+  };
+
+  const renderNotificationCenter = () => {
+    if (!user?.id) return null;
+
+    switch (userType) {
+      case 'candidate':
+        return <NotificationCenter userId={user.id} />;
+      case 'employer':
+        return <EmployerNotificationCenter userId={user.id} />;
+      case 'admin':
+        return (
+          <div className="p-4 text-center text-muted-foreground">
+            <Bell className="h-8 w-8 mx-auto mb-2" />
+            <p>Admin notifications coming soon</p>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -203,9 +231,24 @@ export const DashboardLayout = ({ children, userType }: DashboardLayoutProps) =>
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
+              <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-96 p-0 max-h-[600px] overflow-hidden"
+                  align="end"
+                  side="bottom"
+                >
+                  {renderNotificationCenter()}
+                </PopoverContent>
+              </Popover>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

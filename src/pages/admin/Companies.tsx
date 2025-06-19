@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
   Table,
@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Search, Edit, Trash2, ExternalLink } from "lucide-react";
 import { useCompaniesManagement } from '@/hooks/admin/useCompaniesManagement';
 import { AddCompanyDialog } from '@/components/admin/companies/AddCompanyDialog';
+import { EditCompanyDialog } from '@/components/admin/companies/EditCompanyDialog';
+import { Company } from '@/utils/api/adminApi';
 
 const CompaniesPage = () => {
   const {
@@ -29,17 +31,34 @@ const CompaniesPage = () => {
     searchTerm,
     setSearchTerm,
     handleCreateCompany,
+    handleUpdateCompany,
     handleDeleteCompany
   } = useCompaniesManagement();
+
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handleEdit = (company: Company) => {
+    console.log('Edit company clicked:', company);
+    setEditingCompany(company);
+    setEditDialogOpen(true);
+  };
+
   const handleDelete = async (companyId: string, companyName: string) => {
-    if (window.confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) {
+    const confirmMessage = `Are you sure you want to delete "${companyName}"? This action cannot be undone.`;
+    if (window.confirm(confirmMessage)) {
+      console.log('Delete company confirmed:', companyId);
       await handleDeleteCompany(companyId);
     }
+  };
+
+  const handleEditDialogClose = () => {
+    setEditDialogOpen(false);
+    setEditingCompany(null);
   };
 
   if (loading) {
@@ -142,14 +161,19 @@ const CompaniesPage = () => {
                         <TableCell>{formatDate(company.created_at)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEdit(company)}
+                              className="h-8 w-8 p-0"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleDelete(company.id, company.name)}
-                              className="text-red-600 hover:text-red-800"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -163,6 +187,13 @@ const CompaniesPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        <EditCompanyDialog
+          company={editingCompany}
+          open={editDialogOpen}
+          onOpenChange={handleEditDialogClose}
+          onUpdateCompany={handleUpdateCompany}
+        />
       </div>
     </AdminLayout>
   );

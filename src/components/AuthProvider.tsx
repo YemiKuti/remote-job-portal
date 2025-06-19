@@ -130,18 +130,46 @@ const getSessionWithRetry = async (maxRetries = 1) => {
   return null;
 };
 
-// Auth state cleanup utility
+// Comprehensive auth state cleanup utility
 const cleanupAuthState = () => {
-  console.log('🔐 AuthProvider: Cleaning up auth state');
-  // Clear any potential stuck auth state
+  console.log('🔐 AuthProvider: Starting comprehensive auth state cleanup');
+  
   try {
-    localStorage.removeItem('supabase.auth.token');
-    // Clear other potential auth keys
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('supabase.auth.')) {
-        localStorage.removeItem(key);
+    // Clear standard Supabase auth keys
+    const keysToRemove = [
+      'supabase.auth.token',
+      'sb-mmbrvcndxhipaoxysvwr-auth-token',
+      'sb-auth-token',
+      'supabase.auth.session',
+    ];
+    
+    // Remove specific keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(key);
       }
     });
+    
+    // Clear all keys that start with 'sb-' (Supabase storage pattern)
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') || key.startsWith('supabase.auth.') || key.includes('mmbrvcndxhipaoxysvwr')) {
+        localStorage.removeItem(key);
+        console.log('🔐 Removed localStorage key:', key);
+      }
+    });
+    
+    // Clear sessionStorage if available
+    if (typeof sessionStorage !== 'undefined') {
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.startsWith('supabase.auth.') || key.includes('mmbrvcndxhipaoxysvwr')) {
+          sessionStorage.removeItem(key);
+          console.log('🔐 Removed sessionStorage key:', key);
+        }
+      });
+    }
+    
+    console.log('🔐 AuthProvider: Auth state cleanup completed');
   } catch (error) {
     console.error('🔐 AuthProvider: Error during cleanup:', error);
   }
@@ -152,6 +180,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isExplicitLogout, setIsExplicitLogout] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -162,12 +191,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     const initializeAuth = async () => {
       try {
+        // Check if user explicitly logged out
+        const logoutFlag = localStorage.getItem('explicit_logout');
+        if (logoutFlag === 'true') {
+          console.log('🔐 AuthProvider: Explicit logout detected, clearing state');
+          localStorage.removeItem('explicit_logout');
+          cleanupAuthState();
+          setIsExplicitLogout(true);
+          setIsLoading(false);
+          return;
+        }
+        
         // Set up auth state listener FIRST
         console.log('🔐 AuthProvider: Setting up auth state listener');
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (!mounted) return;
           
           console.log('🔐 AuthProvider: Auth state changed:', event, session?.user?.email || 'No session');
+          
+          // If user explicitly logged out, don't restore session
+          if (isExplicitLogout && event === 'SIGNED_IN') {
+            console.log('🔐 AuthProvider: Ignoring sign-in event due to explicit logout');
+            return;
+          }
           
           // Validate session before setting
           const validatedSession = session?.expires_at && (session.expires_at * 1000) > Date.now() ? session : null;
@@ -178,6 +224,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (event === 'SIGNED_IN' && validatedSession?.user) {
             console.log('🔐 AuthProvider: User signed in successfully');
+            setIsExplicitLogout(false); // Reset logout flag
             
             // Check if this is a recovery flow - if so, redirect to reset password page
             if (isRecoveryFlow()) {
@@ -217,24 +264,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }, 100);
           } else if (event === 'SIGNED_OUT') {
             console.log('🔐 AuthProvider: User signed out');
+            setIsExplicitLogout(false); // Reset when officially signed out
           }
         });
 
         authSubscription = subscription;
 
-        // THEN get initial session with retry logic
-        const initialSession = await getSessionWithRetry();
-        
-        if (mounted) {
-          console.log('🔐 AuthProvider: Initial session retrieved:', initialSession?.user?.email || 'No session');
-          setSession(initialSession);
-          setUser(initialSession?.user ?? null);
+        // THEN get initial session with retry logic (only if not explicit logout)
+        if (!isExplicitLogout) {
+          const initialSession = await getSessionWithRetry();
           
-          // Defer profile creation for existing session
-          if (initialSession?.user) {
-            setTimeout(() => {
-              ensureUserProfileDeferred(initialSession.user);
-            }, 100);
+          if (mounted) {
+            console.log('🔐 AuthProvider: Initial session retrieved:', initialSession?.user?.email || 'No session');
+            setSession(initialSession);
+            setUser(initialSession?.user ?? null);
+            
+            // Defer profile creation for existing session
+            if (initialSession?.user) {
+              setTimeout(() => {
+                ensureUserProfileDeferred(initialSession.user);
+              }, 100);
+            }
           }
         }
 
@@ -273,7 +323,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authSubscription.unsubscribe();
       }
     };
-  }, [navigate]);
+  }, [navigate, isExplicitLogout]);
 
   const loginWithEmail = async (email: string, redirect_to?: string) => {
     setIsLoading(true);
@@ -300,15 +350,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     setIsLoading(true);
     try {
-      console.log('🔐 AuthProvider: Starting sign out process');
+      console.log('🔐 AuthProvider: Starting comprehensive sign out process');
       
-      // Clean up local state FIRST
+      // Set explicit logout flag FIRST
+      localStorage.setItem('explicit_logout', 'true');
+      setIsExplicitLogout(true);
+      
+      // Clean up local state immediately
       setSession(null);
       setUser(null);
       setAuthError(null);
       
-      // Clear auth state from storage
+      // Comprehensive auth state cleanup
       cleanupAuthState();
+      
+      // Additional cleanup - force clear any remaining auth state
+      setTimeout(() => {
+        cleanupAuthState();
+      }, 100);
       
       // Try to sign out with Supabase (but don't wait for it or fail on errors)
       try {
@@ -321,20 +380,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('🔐 AuthProvider: Sign out complete, navigating to signin');
       
-      // Force a page reload to ensure clean state
-      window.location.href = '/signin';
+      // Small delay to ensure cleanup completes before redirect
+      setTimeout(() => {
+        // Force a page reload to ensure completely clean state
+        window.location.href = '/signin';
+      }, 200);
       
     } catch (error: any) {
       console.error('🔐 AuthProvider: Exception during sign out:', error);
       
       // Even if there's an exception, try to clean up and navigate
+      localStorage.setItem('explicit_logout', 'true');
       cleanupAuthState();
       setSession(null);
       setUser(null);
       setAuthError(null);
+      setIsExplicitLogout(true);
       
       toast.error('Sign out failed, but local session cleared');
-      window.location.href = '/signin';
+      setTimeout(() => {
+        window.location.href = '/signin';
+      }, 200);
     } finally {
       setIsLoading(false);
     }

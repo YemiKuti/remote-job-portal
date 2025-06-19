@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,9 +34,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   useEffect(() => {
     // Check if this is a password recovery flow and redirect to reset-password page
@@ -271,80 +269,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       setIsLoading(false);
     }
   };
-
-  if (showPasswordReset) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh] px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
-            <CardDescription>
-              Enter your new password below
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <SecureInput
-                  id="new-password"
-                  type="password"
-                  placeholder="Enter your new password"
-                  value={newPassword}
-                  onSecureChange={setNewPassword}
-                  disabled={isLoading}
-                  required
-                />
-                <p className="text-xs text-gray-600">
-                  Password must be at least 8 characters with uppercase, lowercase, number, and special character
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                <SecureInput
-                  id="confirm-new-password"
-                  type="password"
-                  placeholder="Confirm your new password"
-                  value={confirmNewPassword}
-                  onSecureChange={setConfirmNewPassword}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <div className="space-y-4">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating password...
-                    </>
-                  ) : (
-                    "Update Password"
-                  )}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    setShowPasswordReset(false);
-                    navigate('/auth');
-                  }}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (showForgotPassword) {
     return (

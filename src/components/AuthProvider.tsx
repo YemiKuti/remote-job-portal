@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -301,34 +302,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🔐 AuthProvider: Starting sign out process');
       
-      // First attempt to sign out with existing session
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.warn('🔐 AuthProvider: Sign out API error:', error.message);
-        
-        // If the error is session-related, it's expected - the session might already be invalid
-        if (error.message.includes('session') || error.message.includes('Auth session missing')) {
-          console.log('🔐 AuthProvider: Session already invalid, proceeding with cleanup');
-        } else {
-          // For other errors, we still want to clean up but also show the error
-          console.error('🔐 AuthProvider: Unexpected sign out error:', error);
-          toast.error('Sign out error: ' + error.message);
-        }
-      } else {
-        console.log('🔐 AuthProvider: Successfully signed out via API');
-      }
-      
-      // Clean up auth state after the API call (or if it failed with session error)
-      cleanupAuthState();
-      
-      // Clear local state
+      // Clean up local state FIRST
       setSession(null);
       setUser(null);
       setAuthError(null);
       
+      // Clear auth state from storage
+      cleanupAuthState();
+      
+      // Try to sign out with Supabase (but don't wait for it or fail on errors)
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+        console.log('🔐 AuthProvider: Successfully signed out via API');
+      } catch (error: any) {
+        console.warn('🔐 AuthProvider: Sign out API failed, but continuing with cleanup:', error.message);
+        // Continue with navigation even if API call fails
+      }
+      
       console.log('🔐 AuthProvider: Sign out complete, navigating to signin');
-      navigate('/signin');
+      
+      // Force a page reload to ensure clean state
+      window.location.href = '/signin';
       
     } catch (error: any) {
       console.error('🔐 AuthProvider: Exception during sign out:', error);
@@ -337,10 +331,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       cleanupAuthState();
       setSession(null);
       setUser(null);
-      setAuthError(error.message);
+      setAuthError(null);
       
       toast.error('Sign out failed, but local session cleared');
-      navigate('/signin');
+      window.location.href = '/signin';
     } finally {
       setIsLoading(false);
     }

@@ -124,17 +124,51 @@ function App() {
             } />
 
             {/* Protected Admin Routes */}
-            <Route path="/admin" element={<AdminRoute />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="jobs" element={<AdminJobs />} />
-              <Route path="jobs/new" element={<CreateJob />} />
-              <Route path="jobs/:id/edit" element={<AdminEditJob />} />
-              <Route path="companies" element={<Companies />} />
-              <Route path="users" element={<Users />} />
-              <Route path="blog" element={<BlogManagement />} />
-              <Route path="blog/create" element={<BlogEditor />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            } />
+            <Route path="/admin/jobs" element={
+              <AdminRoute>
+                <AdminJobs />
+              </AdminRoute>
+            } />
+            <Route path="/admin/jobs/new" element={
+              <AdminRoute>
+                <CreateJob />
+              </AdminRoute>
+            } />
+            <Route path="/admin/jobs/:id/edit" element={
+              <AdminRoute>
+                <AdminEditJob />
+              </AdminRoute>
+            } />
+            <Route path="/admin/companies" element={
+              <AdminRoute>
+                <Companies />
+              </AdminRoute>
+            } />
+            <Route path="/admin/users" element={
+              <AdminRoute>
+                <Users />
+              </AdminRoute>
+            } />
+            <Route path="/admin/blog" element={
+              <AdminRoute>
+                <BlogManagement />
+              </AdminRoute>
+            } />
+            <Route path="/admin/blog/create" element={
+              <AdminRoute>
+                <BlogEditor />
+              </AdminRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <AdminRoute>
+                <AdminSettings />
+              </AdminRoute>
+            } />
 
             {/* Candidate Routes */}
             <Route path="/candidate" element={<CandidateDashboard />} />

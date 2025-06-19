@@ -1,13 +1,11 @@
-
 import React from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Building, DollarSign, Briefcase, Bookmark, Sparkles } from "lucide-react";
+import { MapPin, Building, DollarSign, Briefcase, Bookmark } from "lucide-react";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useNavigate } from "react-router-dom";
-import { CVTailoringDialog } from "@/components/cv/CVTailoringDialog";
 import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 
 const SavedJobs = () => {
@@ -154,15 +152,6 @@ const SavedJobs = () => {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <CVTailoringDialog
-                        job={job}
-                        trigger={
-                          <Button variant="outline" size="sm">
-                            <Sparkles className="h-4 w-4 mr-1" />
-                            Tailor CV
-                          </Button>
-                        }
-                      />
                       <Button 
                         variant="outline" 
                         size="sm"

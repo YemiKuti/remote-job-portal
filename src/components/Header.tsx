@@ -226,11 +226,6 @@ export default function Header() {
                   </div>
                 </DialogContent>
               </Dialog>
-              
-              <Button onClick={handleSignUp} className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Sign Up
-              </Button>
             </div>
           )}
           <Button
@@ -277,29 +272,17 @@ export default function Header() {
               Blog
             </Link>
             {!user && (
-              <>
-                <Button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsAuthDialogOpen(true);
-                  }}
-                  variant="outline"
-                  className="flex items-center gap-2 justify-start"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Sign In
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    navigate('/signup');
-                  }}
-                  className="bg-job-green hover:bg-job-darkGreen flex items-center gap-2 justify-start"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Sign Up
-                </Button>
-              </>
+              <Button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsAuthDialogOpen(true);
+                }}
+                variant="outline"
+                className="flex items-center gap-2 justify-start"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </Button>
             )}
           </nav>
         </div>

@@ -378,12 +378,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Continue with navigation even if API call fails
       }
       
-      console.log('🔐 AuthProvider: Sign out complete, navigating to signin');
+      console.log('🔐 AuthProvider: Sign out complete, navigating to home page');
       
       // Small delay to ensure cleanup completes before redirect
       setTimeout(() => {
-        // Force a page reload to ensure completely clean state
-        window.location.href = '/signin';
+        // Force a page reload to ensure completely clean state and redirect to home page
+        window.location.href = '/';
       }, 200);
       
     } catch (error: any) {
@@ -399,7 +399,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       toast.error('Sign out failed, but local session cleared');
       setTimeout(() => {
-        window.location.href = '/signin';
+        window.location.href = '/';
       }, 200);
     } finally {
       setIsLoading(false);

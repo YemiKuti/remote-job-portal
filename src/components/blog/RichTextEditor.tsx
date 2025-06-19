@@ -34,6 +34,9 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Ensure value is always a string
+  const safeValue = String(value || '');
+
   const getSelectionInfo = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return { start: 0, end: 0, selectedText: '' };
@@ -41,9 +44,9 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
     return {
       start: textarea.selectionStart,
       end: textarea.selectionEnd,
-      selectedText: value.substring(textarea.selectionStart, textarea.selectionEnd)
+      selectedText: safeValue.substring(textarea.selectionStart, textarea.selectionEnd)
     };
-  }, [value]);
+  }, [safeValue]);
 
   const insertTextAtCursor = useCallback((before: string, after: string = '', replaceSelection: boolean = false) => {
     const textarea = textareaRef.current;
@@ -56,15 +59,15 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
 
     if (replaceSelection && selectedText) {
       // Wrap selected text
-      newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
+      newText = safeValue.substring(0, start) + before + selectedText + after + safeValue.substring(end);
       newCursorPos = start + before.length + selectedText.length + after.length;
     } else if (selectedText && !replaceSelection) {
       // Insert at cursor, preserving selection
-      newText = value.substring(0, start) + before + after + value.substring(start);
+      newText = safeValue.substring(0, start) + before + after + safeValue.substring(start);
       newCursorPos = start + before.length;
     } else {
       // No selection, just insert
-      newText = value.substring(0, start) + before + after + value.substring(end);
+      newText = safeValue.substring(0, start) + before + after + safeValue.substring(end);
       newCursorPos = start + before.length;
     }
 
@@ -75,7 +78,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
       textarea.focus();
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  }, [value, onChange, getSelectionInfo]);
+  }, [safeValue, onChange, getSelectionInfo]);
 
   const wrapSelectedText = useCallback((before: string, after: string = '') => {
     insertTextAtCursor(before, after, true);
@@ -86,8 +89,8 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
     if (!textarea) return;
 
     const { start } = getSelectionInfo();
-    const beforeCursor = value.substring(0, start);
-    const afterCursor = value.substring(start);
+    const beforeCursor = safeValue.substring(0, start);
+    const afterCursor = safeValue.substring(start);
     
     // Check if we're at the beginning of a line or need to add a newline
     const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n');
@@ -105,7 +108,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
       textarea.focus();
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  }, [value, onChange, getSelectionInfo]);
+  }, [safeValue, onChange, getSelectionInfo]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     // Let the default paste behavior work for now
@@ -343,7 +346,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         {showPreview ? (
           <div className="min-h-[300px] p-3">
             <RichTextRenderer 
-              content={value} 
+              content={safeValue} 
               variant="blog"
               className="prose-headings:mt-0 prose-p:mb-2"
             />
@@ -351,7 +354,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         ) : (
           <Textarea
             ref={textareaRef}
-            value={value}
+            value={safeValue}
             onChange={(e) => onChange(e.target.value)}
             onPaste={handlePaste}
             placeholder={placeholder}
@@ -362,8 +365,8 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
 
       {/* Word Count */}
       <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-        <span>Words: {value.split(/\s+/).filter(word => word.length > 0).length}</span>
-        <span>Characters: {value.length}</span>
+        <span>Words: {safeValue.split(/\s+/).filter(word => word.length > 0).length}</span>
+        <span>Characters: {safeValue.length}</span>
       </div>
     </div>
   );

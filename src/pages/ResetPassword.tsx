@@ -25,19 +25,54 @@ export default function ResetPassword() {
     const checkResetSession = async () => {
       // Parse URL fragment for recovery tokens
       const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+      const hashParams = new URLSearchParams(hash);
       
       // Also check search params as fallback
       const searchParams = new URLSearchParams(location.search);
       
-      const type = params.get('type') || searchParams.get('type');
-      const accessToken = params.get('access_token') || searchParams.get('access_token');
-      const refreshToken = params.get('refresh_token') || searchParams.get('refresh_token');
+      // Check both hash and query parameters for tokens
+      const type = hashParams.get('type') || searchParams.get('type');
+      const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+      
+      // Handle legacy 'token' parameter from older email formats
+      const legacyToken = searchParams.get('token');
 
-      console.log('🔐 Reset session check:', { type, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+      console.log('🔐 Reset session check:', { 
+        type, 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken,
+        hasLegacyToken: !!legacyToken,
+        hash,
+        search: location.search
+      });
 
-      if (type === 'recovery' && accessToken && refreshToken) {
-        console.log('🔐 Password recovery detected, setting up session');
+      // If we have a legacy token parameter, try to exchange it
+      if (legacyToken && type === 'recovery') {
+        console.log('🔐 Legacy token detected, attempting to verify session');
+        
+        try {
+          // For legacy tokens, we need to verify the user's session
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (session && session.user) {
+            console.log('🔐 Valid session found with legacy token');
+            setIsValidSession(true);
+            toast.success('Please set your new password below.');
+            // Clear the URL parameters to clean up the interface
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            console.log('🔐 No valid session with legacy token, redirecting to request new reset');
+            toast.error('This reset link has expired. Please request a new password reset.');
+            navigate('/auth');
+          }
+        } catch (error) {
+          console.error('Error checking session with legacy token:', error);
+          toast.error('Invalid reset link. Please request a new password reset.');
+          navigate('/auth');
+        }
+      } else if (type === 'recovery' && accessToken && refreshToken) {
+        console.log('🔐 Standard recovery tokens detected, setting up session');
         
         try {
           const { error } = await supabase.auth.setSession({

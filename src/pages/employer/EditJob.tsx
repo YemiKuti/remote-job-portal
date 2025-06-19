@@ -5,11 +5,11 @@ import JobForm from '@/components/JobForm';
 import { useParams } from 'react-router-dom';
 
 const EditJob = () => {
-  const { jobId } = useParams();
+  const { id: jobId } = useParams<{ id: string }>();
 
   return (
     <DashboardLayout userType="employer">
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-2xl mx-auto">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Edit Job</h2>
           <p className="text-muted-foreground">

@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { MessageCandidateButton } from './quick-actions/MessageCandidateButton';
 import { ResumeDownloadButton } from './quick-actions/ResumeDownloadButton';
-import { StatusUpdateButton } from './quick-actions/StatusUpdateButton';
 import { ViewProfileButton } from './quick-actions/ViewProfileButton';
 import { 
   Calendar, 
@@ -659,67 +658,30 @@ export const EnhancedApplicationDetailModal = ({
                   </div>
 
                   <Separator />
-
+                  
                   <div className="space-y-4">
-                    <h4 className="font-medium">Quick Actions</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <MessageCandidateButton
-                        candidateId={application.candidate?.id || ''}
-                        candidateName={getCandidateDisplayName(application.candidate)}
-                        className="justify-start"
-                      />
-                      <StatusUpdateButton
-                        currentStatus={application.status}
-                        targetStatus="shortlisted"
-                        applicationId={application.id}
-                        onUpdateStatus={handleStatusUpdateWrapper}
-                        candidateName={getCandidateDisplayName(application.candidate)}
-                        className="justify-start"
-                      />
-                      <StatusUpdateButton
-                        currentStatus={application.status}
-                        targetStatus="interviewed"
-                        applicationId={application.id}
-                        onUpdateStatus={handleStatusUpdateWrapper}
-                        candidateName={getCandidateDisplayName(application.candidate)}
-                        className="justify-start"
-                      />
-                      <ViewProfileButton
-                        candidateId={application.candidate?.id}
-                        candidateName={getCandidateDisplayName(application.candidate)}
-                        className="justify-start"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Application Timeline */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Application Timeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium">Application Submitted</p>
-                        <p className="text-muted-foreground">
-                          {new Date(application.applied_date).toLocaleString()}
-                        </p>
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Application Timeline
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <div>
+                          <p className="font-medium">Application Submitted</p>
+                          <p className="text-muted-foreground">
+                            {new Date(application.applied_date).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                      <div>
-                        <p className="font-medium">Current Status: {application.status}</p>
-                        <p className="text-muted-foreground">
-                          {application.status === 'pending' ? 'Awaiting review' : 'Status updated'}
-                        </p>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                        <div>
+                          <p className="font-medium">Current Status: {application.status}</p>
+                          <p className="text-muted-foreground">
+                            {application.status === 'pending' ? 'Awaiting review' : 'Status updated'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

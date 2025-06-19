@@ -72,14 +72,20 @@ export function JobSelectionStep({ onComplete, onBack }: JobSelectionStepProps) 
       requirements: [],
       techStack: [],
       salary: { min: 0, max: 0, currency: 'USD' },
-      employmentType: 'Not specified',
-      experienceLevel: 'Not specified',
+      employmentType: 'Full-time',
+      experienceLevel: 'Mid-level',
       remote: false,
       visaSponsorship: false,
       postedDate: new Date().toISOString(),
       logo: '',
       sponsored: false,
-      isFeatured: false
+      isFeatured: false,
+      applicationType: 'internal',
+      status: 'active',
+      views: 0,
+      applications: 0,
+      employerId: '',
+      companySize: 'Medium'
     };
 
     onComplete({

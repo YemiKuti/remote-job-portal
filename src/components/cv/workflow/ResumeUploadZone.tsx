@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Plus } from 'lucide-react';
@@ -60,6 +61,9 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
+      // Convert candidate data to JSON-compatible format
+      const candidateDataJson = JSON.parse(JSON.stringify(resumeContent.candidateData));
+
       // Save resume record to database with extracted candidate data
       const { data: resume, error: dbError } = await supabase
         .from('candidate_resumes')
@@ -69,7 +73,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
           file_path: filePath,
           file_size: file.size,
           is_default: false,
-          candidate_data: resumeContent.candidateData,
+          candidate_data: candidateDataJson,
           extracted_content: resumeContent.text
         })
         .select()

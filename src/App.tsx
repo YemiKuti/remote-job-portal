@@ -16,6 +16,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
 import AuthPage from './pages/Auth';
+import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import UserProfilePage from './pages/UserProfilePage';
 
@@ -66,6 +67,7 @@ function App() {
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/:userId" element={<UserProfilePage />} />
             <Route path="/pricing" element={<Pricing />} />

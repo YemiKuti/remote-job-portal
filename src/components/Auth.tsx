@@ -38,31 +38,15 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   useEffect(() => {
-    // Check if this is a password recovery flow
+    // Check if this is a password recovery flow and redirect to reset-password page
     const urlParams = new URLSearchParams(location.search);
     const type = urlParams.get('type');
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-
-    if (type === 'recovery' && accessToken && refreshToken) {
-      console.log('🔐 Password recovery detected, setting up session');
-      setShowPasswordReset(true);
-      
-      // Set the session with the tokens from the URL
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      }).then(({ error }) => {
-        if (error) {
-          console.error('Error setting recovery session:', error);
-          toast.error('Invalid recovery link. Please request a new password reset.');
-          setShowPasswordReset(false);
-        } else {
-          toast.success('Please set your new password below.');
-        }
-      });
+    
+    if (type === 'recovery') {
+      navigate(`/reset-password${location.search}`);
+      return;
     }
-  }, [location]);
+  }, [location, navigate]);
 
   const validateInputs = (isSignUp: boolean = false): boolean => {
     const errors: {[key: string]: string} = {};
@@ -95,46 +79,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     return Object.keys(errors).length === 0;
   };
 
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newPassword || !confirmNewPassword) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    try {
-      passwordSchema.parse(newPassword);
-    } catch (error: any) {
-      toast.error(error.errors[0]?.message || "Password does not meet requirements");
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      toast.success('Password updated successfully!');
-      setShowPasswordReset(false);
-      navigate('/');
-    } catch (error: any) {
-      console.error('Error updating password:', error);
-      toast.error('Failed to update password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -155,8 +99,8 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     
     try {
       const sanitizedEmail = sanitizeInput(resetEmail);
-      // Use the full URL to ensure proper redirection
-      const redirectUrl = `${window.location.origin}/auth?type=recovery`;
+      // Use the reset-password page as redirect URL
+      const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
         redirectTo: redirectUrl

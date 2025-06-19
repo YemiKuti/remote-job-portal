@@ -41,13 +41,7 @@ export const processMarkdown = (markdown: string | string[] | null | undefined):
     .replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono border">$1</code>')
     
     // Enhanced blockquotes
-    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-primary bg-gray-50 pl-6 pr-4 py-3 my-6 text-gray-700 italic rounded-r-md">$1</blockquote>')
-    
-    // Tables (basic markdown table support)
-    .replace(/\|(.+)\|/g, (match, content) => {
-      const cells = content.split('|').map(cell => cell.trim()).filter(cell => cell);
-      return `<tr>${cells.map(cell => `<td class="border border-gray-300 px-4 py-2">${cell}</td>`).join('')}</tr>`;
-    });
+    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-primary bg-gray-50 pl-6 pr-4 py-3 my-6 text-gray-700 italic rounded-r-md">$1</blockquote>');
 
   // Process code blocks with syntax highlighting classes
   html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
@@ -59,38 +53,32 @@ export const processMarkdown = (markdown: string | string[] | null | undefined):
     </div>`;
   });
 
-  // Process lists with better styling and proper nesting
+  // Process lists with better styling
   html = processEnhancedLists(html);
   
   // Process paragraphs and line breaks
   html = processEnhancedParagraphs(html);
-  
-  // Process tables if any were found
-  html = processMarkdownTables(html);
   
   return html;
 };
 
 // Enhanced list processing with better styling and nesting support
 const processEnhancedLists = (html: string): string => {
-  // Split into lines for processing
   const lines = html.split('\n');
   const processedLines = [];
   let inList = false;
   let listType = '';
-  let listLevel = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
     
     // Check for list items
-    const unorderedMatch = trimmedLine.match(/^(\s*)[*+-] (.+)$/);
-    const orderedMatch = trimmedLine.match(/^(\s*)\d+\. (.+)$/);
+    const unorderedMatch = trimmedLine.match(/^[*+-] (.+)$/);
+    const orderedMatch = trimmedLine.match(/^\d+\. (.+)$/);
     
     if (unorderedMatch || orderedMatch) {
-      const indent = (unorderedMatch || orderedMatch)[1].length;
-      const content = (unorderedMatch || orderedMatch)[2];
+      const content = (unorderedMatch || orderedMatch)[1];
       const currentListType = unorderedMatch ? 'ul' : 'ol';
       
       if (!inList || listType !== currentListType) {
@@ -103,20 +91,16 @@ const processEnhancedLists = (html: string): string => {
         processedLines.push(`<${currentListType} class="${listClass}">`);
         inList = true;
         listType = currentListType;
-        listLevel = indent;
       }
       
       processedLines.push(`<li class="leading-relaxed">${content}</li>`);
     } else {
       if (inList && trimmedLine === '') {
-        // Empty line within list - continue
         continue;
       } else if (inList) {
-        // End of list
         processedLines.push(`</${listType}>`);
         inList = false;
         listType = '';
-        listLevel = 0;
       }
       
       if (trimmedLine !== '') {
@@ -125,7 +109,6 @@ const processEnhancedLists = (html: string): string => {
     }
   }
   
-  // Close any remaining list
   if (inList) {
     processedLines.push(`</${listType}>`);
   }
@@ -143,7 +126,7 @@ const processEnhancedParagraphs = (html: string): string => {
       if (!trimmed) return '';
       
       // Don't wrap block elements in paragraphs
-      if (trimmed.match(/^<(h[1-6]|ul|ol|li|blockquote|pre|div|figure|table)/)) {
+      if (trimmed.match(/^<(h[1-6]|ul|ol|li|blockquote|pre|div|figure)/)) {
         return trimmed.replace(/\n/g, ' ');
       }
       
@@ -157,40 +140,19 @@ const processEnhancedParagraphs = (html: string): string => {
     .join('\n');
 };
 
-// Process markdown tables into HTML tables
-const processMarkdownTables = (html: string): string => {
-  // Look for table rows that were converted earlier
-  const tableRegex = /(<tr>.*?<\/tr>\s*)+/g;
-  
-  return html.replace(tableRegex, (match) => {
-    return `<div class="my-6 overflow-x-auto">
-      <table class="min-w-full border-collapse border border-gray-300 rounded-lg">
-        <tbody>
-          ${match}
-        </tbody>
-      </table>
-    </div>`;
-  });
-};
-
 // Enhanced sanitization with more comprehensive security
 export const sanitizeHtml = (html: string): string => {
-  // Ensure we have a string
   const content = String(html || '');
   
   return content
-    // Remove script tags and dangerous content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
     .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-    // Remove dangerous protocols
     .replace(/javascript:/gi, '')
     .replace(/data:/gi, '')
     .replace(/vbscript:/gi, '')
-    // Remove dangerous event handlers
     .replace(/on\w+\s*=/gi, '')
-    // Remove style attributes that could be used for attacks
     .replace(/style\s*=\s*["'][^"']*["']/gi, '');
 };
 
@@ -198,15 +160,14 @@ export const sanitizeHtml = (html: string): string => {
 export const extractPlainText = (markdown: string | string[] | null | undefined, maxLength: number = 160): string => {
   if (!markdown) return '';
   
-  // Handle arrays by joining them
   const content = Array.isArray(markdown) ? markdown.join(' ') : String(markdown);
   
   return content
-    .replace(/[#*_~`\[\]()]/g, '') // Remove markdown symbols
-    .replace(/!\[.*?\]\(.*?\)/g, '') // Remove images
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
-    .replace(/\n/g, ' ') // Replace newlines with spaces
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/[#*_~`\[\]()]/g, '')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
     .substring(0, maxLength)
     .concat(content.length > maxLength ? '...' : '');

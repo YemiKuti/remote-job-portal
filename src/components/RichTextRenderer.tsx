@@ -23,7 +23,7 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   const variantClasses = {
     default: "prose max-w-none text-gray-700",
     compact: "prose prose-sm max-w-none text-gray-700",
-    blog: "prose prose-lg max-w-none text-gray-800 prose-headings:text-gray-900 prose-a:text-primary prose-strong:text-gray-900",
+    blog: "prose prose-lg max-w-none text-gray-800 prose-headings:text-gray-900 prose-a:text-primary prose-strong:text-gray-900 prose-p:leading-relaxed prose-li:leading-relaxed",
     job: "prose max-w-none text-gray-700 prose-headings:text-gray-800 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-p:my-3 prose-h2:mt-6 prose-h2:mb-4 prose-h3:mt-5 prose-h3:mb-3 prose-strong:font-semibold prose-em:italic"
   };
 

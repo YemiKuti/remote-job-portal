@@ -6,7 +6,6 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { GeneralSettingsForm } from './GeneralSettingsForm';
 import { NotificationSettings } from './NotificationSettings';
 import { BillingSettings } from './BillingSettings';
-import { TeamMembersSettings } from './TeamMembersSettings';
 import { Loader2 } from 'lucide-react';
 
 interface EmployerSettingsLayoutProps {
@@ -65,7 +64,6 @@ export const EmployerSettingsLayout = ({
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
-            <TabsTrigger value="team">Team Members</TabsTrigger>
           </TabsList>
           
           <TabsContent value="general">
@@ -87,10 +85,6 @@ export const EmployerSettingsLayout = ({
           
           <TabsContent value="billing">
             <BillingSettings />
-          </TabsContent>
-          
-          <TabsContent value="team">
-            <TeamMembersSettings />
           </TabsContent>
         </Tabs>
       </div>

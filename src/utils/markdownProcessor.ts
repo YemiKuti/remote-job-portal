@@ -1,9 +1,19 @@
 
 // Enhanced markdown processing utility for better formatting across the application
-export const processMarkdown = (markdown: string): string => {
+export const processMarkdown = (markdown: string | string[] | null | undefined): string => {
+  // Handle various input types safely
   if (!markdown) return '';
+  
+  // If it's an array, join it with line breaks
+  if (Array.isArray(markdown)) {
+    return processMarkdown(markdown.join('\n'));
+  }
+  
+  // Ensure we have a string
+  const content = String(markdown);
+  if (!content || content.trim() === '') return '';
 
-  let html = markdown
+  let html = content
     // Headers (process in order from h6 to h1 to avoid conflicts)
     .replace(/^###### (.*$)/gm, '<h6 class="text-base font-semibold mt-4 mb-2 text-gray-800">$1</h6>')
     .replace(/^##### (.*$)/gm, '<h5 class="text-lg font-semibold mt-4 mb-2 text-gray-800">$1</h5>')
@@ -165,7 +175,10 @@ const processMarkdownTables = (html: string): string => {
 
 // Enhanced sanitization with more comprehensive security
 export const sanitizeHtml = (html: string): string => {
-  return html
+  // Ensure we have a string
+  const content = String(html || '');
+  
+  return content
     // Remove script tags and dangerous content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -182,10 +195,13 @@ export const sanitizeHtml = (html: string): string => {
 };
 
 // Utility function to extract plain text for previews
-export const extractPlainText = (markdown: string, maxLength: number = 160): string => {
+export const extractPlainText = (markdown: string | string[] | null | undefined, maxLength: number = 160): string => {
   if (!markdown) return '';
   
-  return markdown
+  // Handle arrays by joining them
+  const content = Array.isArray(markdown) ? markdown.join(' ') : String(markdown);
+  
+  return content
     .replace(/[#*_~`\[\]()]/g, '') // Remove markdown symbols
     .replace(/!\[.*?\]\(.*?\)/g, '') // Remove images
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
@@ -193,5 +209,5 @@ export const extractPlainText = (markdown: string, maxLength: number = 160): str
     .replace(/\s+/g, ' ') // Normalize whitespace
     .trim()
     .substring(0, maxLength)
-    .concat(markdown.length > maxLength ? '...' : '');
+    .concat(content.length > maxLength ? '...' : '');
 };

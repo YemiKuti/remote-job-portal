@@ -4,7 +4,7 @@ import { processMarkdown, sanitizeHtml } from "@/utils/markdownProcessor";
 import { cn } from "@/lib/utils";
 
 interface RichTextRendererProps {
-  content: string;
+  content: string | string[] | null | undefined;
   className?: string;
   variant?: 'default' | 'compact' | 'blog' | 'job';
 }
@@ -14,7 +14,8 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   className,
   variant = 'default'
 }) => {
-  const processedHtml = processMarkdown(content || "");
+  // Safely process the content with type checking
+  const processedHtml = processMarkdown(content);
   const sanitizedHtml = sanitizeHtml(processedHtml);
 
   const baseClasses = "rich-text-content";
@@ -27,7 +28,7 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   };
 
   // Handle empty content
-  if (!content || content.trim() === '') {
+  if (!content || (typeof content === 'string' && content.trim() === '') || (Array.isArray(content) && content.length === 0)) {
     return (
       <div className={cn(baseClasses, variantClasses[variant], className)}>
         <p className="text-gray-500 italic">No content provided</p>

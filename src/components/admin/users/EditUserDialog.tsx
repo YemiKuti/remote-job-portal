@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,28 +18,44 @@ interface EditUserDialogProps {
 const EditUserDialog = ({ user, open, onOpenChange, onUpdateUser }: EditUserDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    username: user?.username || '',
-    role: user?.role || 'user'
+    full_name: '',
+    username: '',
+    role: 'user'
   });
 
-  React.useEffect(() => {
-    if (user) {
+  // Reset form data when user changes or dialog opens/closes
+  useEffect(() => {
+    if (user && open) {
+      console.log('Setting form data for user:', user);
       setFormData({
         full_name: user.full_name || '',
         username: user.username || '',
         role: user.role || 'user'
       });
+    } else if (!open) {
+      // Reset form when dialog closes
+      setFormData({
+        full_name: '',
+        username: '',
+        role: 'user'
+      });
     }
-  }, [user]);
+  }, [user, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      console.error('No user selected for editing');
+      return;
+    }
     
+    console.log('Submitting form data:', formData);
     setIsLoading(true);
+    
     try {
       const success = await onUpdateUser(user.id, formData);
+      console.log('Update result:', success);
+      
       if (success) {
         onOpenChange(false);
       }
@@ -51,6 +67,7 @@ const EditUserDialog = ({ user, open, onOpenChange, onUpdateUser }: EditUserDial
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`Updating field ${field} with value:`, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -73,7 +90,7 @@ const EditUserDialog = ({ user, open, onOpenChange, onUpdateUser }: EditUserDial
             <Label htmlFor="email">Email</Label>
             <Input 
               id="email" 
-              value={user.email} 
+              value={user.email || ''} 
               disabled 
               className="bg-gray-50"
             />

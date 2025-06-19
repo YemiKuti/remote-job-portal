@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -90,9 +89,19 @@ export const useUsersManagement = () => {
 
   const handleUpdateUser = async (userId: string, userData: UpdateUserData) => {
     try {
-      console.log('Updating user:', userId, userData);
+      console.log('Updating user in hook:', userId, userData);
+      
+      // Validate that we have valid data
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      
+      if (!userData || Object.keys(userData).length === 0) {
+        throw new Error('User data is required');
+      }
       
       const success = await updateAdminUser(userId, userData);
+      console.log('Update result from API:', success);
       
       if (success) {
         // Reload users to get the latest data
@@ -104,11 +113,11 @@ export const useUsersManagement = () => {
         });
         
         return true;
+      } else {
+        throw new Error('Update operation returned false');
       }
-      
-      return false;
     } catch (error: any) {
-      console.error('Error updating user:', error);
+      console.error('Error updating user in hook:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to update user. Please try again.',

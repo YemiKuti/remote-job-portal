@@ -7,7 +7,7 @@ import { SubscriptionRequired } from '@/components/employer/SubscriptionRequired
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Crown } from 'lucide-react';
 
 const PostJob = () => {
   const {
@@ -27,7 +27,7 @@ const PostJob = () => {
       <DashboardLayout userType="employer">
         <div className="flex flex-col items-center justify-center h-full space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Checking employer subscription...</p>
+          <p className="text-muted-foreground">Checking employer access...</p>
         </div>
       </DashboardLayout>
     );
@@ -50,32 +50,32 @@ const PostJob = () => {
     );
   }
 
-  // No active subscription, block access
-  if (!hasActiveSubscription) {
-    return (
-      <DashboardLayout userType="employer">
-        <SubscriptionRequired employerPlan={subscriptionTier} onRefresh={refresh} />
-      </DashboardLayout>
-    );
-  }
-
-  // Reached post limit, prompt to upgrade
-  if (!canPost && postLimit !== null) {
+  // Reached post limit (including free tier limit)
+  if (!canPost) {
     return (
       <DashboardLayout userType="employer">
         <div className="max-w-lg mx-auto mt-10">
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>
-              You've reached your job posting limit for your <b>{subscriptionTier}</b> plan ({postLimit} jobs).
+              {hasActiveSubscription ? (
+                <>
+                  You've reached your job posting limit for your <b>{subscriptionTier}</b> plan ({postLimit} jobs).
+                </>
+              ) : (
+                <>
+                  You've reached your free job posting limit (1 job). 
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Upgrade to a paid plan to post more jobs and unlock additional features.
+                  </div>
+                </>
+              )}
               <div className="mt-2">
                 <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
                   <a href="/pricing" target="_self">
-                    Upgrade Plan
+                    <Crown className="mr-2 h-4 w-4" />
+                    {hasActiveSubscription ? 'Upgrade Plan' : 'View Pricing Plans'}
                   </a>
                 </Button>
-              </div>
-              <div className="text-xs mt-2 text-muted-foreground">
-                Want to post more jobs? Upgrade to Pro or Enterprise for a higher limit!
               </div>
               <Button variant="outline" size="sm" className="mt-4" onClick={refresh}>
                 <RefreshCw className="h-4 w-4 mr-1 inline" />
@@ -88,7 +88,9 @@ const PostJob = () => {
               Jobs posted: <Badge variant="secondary">{activePostsCount} / {postLimit}</Badge>
             </span>
             <span>
-              Current Plan: <Badge>{subscriptionTier}</Badge>
+              Current Plan: <Badge variant={hasActiveSubscription ? "default" : "outline"}>
+                {subscriptionTier || "Free"}
+              </Badge>
             </span>
           </div>
         </div>
@@ -110,7 +112,9 @@ const PostJob = () => {
           <div className="flex gap-4">
             <span>
               <span className="font-medium">Current Plan:</span>{" "}
-              <Badge variant="secondary">{subscriptionTier || "Unknown"}</Badge>
+              <Badge variant={hasActiveSubscription ? "default" : "outline"}>
+                {subscriptionTier || "Free"}
+              </Badge>
             </span>
             {postLimit !== null && (
               <span>
@@ -123,10 +127,22 @@ const PostJob = () => {
           </div>
           <Button asChild size="sm" variant="outline">
             <a href="/pricing" target="_self">
+              <Crown className="mr-1 h-3 w-3" />
               Upgrade
             </a>
           </Button>
         </div>
+        {!hasActiveSubscription && (
+          <Alert className="mb-6">
+            <Crown className="h-4 w-4" />
+            <AlertDescription>
+              You're using our free plan! Post 1 job at no cost. 
+              <a href="/pricing" className="ml-1 text-job-blue hover:underline">
+                Upgrade for more postings and premium features.
+              </a>
+            </AlertDescription>
+          </Alert>
+        )}
         <JobForm />
       </div>
     </DashboardLayout>
@@ -134,4 +150,3 @@ const PostJob = () => {
 };
 
 export default PostJob;
-

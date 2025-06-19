@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -35,7 +36,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Award,
-  Target,
   Zap
 } from 'lucide-react';
 
@@ -130,40 +130,6 @@ export const EnhancedApplicationDetailModal = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const calculateMatchScore = () => {
-    if (!application.job || !application.candidate) return 0;
-    
-    let score = 0;
-    const maxScore = 100;
-    
-    // Experience match (30 points)
-    if (application.candidate.experience !== undefined) {
-      score += Math.min(30, application.candidate.experience * 3);
-    }
-    
-    // Location match (20 points)
-    if (application.candidate.location && application.job.location) {
-      if (application.candidate.location.toLowerCase().includes(application.job.location.toLowerCase()) ||
-          application.job.location.toLowerCase().includes(application.candidate.location.toLowerCase())) {
-        score += 20;
-      }
-    }
-    
-    // Skills match (50 points)
-    if (application.candidate.skills && application.job.tech_stack) {
-      const candidateSkills = application.candidate.skills.toLowerCase().split(',').map(s => s.trim());
-      const jobSkills = application.job.tech_stack.map(s => s.toLowerCase());
-      const matchingSkills = candidateSkills.filter(skill => 
-        jobSkills.some(jobSkill => jobSkill.includes(skill) || skill.includes(jobSkill))
-      );
-      score += Math.min(50, (matchingSkills.length / jobSkills.length) * 50);
-    }
-    
-    return Math.round(Math.min(score, maxScore));
-  };
-
-  const matchScore = calculateMatchScore();
-
   const handleStatusUpdate = async () => {
     if (newStatus && newStatus !== application.status) {
       await onUpdateStatus(application.id, newStatus);
@@ -204,13 +170,6 @@ export const EnhancedApplicationDetailModal = ({
           {/* Quick Actions Bar */}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Match Score</span>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                  {matchScore}%
-                </Badge>
-              </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-gray-600" />
                 <span className="text-sm text-gray-600">
@@ -335,56 +294,33 @@ export const EnhancedApplicationDetailModal = ({
                   </CardContent>
                 </Card>
 
-                {/* Job Match Analysis */}
+                {/* Job Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Zap className="h-5 w-5" />
-                      Job Match Analysis
+                      <Briefcase className="h-5 w-5" />
+                      Job Information
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Overall Match</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-gray-200 rounded-full">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              matchScore >= 80 ? 'bg-green-500' :
-                              matchScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${matchScore}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold">{matchScore}%</span>
-                      </div>
-                    </div>
-
                     <div className="space-y-3">
                       <div className="flex justify-between items-center text-sm">
-                        <span>Experience Level</span>
+                        <span className="font-medium">Position</span>
                         <span className="text-muted-foreground">
-                          {application.candidate?.experience || 0} years
+                          {application.job?.title || 'Not specified'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span>Location</span>
+                        <span className="font-medium">Company</span>
                         <span className="text-muted-foreground">
-                          {application.candidate?.location || 'Not specified'}
+                          {application.job?.company || 'Not specified'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span>Skills Match</span>
-                        <div className="flex items-center gap-1">
-                          {application.candidate?.skills && application.job?.tech_stack ? (
-                            <>
-                              <Star className="h-3 w-3 text-yellow-500" />
-                              <span className="text-muted-foreground">Good</span>
-                            </>
-                          ) : (
-                            <span className="text-muted-foreground">Unable to assess</span>
-                          )}
-                        </div>
+                        <span className="font-medium">Location</span>
+                        <span className="text-muted-foreground">
+                          {application.job?.location || 'Not specified'}
+                        </span>
                       </div>
                     </div>
 
@@ -404,6 +340,19 @@ export const EnhancedApplicationDetailModal = ({
                             </li>
                           )}
                         </ul>
+                      </div>
+                    )}
+
+                    {application.job?.tech_stack && (
+                      <div className="pt-3 border-t">
+                        <h5 className="font-medium mb-2">Tech Stack</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {application.job.tech_stack.map((tech, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {tech}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -541,69 +490,6 @@ export const EnhancedApplicationDetailModal = ({
                   </Card>
                 )}
               </div>
-            </TabsContent>
-
-            <TabsContent value="assessment" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
-                    Application Assessment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{matchScore}%</div>
-                      <div className="text-sm text-blue-700">Overall Match</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {application.resume ? '✓' : '✗'}
-                      </div>
-                      <div className="text-sm text-green-700">Resume Provided</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {application.cover_letter ? '✓' : '✗'}
-                      </div>
-                      <div className="text-sm text-purple-700">Cover Letter</div>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Assessment Notes</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="font-medium">Strengths</Label>
-                        <ul className="text-sm space-y-1 text-green-700">
-                          {application.candidate?.experience && (
-                            <li>✓ {application.candidate.experience} years of experience</li>
-                          )}
-                          {application.resume && <li>✓ Resume provided</li>}
-                          {application.cover_letter && <li>✓ Detailed cover letter</li>}
-                          {application.portfolio_url && <li>✓ Portfolio available</li>}
-                          {application.candidate?.skills && <li>✓ Skills clearly listed</li>}
-                        </ul>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="font-medium">Areas for Review</Label>
-                        <ul className="text-sm space-y-1 text-amber-700">
-                          {!application.candidate?.full_name && !application.candidate?.username && (
-                            <li>⚠ Incomplete profile information</li>
-                          )}
-                          {!application.resume && <li>⚠ No resume attached</li>}
-                          {!application.cover_letter && <li>⚠ No cover letter provided</li>}
-                          {!application.candidate?.phone && <li>⚠ No contact phone number</li>}
-                          {!application.portfolio_url && <li>⚠ No portfolio or work samples</li>}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="actions" className="space-y-6 mt-6">

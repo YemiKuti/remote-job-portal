@@ -84,7 +84,8 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     
     try {
       const sanitizedEmail = sanitizeInput(resetEmail);
-      const redirectUrl = `${window.location.origin}/auth`;
+      // Use the full URL to ensure proper redirection
+      const redirectUrl = `${window.location.origin}/auth?type=recovery`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
         redirectTo: redirectUrl

@@ -23,10 +23,18 @@ export default function ResetPassword() {
 
   useEffect(() => {
     const checkResetSession = async () => {
-      const urlParams = new URLSearchParams(location.search);
-      const type = urlParams.get('type');
-      const accessToken = urlParams.get('access_token');
-      const refreshToken = urlParams.get('refresh_token');
+      // Parse URL fragment for recovery tokens
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      
+      // Also check search params as fallback
+      const searchParams = new URLSearchParams(location.search);
+      
+      const type = params.get('type') || searchParams.get('type');
+      const accessToken = params.get('access_token') || searchParams.get('access_token');
+      const refreshToken = params.get('refresh_token') || searchParams.get('refresh_token');
+
+      console.log('🔐 Reset session check:', { type, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
 
       if (type === 'recovery' && accessToken && refreshToken) {
         console.log('🔐 Password recovery detected, setting up session');
@@ -44,6 +52,8 @@ export default function ResetPassword() {
           } else {
             setIsValidSession(true);
             toast.success('Please set your new password below.');
+            // Clear the URL fragment to clean up the interface
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (error) {
           console.error('Error during session setup:', error);
@@ -51,6 +61,7 @@ export default function ResetPassword() {
           navigate('/auth');
         }
       } else {
+        console.log('🔐 No valid recovery tokens found, redirecting to auth');
         toast.error('Invalid reset link. Please request a new password reset.');
         navigate('/auth');
       }

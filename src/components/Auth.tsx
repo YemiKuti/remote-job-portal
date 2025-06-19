@@ -38,10 +38,14 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   useEffect(() => {
     // Check if this is a password recovery flow and redirect to reset-password page
     const urlParams = new URLSearchParams(location.search);
-    const type = urlParams.get('type');
+    const hash = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(hash);
+    
+    const type = urlParams.get('type') || hashParams.get('type');
     
     if (type === 'recovery') {
-      navigate(`/reset-password${location.search}`);
+      console.log('🔐 Recovery detected in Auth component, redirecting to reset-password');
+      navigate(`/reset-password${location.search}${location.hash}`);
       return;
     }
   }, [location, navigate]);

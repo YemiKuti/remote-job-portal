@@ -3,7 +3,6 @@ import React from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import JobForm from '@/components/JobForm';
 import { useEmployerSubscriptionAccess } from '@/hooks/useEmployerSubscriptionAccess';
-import { SubscriptionRequired } from '@/components/employer/SubscriptionRequired';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,30 +49,19 @@ const PostJob = () => {
     );
   }
 
-  // Reached post limit (including free tier limit)
+  // Reached post limit (only for paid tiers now)
   if (!canPost) {
     return (
       <DashboardLayout userType="employer">
         <div className="max-w-lg mx-auto mt-10">
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>
-              {hasActiveSubscription ? (
-                <>
-                  You've reached your job posting limit for your <b>{subscriptionTier}</b> plan ({postLimit} jobs).
-                </>
-              ) : (
-                <>
-                  You've reached your free job posting limit (1 job). 
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    Upgrade to a paid plan to post more jobs and unlock additional features.
-                  </div>
-                </>
-              )}
+              You've reached your job posting limit for your <b>{subscriptionTier}</b> plan ({postLimit} jobs).
               <div className="mt-2">
                 <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
                   <a href="/pricing" target="_self">
                     <Crown className="mr-2 h-4 w-4" />
-                    {hasActiveSubscription ? 'Upgrade Plan' : 'View Pricing Plans'}
+                    Upgrade Plan
                   </a>
                 </Button>
               </div>
@@ -98,7 +86,7 @@ const PostJob = () => {
     );
   }
 
-  // User has access and is under limit
+  // User has access and is under limit (or unlimited for free tier)
   return (
     <DashboardLayout userType="employer">
       <div className="space-y-6 max-w-2xl mx-auto">
@@ -116,11 +104,18 @@ const PostJob = () => {
                 {subscriptionTier || "Free"}
               </Badge>
             </span>
-            {postLimit !== null && (
+            {postLimit !== null ? (
               <span>
                 <span className="font-medium">Job Posts Left:</span>{" "}
                 <Badge variant={activePostsCount === postLimit ? "destructive" : "outline"}>
                   {Math.max(0, postLimit - activePostsCount)}
+                </Badge>
+              </span>
+            ) : (
+              <span>
+                <span className="font-medium">Job Posts:</span>{" "}
+                <Badge variant="outline">
+                  {activePostsCount} / Unlimited
                 </Badge>
               </span>
             )}
@@ -128,7 +123,7 @@ const PostJob = () => {
           <Button asChild size="sm" variant="outline">
             <a href="/pricing" target="_self">
               <Crown className="mr-1 h-3 w-3" />
-              Upgrade
+              {hasActiveSubscription ? "Manage Plan" : "Upgrade"}
             </a>
           </Button>
         </div>
@@ -136,9 +131,9 @@ const PostJob = () => {
           <Alert className="mb-6">
             <Crown className="h-4 w-4" />
             <AlertDescription>
-              You're using our free plan! Post 1 job at no cost. 
+              You're using our free plan with unlimited job postings! 
               <a href="/pricing" className="ml-1 text-job-blue hover:underline">
-                Upgrade for more postings and premium features.
+                Upgrade for premium features and analytics.
               </a>
             </AlertDescription>
           </Alert>

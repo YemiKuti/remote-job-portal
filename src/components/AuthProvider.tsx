@@ -178,13 +178,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (event === 'SIGNED_IN' && validatedSession?.user) {
             console.log('🔐 AuthProvider: User signed in successfully');
             
-            // Check if this is a recovery flow - if so, don't auto-redirect
+            // Check if this is a recovery flow - if so, redirect to reset password page
             if (isRecoveryFlow()) {
-              console.log('🔐 AuthProvider: Recovery flow detected, skipping auto-redirect');
+              console.log('🔐 AuthProvider: Recovery flow detected, redirecting to reset-password');
               // Defer profile creation to avoid blocking
               setTimeout(() => {
                 ensureUserProfileDeferred(validatedSession.user);
               }, 100);
+              // Force redirect to reset password page for recovery flows
+              navigate('/reset-password', { replace: true });
               return;
             }
             

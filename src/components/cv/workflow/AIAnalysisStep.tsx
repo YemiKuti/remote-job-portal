@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,10 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Brain, ArrowLeft, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Job } from '@/types';
 
 interface AIAnalysisStepProps {
   workflowData: {
     selectedResume: any;
+    selectedJob: Job | null;
     jobTitle: string;
     companyName: string;
     jobDescription: string;
@@ -44,22 +47,45 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(25);
       setStatus('analyzing');
-      setStatusMessage('AI is analyzing your resume with candidate information and job requirements...');
+      setStatusMessage('AI is analyzing your resume with the selected job requirements...');
 
       // Get resume content
       const resumeContent = await resumeData.text();
 
       setProgress(50);
-      setStatusMessage('Generating your tailored resume with complete candidate information...');
+      setStatusMessage('Generating your tailored resume optimized for this specific position...');
 
-      // Call the tailor-cv edge function with candidate data
+      // Prepare enhanced job data for better AI analysis
+      const enhancedJobDescription = workflowData.selectedJob ? 
+        `Job Title: ${workflowData.selectedJob.title}
+Company: ${workflowData.selectedJob.company}
+Location: ${workflowData.selectedJob.location}
+Employment Type: ${workflowData.selectedJob.employmentType}
+Experience Level: ${workflowData.selectedJob.experienceLevel}
+Remote: ${workflowData.selectedJob.remote ? 'Yes' : 'No'}
+
+Job Description:
+${workflowData.selectedJob.description}
+
+Key Requirements:
+${workflowData.selectedJob.requirements?.join('\n') || 'No specific requirements listed'}
+
+Required Technology Stack:
+${workflowData.selectedJob.techStack.join(', ')}
+
+Salary Range: ${workflowData.selectedJob.salary.min && workflowData.selectedJob.salary.max ? 
+  `${workflowData.selectedJob.salary.currency} ${workflowData.selectedJob.salary.min.toLocaleString()} - ${workflowData.selectedJob.salary.max.toLocaleString()}` : 
+  'Not specified'}` : workflowData.jobDescription;
+
+      // Call the tailor-cv edge function with enhanced job data
       const { data, error } = await supabase.functions.invoke('tailor-cv', {
         body: {
           resumeContent,
-          jobDescription: workflowData.jobDescription,
+          jobDescription: enhancedJobDescription,
           jobTitle: workflowData.jobTitle,
           companyName: workflowData.companyName,
-          candidateData: workflowData.selectedResume.candidate_data
+          candidateData: workflowData.selectedResume.candidate_data,
+          jobData: workflowData.selectedJob // Pass the complete job object for additional context
         }
       });
 
@@ -75,17 +101,18 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(75);
       setStatus('generating');
-      setStatusMessage('Finalizing your professional resume...');
+      setStatusMessage('Finalizing your professionally tailored resume...');
 
-      // Save the tailored resume to database
+      // Save the tailored resume to database with job reference
       const { data: tailoredResume, error: saveError } = await supabase
         .from('tailored_resumes')
         .insert({
           user_id: workflowData.selectedResume.user_id,
           original_resume_id: workflowData.selectedResume.id,
+          job_id: workflowData.selectedJob?.id?.startsWith('manual-') ? null : workflowData.selectedJob?.id,
           job_title: workflowData.jobTitle,
           company_name: workflowData.companyName,
-          job_description: workflowData.jobDescription,
+          job_description: enhancedJobDescription,
           tailored_content: data.tailoredResume,
           ai_suggestions: data.suggestions || {},
           tailoring_score: data.score || 85
@@ -97,7 +124,7 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
 
       setProgress(100);
       setStatus('complete');
-      setStatusMessage('Your tailored resume with complete candidate information is ready!');
+      setStatusMessage(`Your resume has been perfectly tailored for the ${workflowData.jobTitle} position!`);
 
       // Wait a moment before completing
       setTimeout(() => {
@@ -142,10 +169,22 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
           Step 3: AI Analysis & Tailoring
         </CardTitle>
         <CardDescription>
-          Our AI is analyzing your resume and tailoring it with your complete candidate information
+          Our AI is analyzing your resume and tailoring it specifically for this position
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Selected Job Summary */}
+        {workflowData.selectedJob && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">Tailoring for:</h4>
+            <div>
+              <h5 className="font-semibold">{workflowData.selectedJob.title}</h5>
+              <p className="text-sm text-gray-600">{workflowData.selectedJob.company}</p>
+              <p className="text-xs text-gray-500 mt-1">{workflowData.selectedJob.location}</p>
+            </div>
+          </div>
+        )}
+
         <div className="text-center space-y-4">
           {getStatusIcon()}
           
@@ -160,23 +199,23 @@ export function AIAnalysisStep({ workflowData, onComplete, onBack }: AIAnalysisS
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">🤖 What our AI is doing:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Extracting candidate information from your resume</li>
-              <li>• Analyzing your existing resume structure and content</li>
-              <li>• Extracting key requirements from the job description</li>
-              <li>• Including your complete contact information and details</li>
-              <li>• Matching your skills and experience to job requirements</li>
-              <li>• Optimizing keywords for ATS (Applicant Tracking Systems)</li>
-              <li>• Creating a professional header with your contact information</li>
-              <li>• Generating tailored content that highlights relevant experience</li>
+              <li>• Extracting and analyzing your professional experience and skills</li>
+              <li>• Mapping job requirements to your qualifications</li>
+              <li>• Optimizing keywords for this specific position and company</li>
+              <li>• Restructuring content to highlight relevant achievements</li>
+              <li>• Ensuring ATS compatibility and professional formatting</li>
+              <li>• Including complete contact information and professional details</li>
+              <li>• Tailoring language and tone to match industry standards</li>
             </ul>
           </div>
         ) : status === 'complete' ? (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h4 className="font-medium text-green-900 mb-2">✅ Analysis Complete!</h4>
             <p className="text-sm text-green-800">
-              Your resume has been successfully tailored with complete candidate information for the {workflowData.jobTitle || 'position'} 
+              Your resume has been successfully tailored for the {workflowData.jobTitle} position
               {workflowData.companyName && ` at ${workflowData.companyName}`}. 
-              The AI has included your contact details, optimized your content for maximum impact, and ensured ATS compatibility.
+              The AI has optimized your content to match the job requirements, included relevant keywords,
+              and ensured maximum ATS compatibility for this specific role.
             </p>
           </div>
         ) : status === 'error' ? (

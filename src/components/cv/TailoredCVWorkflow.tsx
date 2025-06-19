@@ -3,20 +3,22 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Upload, FileText, Brain, Download } from 'lucide-react';
+import { CheckCircle, Upload, Building, Brain, Download } from 'lucide-react';
 import { ResumeUploadStep } from './workflow/ResumeUploadStep';
-import { JobDescriptionStep } from './workflow/JobDescriptionStep';
+import { JobSelectionStep } from './workflow/JobSelectionStep';
 import { AIAnalysisStep } from './workflow/AIAnalysisStep';
 import { DownloadStep } from './workflow/DownloadStep';
+import { Job } from '@/types';
 
 interface TailoredCVWorkflowProps {
   userId: string;
 }
 
-type WorkflowStep = 'upload' | 'description' | 'analysis' | 'download';
+type WorkflowStep = 'upload' | 'jobSelection' | 'analysis' | 'download';
 
 interface WorkflowData {
   selectedResume: any;
+  selectedJob: Job | null;
   jobTitle: string;
   companyName: string;
   jobDescription: string;
@@ -27,6 +29,7 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [workflowData, setWorkflowData] = useState<WorkflowData>({
     selectedResume: null,
+    selectedJob: null,
     jobTitle: '',
     companyName: '',
     jobDescription: '',
@@ -35,7 +38,7 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
 
   const steps = [
     { id: 'upload', title: 'Upload Resume', icon: Upload, description: 'Upload your existing resume or CV' },
-    { id: 'description', title: 'Job Description', icon: FileText, description: 'Paste the job description you\'re applying for' },
+    { id: 'jobSelection', title: 'Select Job', icon: Building, description: 'Choose the job you\'re applying for' },
     { id: 'analysis', title: 'AI Analysis', icon: Brain, description: 'AI analyzes and tailors your resume' },
     { id: 'download', title: 'Download', icon: Download, description: 'Download your tailored ATS-friendly resume' }
   ];
@@ -48,9 +51,9 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
     
     switch (step) {
       case 'upload':
-        setCurrentStep('description');
+        setCurrentStep('jobSelection');
         break;
-      case 'description':
+      case 'jobSelection':
         setCurrentStep('analysis');
         break;
       case 'analysis':
@@ -64,11 +67,11 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
 
   const handleBack = () => {
     switch (currentStep) {
-      case 'description':
+      case 'jobSelection':
         setCurrentStep('upload');
         break;
       case 'analysis':
-        setCurrentStep('description');
+        setCurrentStep('jobSelection');
         break;
       case 'download':
         setCurrentStep('analysis');
@@ -80,6 +83,7 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
     setCurrentStep('upload');
     setWorkflowData({
       selectedResume: null,
+      selectedJob: null,
       jobTitle: '',
       companyName: '',
       jobDescription: '',
@@ -146,10 +150,9 @@ export function TailoredCVWorkflow({ userId }: TailoredCVWorkflowProps) {
           />
         )}
         
-        {currentStep === 'description' && (
-          <JobDescriptionStep
-            initialData={workflowData}
-            onComplete={(data) => handleStepComplete('description', data)}
+        {currentStep === 'jobSelection' && (
+          <JobSelectionStep
+            onComplete={(data) => handleStepComplete('jobSelection', data)}
             onBack={handleBack}
           />
         )}

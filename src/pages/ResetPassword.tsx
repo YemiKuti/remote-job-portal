@@ -20,6 +20,7 @@ export default function ResetPassword() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [hasLegacyToken, setHasLegacyToken] = useState(false);
 
   useEffect(() => {
     const checkResetSession = async () => {
@@ -47,30 +48,14 @@ export default function ResetPassword() {
         search: location.search
       });
 
-      // If we have a legacy token parameter, try to exchange it
+      // Handle legacy token format - allow password reset without requiring existing session
       if (legacyToken && type === 'recovery') {
-        console.log('🔐 Legacy token detected, attempting to verify session');
-        
-        try {
-          // For legacy tokens, we need to verify the user's session
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (session && session.user) {
-            console.log('🔐 Valid session found with legacy token');
-            setIsValidSession(true);
-            toast.success('Please set your new password below.');
-            // Clear the URL parameters to clean up the interface
-            window.history.replaceState({}, document.title, window.location.pathname);
-          } else {
-            console.log('🔐 No valid session with legacy token, redirecting to request new reset');
-            toast.error('This reset link has expired. Please request a new password reset.');
-            navigate('/auth');
-          }
-        } catch (error) {
-          console.error('Error checking session with legacy token:', error);
-          toast.error('Invalid reset link. Please request a new password reset.');
-          navigate('/auth');
-        }
+        console.log('🔐 Legacy token detected, allowing password reset');
+        setHasLegacyToken(true);
+        setIsValidSession(true);
+        toast.success('Please set your new password below.');
+        // Clear the URL parameters to clean up the interface
+        window.history.replaceState({}, document.title, window.location.pathname);
       } else if (type === 'recovery' && accessToken && refreshToken) {
         console.log('🔐 Standard recovery tokens detected, setting up session');
         
@@ -130,6 +115,20 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
+      // For legacy tokens, we need to handle password update differently
+      if (hasLegacyToken) {
+        // For legacy tokens, we'll attempt to update the password directly
+        // This may require the user to be signed in first
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // If no session exists, we can't update the password with legacy tokens
+          toast.error('This reset link format is no longer supported. Please request a new password reset.');
+          navigate('/auth');
+          return;
+        }
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -140,7 +139,12 @@ export default function ResetPassword() {
       navigate('/auth');
     } catch (error: any) {
       console.error('Error updating password:', error);
-      toast.error('Failed to update password. Please try again.');
+      if (hasLegacyToken) {
+        toast.error('This reset link has expired. Please request a new password reset.');
+        navigate('/auth');
+      } else {
+        toast.error('Failed to update password. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +181,13 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {hasLegacyToken && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  You're using an older reset link format. If you encounter any issues, please request a new password reset.
+                </p>
+              </div>
+            )}
             <form onSubmit={handlePasswordUpdate} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>

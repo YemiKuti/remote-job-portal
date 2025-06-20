@@ -64,7 +64,13 @@ const UserProfilePage = () => {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const hasProfileData = profile.full_name || profile.username || profile.bio || profile.skills || profile.experience !== undefined;
+  // Fixed profile completeness check - should check if most key fields are filled
+  const hasBasicInfo = profile.full_name || profile.username;
+  const hasProfessionalInfo = profile.title || profile.bio || profile.skills || (profile.experience !== undefined && profile.experience !== null);
+  const hasContactInfo = profile.location || profile.website;
+  
+  // A profile is considered complete if it has basic info AND either professional or contact info
+  const hasProfileData = hasBasicInfo && (hasProfessionalInfo || hasContactInfo);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -310,7 +316,7 @@ const UserProfilePage = () => {
               </Card>
 
               {/* Empty State for Incomplete Profile */}
-              {!hasProfileData && !resumes.length && (
+              {!hasProfileData && resumes.length === 0 && (
                 <Card className="shadow-lg border-0">
                   <CardContent className="text-center py-12">
                     <UserCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -402,7 +408,7 @@ const UserProfilePage = () => {
                 </CardContent>
               </Card>
 
-              {/* Profile Completeness */}
+              {/* Profile Completeness - Fixed condition */}
               {hasProfileData && (
                 <Card className="shadow-lg border-0 bg-green-50 border border-green-200">
                   <CardContent className="pt-6">

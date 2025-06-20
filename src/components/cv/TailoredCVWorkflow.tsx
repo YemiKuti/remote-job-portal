@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,66 +48,48 @@ interface TailoringResult {
   };
 }
 
-type WorkflowStep = 'job-selection' | 'resume-upload' | 'ai-analysis' | 'review' | 'download';
+type WorkflowStep = 'resume-upload' | 'job-selection' | 'ai-analysis' | 'review' | 'download';
 
 export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('job-selection');
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>('resume-upload');
   const [selectedJob, setSelectedJob] = useState<any>(null);
-  const [uploadedResume, setUploadedResume] = useState<any>(null);
+  const [selectedResume, setSelectedResume] = useState<any>(null);
+  const [jobTitle, setJobTitle] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [jobDescription, setJobDescription] = useState<string>('');
   const [tailoringResult, setTailoringResult] = useState<TailoringResult | null>(null);
+  const [tailoredResumeId, setTailoredResumeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const stepProgress = {
-    'job-selection': 20,
-    'resume-upload': 40,
+    'resume-upload': 20,
+    'job-selection': 40,
     'ai-analysis': 70,
     'review': 90,
     'download': 100
   };
 
-  const handleJobSelection = (job: any) => {
-    setSelectedJob(job);
-    setCurrentStep('resume-upload');
-    setProgress(stepProgress['resume-upload']);
-    console.log('✅ Job selected:', job.title);
+  const handleResumeUpload = (data: { selectedResume: any }) => {
+    setSelectedResume(data.selectedResume);
+    setCurrentStep('job-selection');
+    setProgress(stepProgress['job-selection']);
+    console.log('✅ Resume selected:', data.selectedResume.name);
   };
 
-  const handleResumeUpload = async (file: File, resumeData?: any) => {
-    try {
-      setLoading(true);
-      console.log('📤 Processing uploaded resume...');
-
-      let resumeContent;
-      if (resumeData) {
-        // Existing resume from database
-        resumeContent = resumeData;
-      } else {
-        // New file upload
-        resumeContent = await extractResumeContent(file);
-      }
-
-      setUploadedResume({
-        file,
-        content: resumeContent,
-        name: resumeData?.name || file.name
-      });
-
-      setCurrentStep('ai-analysis');
-      setProgress(stepProgress['ai-analysis']);
-      console.log('✅ Resume processed successfully');
-    } catch (error) {
-      console.error('❌ Error processing resume:', error);
-      setError('Failed to process resume. Please try again.');
-      toast.error('Failed to process resume');
-    } finally {
-      setLoading(false);
-    }
+  const handleJobSelection = (data: { selectedJob: any; jobTitle: string; companyName: string; jobDescription: string }) => {
+    setSelectedJob(data.selectedJob);
+    setJobTitle(data.jobTitle);
+    setCompanyName(data.companyName);
+    setJobDescription(data.jobDescription);
+    setCurrentStep('ai-analysis');
+    setProgress(stepProgress['ai-analysis']);
+    console.log('✅ Job selected:', data.jobTitle);
   };
 
   const handleAIAnalysis = async () => {
-    if (!selectedJob || !uploadedResume) {
+    if (!selectedJob || !selectedResume) {
       setError('Missing job or resume information');
       return;
     }
@@ -123,11 +106,11 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       const { data, error: functionError } = await supabase.functions.invoke('tailor-cv', {
         body: {
-          resumeContent: uploadedResume.content?.text || 'Resume content',
-          jobDescription: selectedJob.description,
-          jobTitle: selectedJob.title,
-          companyName: selectedJob.company,
-          candidateData: uploadedResume.content?.candidateData,
+          resumeContent: selectedResume.content?.text || selectedResume.resume_text || 'Resume content',
+          jobDescription: jobDescription,
+          jobTitle: jobTitle,
+          companyName: companyName,
+          candidateData: selectedResume.candidate_data,
           jobRequirements: selectedJob.requirements || []
         }
       });
@@ -144,8 +127,33 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       }
 
       setTailoringResult(data);
-      setCurrentStep('review');
-      setProgress(stepProgress['review']);
+      
+      // Save the tailored resume to database
+      const { data: savedResume, error: saveError } = await supabase
+        .from('tailored_resumes')
+        .insert({
+          user_id: userId,
+          original_resume_id: selectedResume.id,
+          job_id: selectedJob.id,
+          tailored_content: data.tailoredResume,
+          ai_suggestions: data.suggestions,
+          tailoring_score: data.score,
+          job_title: jobTitle,
+          company_name: companyName,
+          job_description: jobDescription
+        })
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('❌ Error saving tailored resume:', saveError);
+        // Continue anyway, we have the data
+      } else {
+        setTailoredResumeId(savedResume.id);
+      }
+
+      setCurrentStep('download');
+      setProgress(stepProgress['download']);
       
       console.log('✅ AI analysis completed. Score:', data.score);
       toast.success(`CV tailored successfully! Match score: ${data.score}%`);
@@ -159,48 +167,16 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     }
   };
 
-  const handleSaveTailoredCV = async () => {
-    if (!tailoringResult || !selectedJob || !uploadedResume) return;
-
-    try {
-      setLoading(true);
-      console.log('💾 Saving tailored CV...');
-
-      const { error } = await supabase
-        .from('tailored_resumes')
-        .insert({
-          user_id: userId,
-          original_resume_id: uploadedResume.id,
-          job_id: selectedJob.id,
-          tailored_content: tailoringResult.tailoredResume,
-          ai_suggestions: tailoringResult.suggestions,
-          tailoring_score: tailoringResult.score,
-          job_title: selectedJob.title,
-          company_name: selectedJob.company,
-          job_description: selectedJob.description
-        });
-
-      if (error) throw error;
-
-      setCurrentStep('download');
-      setProgress(stepProgress['download']);
-      toast.success('Tailored CV saved successfully!');
-      console.log('✅ Tailored CV saved to database');
-
-    } catch (error) {
-      console.error('❌ Error saving tailored CV:', error);
-      toast.error('Failed to save tailored CV');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resetWorkflow = () => {
-    setCurrentStep('job-selection');
+    setCurrentStep('resume-upload');
     setSelectedJob(null);
-    setUploadedResume(null);
+    setSelectedResume(null);
+    setJobTitle('');
+    setCompanyName('');
+    setJobDescription('');
     setTailoringResult(null);
-    setProgress(stepProgress['job-selection']);
+    setTailoredResumeId(null);
+    setProgress(stepProgress['resume-upload']);
     setError(null);
   };
 
@@ -219,7 +195,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
                 Create a targeted resume with a compelling 3-sentence career profile
               </CardDescription>
             </div>
-            {currentStep !== 'job-selection' && (
+            {currentStep !== 'resume-upload' && (
               <Button variant="outline" onClick={resetWorkflow}>
                 Start Over
               </Button>
@@ -247,122 +223,38 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       {/* Step Content */}
       <div className="space-y-6">
-        {currentStep === 'job-selection' && (
-          <JobSelectionStep 
-            onJobSelect={handleJobSelection}
+        {currentStep === 'resume-upload' && (
+          <ResumeUploadStep 
             userId={userId}
+            onComplete={handleResumeUpload}
           />
         )}
 
-        {currentStep === 'resume-upload' && selectedJob && (
-          <ResumeUploadStep 
-            onResumeUpload={handleResumeUpload}
-            selectedJob={selectedJob}
-            userId={userId}
-            loading={loading}
+        {currentStep === 'job-selection' && (
+          <JobSelectionStep 
+            onComplete={handleJobSelection}
+            onBack={() => setCurrentStep('resume-upload')}
           />
         )}
 
         {currentStep === 'ai-analysis' && (
           <AIAnalysisStep 
             selectedJob={selectedJob}
-            uploadedResume={uploadedResume}
+            uploadedResume={selectedResume}
             onStartAnalysis={handleAIAnalysis}
             loading={loading}
           />
         )}
 
-        {currentStep === 'review' && tailoringResult && (
-          <div className="space-y-6">
-            {/* Analysis Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-green-500" />
-                    Tailoring Analysis
-                  </span>
-                  <Badge variant={tailoringResult.score >= 80 ? "default" : "secondary"} className="text-lg px-3 py-1">
-                    {tailoringResult.score}% Match
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {tailoringResult.analysis.skillsMatched}
-                    </div>
-                    <div className="text-sm text-gray-600">Skills Matched</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {tailoringResult.analysis.candidateSkills.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Key Skills Identified</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {tailoringResult.analysis.experienceLevel}
-                    </div>
-                    <div className="text-sm text-gray-600">Experience Level</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <h4 className="font-medium">Key Improvements:</h4>
-                  <div className="grid gap-2">
-                    {tailoringResult.analysis.hasCareerProfile && (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm">3-sentence career profile created</span>
-                      </div>
-                    )}
-                    {tailoringResult.suggestions.recommendations.map((rec, index) => (
-                      <div key={index} className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm">{rec}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Resume Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Tailored Resume Preview
-                </CardTitle>
-                <CardDescription>
-                  Your resume customized for {selectedJob?.title} at {selectedJob?.company}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-gray-50 p-6 rounded-lg max-h-96 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm font-mono">
-                    {tailoringResult.tailoredResume}
-                  </pre>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button onClick={handleSaveTailoredCV} disabled={loading}>
-                    {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save Tailored Resume
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {currentStep === 'download' && tailoringResult && (
+        {currentStep === 'download' && tailoringResult && tailoredResumeId && (
           <DownloadStep 
-            tailoredResume={tailoringResult.tailoredResume}
-            jobTitle={selectedJob?.title}
-            companyName={selectedJob?.company}
-            score={tailoringResult.score}
+            workflowData={{
+              tailoredResumeId: tailoredResumeId,
+              jobTitle: jobTitle,
+              companyName: companyName,
+              selectedResume: selectedResume
+            }}
+            onRestart={resetWorkflow}
           />
         )}
       </div>

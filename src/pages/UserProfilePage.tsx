@@ -64,13 +64,16 @@ const UserProfilePage = () => {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Fixed profile completeness check - should check if most key fields are filled
-  const hasBasicInfo = profile.full_name || profile.username;
-  const hasProfessionalInfo = profile.title || profile.bio || profile.skills || (profile.experience !== undefined && profile.experience !== null);
-  const hasContactInfo = profile.location || profile.website;
+  // More strict profile completeness check - require substantial information across multiple areas
+  const hasBasicInfo = !!(profile.full_name && profile.username);
+  const hasProfessionalInfo = !!(profile.title && profile.bio && profile.skills && (profile.experience !== undefined && profile.experience !== null));
+  const hasContactInfo = !!(profile.location && profile.website);
   
-  // A profile is considered complete if it has basic info AND either professional or contact info
-  const hasProfileData = hasBasicInfo && (hasProfessionalInfo || hasContactInfo);
+  // A profile is considered complete only if it has ALL basic info AND substantial professional info AND contact info
+  const hasComprehensiveProfile = hasBasicInfo && hasProfessionalInfo && hasContactInfo;
+  
+  // Check if profile has at least some meaningful content
+  const hasMinimalProfileData = profile.full_name || profile.username || profile.bio || profile.skills || profile.title || profile.location;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -106,7 +109,7 @@ const UserProfilePage = () => {
                     fallbackText={getInitials(profile.full_name || profile.username)}
                     className="h-28 w-28 md:h-36 md:w-36 border-4 border-white/20 shadow-2xl"
                   />
-                  {hasProfileData && (
+                  {hasComprehensiveProfile && (
                     <div className="absolute -bottom-2 -right-2 bg-green-500 p-2 rounded-full border-3 border-white">
                       <Star className="h-4 w-4 text-white" />
                     </div>
@@ -316,7 +319,7 @@ const UserProfilePage = () => {
               </Card>
 
               {/* Empty State for Incomplete Profile */}
-              {!hasProfileData && resumes.length === 0 && (
+              {!hasMinimalProfileData && resumes.length === 0 && (
                 <Card className="shadow-lg border-0">
                   <CardContent className="text-center py-12">
                     <UserCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -408,8 +411,8 @@ const UserProfilePage = () => {
                 </CardContent>
               </Card>
 
-              {/* Profile Completeness - Fixed condition */}
-              {hasProfileData && (
+              {/* Profile Completeness - Only show for truly comprehensive profiles */}
+              {hasComprehensiveProfile && (
                 <Card className="shadow-lg border-0 bg-green-50 border border-green-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-2 text-green-800">

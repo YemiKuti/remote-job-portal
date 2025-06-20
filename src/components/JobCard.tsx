@@ -7,6 +7,7 @@ import { formatSalary, getTimeAgo } from "@/data/jobs";
 import { Job } from "@/types";
 import { SponsoredBadge } from "@/components/ui/sponsored-badge";
 import { useNavigate } from "react-router-dom";
+import { RichTextRenderer } from "@/components/RichTextRenderer";
 
 interface JobCardProps {
   job: Job;
@@ -57,7 +58,13 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
           </div>
         </div>
         
-        <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
+        <div className="mb-4">
+          <RichTextRenderer 
+            content={job.description} 
+            variant="compact"
+            className="line-clamp-3 text-sm"
+          />
+        </div>
         
         <div className="flex flex-wrap gap-2 mb-4">
           {job.techStack.slice(0, 3).map((tech) => (

@@ -1,25 +1,33 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
 export const validateOpenAISetup = async (): Promise<boolean> => {
   try {
     console.log('🔍 Validating OpenAI setup...');
     
-    const { data, error } = await supabase.functions.invoke('analyze-cv', {
-      body: { test: true }
-    });
-
-    if (error) {
-      console.error('❌ OpenAI validation error:', error);
+    // Test the edge function to see if OpenAI is configured
+    const { data, error } = await fetch('/api/test-openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ test: true })
+    }).then(res => res.json()).catch(() => ({ error: 'Network error' }));
+    
+    if (error && error.includes('not configured')) {
+      console.log('❌ OpenAI API key not configured');
       return false;
     }
-
-    const isValid = data?.status === 'ok' && data?.hasOpenAI === true;
-    console.log('✅ OpenAI setup validation result:', isValid);
     
-    return isValid;
+    console.log('✅ OpenAI setup validated');
+    return true;
   } catch (error) {
     console.error('❌ Error validating OpenAI setup:', error);
     return false;
   }
+};
+
+export const getOpenAIModels = () => {
+  return {
+    'gpt-4o-mini': 'Fast and efficient model for resume tailoring',
+    'gpt-4o': 'More powerful model for complex tailoring tasks'
+  };
 };

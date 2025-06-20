@@ -7,41 +7,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper function to truncate text while preserving important sections
-const smartTruncate = (text: string, maxLength: number): string => {
-  if (text.length <= maxLength) return text;
+// Enhanced function to extract key skills from resume content
+const extractKeySkills = (resumeContent: string): string[] => {
+  const skillsSection = resumeContent.toLowerCase();
+  const commonSkills = [
+    'javascript', 'typescript', 'react', 'node.js', 'python', 'java', 'c++', 'sql',
+    'aws', 'azure', 'docker', 'kubernetes', 'git', 'agile', 'scrum', 'leadership',
+    'project management', 'communication', 'problem solving', 'teamwork', 'analytical',
+    'machine learning', 'data analysis', 'mongodb', 'postgresql', 'express', 'vue',
+    'angular', 'php', 'ruby', 'golang', 'swift', 'kotlin', 'flutter', 'react native'
+  ];
   
-  const lines = text.split('\n');
-  const importantSections = [];
-  let currentLength = 0;
+  const foundSkills = commonSkills.filter(skill => 
+    skillsSection.includes(skill.toLowerCase())
+  );
   
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (trimmedLine.length === 0) continue;
-    
-    const isImportant = /^(summary|objective|experience|education|skills|work|employment|achievements?|projects?|certifications?)/i.test(trimmedLine) ||
-                       trimmedLine.length < 100;
-    
-    if (isImportant || currentLength + line.length < maxLength) {
-      importantSections.push(line);
-      currentLength += line.length + 1;
-    }
-    
-    if (currentLength >= maxLength) break;
-  }
-  
-  return importantSections.join('\n');
+  return foundSkills.slice(0, 8); // Limit to top 8 skills
 };
 
-const formatCandidateInfo = (candidateData: any): string => {
-  if (!candidateData) return '';
+// Enhanced function to extract job requirements and key qualifications
+const analyzeJobRequirements = (jobDescription: string): {
+  requiredSkills: string[],
+  experienceLevel: string,
+  keyQualifications: string[]
+} => {
+  const lowerDesc = jobDescription.toLowerCase();
   
-  let candidateSection = '\n\nCANDIDATE INFORMATION (USE THIS EXACT INFORMATION):\n';
+  // Extract required skills
+  const skillKeywords = [
+    'javascript', 'typescript', 'react', 'node.js', 'python', 'java', 'sql',
+    'aws', 'azure', 'docker', 'kubernetes', 'agile', 'leadership', 'management',
+    'communication', 'problem solving', 'analytical', 'machine learning', 'data'
+  ];
+  
+  const requiredSkills = skillKeywords.filter(skill => 
+    lowerDesc.includes(skill)
+  );
+  
+  // Determine experience level
+  let experienceLevel = 'mid-level';
+  if (lowerDesc.includes('senior') || lowerDesc.includes('lead') || lowerDesc.includes('principal')) {
+    experienceLevel = 'senior';
+  } else if (lowerDesc.includes('junior') || lowerDesc.includes('entry') || lowerDesc.includes('graduate')) {
+    experienceLevel = 'junior';
+  }
+  
+  // Extract key qualifications
+  const qualificationPatterns = [
+    /(\d+\+?\s*years?\s*(?:of\s*)?experience)/gi,
+    /(bachelor'?s?\s*degree)/gi,
+    /(master'?s?\s*degree)/gi,
+    /(certification)/gi,
+    /(proven track record)/gi
+  ];
+  
+  const keyQualifications: string[] = [];
+  qualificationPatterns.forEach(pattern => {
+    const matches = jobDescription.match(pattern);
+    if (matches) {
+      keyQualifications.push(...matches.slice(0, 2));
+    }
+  });
+  
+  return { requiredSkills, experienceLevel, keyQualifications };
+};
+
+// Enhanced function to format candidate information for AI processing
+const formatCandidateInfo = (candidateData: any, resumeContent: string): string => {
+  if (!candidateData && !resumeContent) return '';
+  
+  const extractedSkills = extractKeySkills(resumeContent);
+  
+  let candidateSection = '\n\nCANDIDATE PROFILE:\n';
   
   // Personal Information
-  if (candidateData.personalInfo) {
+  if (candidateData?.personalInfo) {
     if (candidateData.personalInfo.name) {
-      candidateSection += `Full Name: ${candidateData.personalInfo.name}\n`;
+      candidateSection += `Name: ${candidateData.personalInfo.name}\n`;
     }
     if (candidateData.personalInfo.email) {
       candidateSection += `Email: ${candidateData.personalInfo.email}\n`;
@@ -49,47 +91,35 @@ const formatCandidateInfo = (candidateData: any): string => {
     if (candidateData.personalInfo.phone) {
       candidateSection += `Phone: ${candidateData.personalInfo.phone}\n`;
     }
-    if (candidateData.personalInfo.address) {
-      candidateSection += `Address: ${candidateData.personalInfo.address}\n`;
-    }
-    if (candidateData.personalInfo.linkedin) {
-      candidateSection += `LinkedIn: ${candidateData.personalInfo.linkedin}\n`;
-    }
   }
   
-  // Summary
-  if (candidateData.summary) {
-    candidateSection += `\nProfessional Summary: ${candidateData.summary}\n`;
+  // Key Skills
+  if (extractedSkills.length > 0) {
+    candidateSection += `\nKey Technical Skills: ${extractedSkills.join(', ')}\n`;
   }
   
-  // Experience
-  if (candidateData.experience && candidateData.experience.length > 0) {
-    candidateSection += '\nWork Experience:\n';
-    candidateData.experience.forEach((exp: any, index: number) => {
-      candidateSection += `${index + 1}. ${exp.title || 'Position'} at ${exp.company || 'Company'}\n`;
-      if (exp.duration) candidateSection += `   Duration: ${exp.duration}\n`;
-      if (exp.description) candidateSection += `   Description: ${exp.description}\n`;
+  // Experience Summary
+  if (candidateData?.experience && candidateData.experience.length > 0) {
+    candidateSection += '\nRelevant Experience:\n';
+    candidateData.experience.slice(0, 3).forEach((exp: any, index: number) => {
+      candidateSection += `${index + 1}. ${exp.title || 'Role'} at ${exp.company || 'Company'}`;
+      if (exp.duration) candidateSection += ` (${exp.duration})`;
+      candidateSection += '\n';
+      if (exp.description) {
+        const shortDesc = exp.description.substring(0, 150);
+        candidateSection += `   Key achievements: ${shortDesc}...\n`;
+      }
     });
   }
   
   // Education
-  if (candidateData.education && candidateData.education.length > 0) {
+  if (candidateData?.education && candidateData.education.length > 0) {
     candidateSection += '\nEducation:\n';
     candidateData.education.forEach((edu: any) => {
       candidateSection += `- ${edu.degree || 'Degree'} from ${edu.institution || 'Institution'}`;
       if (edu.year) candidateSection += ` (${edu.year})`;
       candidateSection += '\n';
     });
-  }
-  
-  // Skills
-  if (candidateData.skills && candidateData.skills.length > 0) {
-    candidateSection += `\nSkills: ${candidateData.skills.join(', ')}\n`;
-  }
-  
-  // Certifications
-  if (candidateData.certifications && candidateData.certifications.length > 0) {
-    candidateSection += `\nCertifications: ${candidateData.certifications.join(', ')}\n`;
   }
   
   return candidateSection;
@@ -103,6 +133,8 @@ serve(async (req) => {
   try {
     const { resumeContent, jobDescription, jobTitle, companyName, candidateData } = await req.json()
 
+    console.log('🔄 Processing CV tailoring request for:', jobTitle, 'at', companyName);
+
     if (!resumeContent || !jobDescription) {
       return new Response(
         JSON.stringify({ error: 'Resume content and job description are required' }),
@@ -115,8 +147,9 @@ serve(async (req) => {
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
+      console.error('❌ OpenAI API key not configured');
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        JSON.stringify({ error: 'AI service not configured. Please contact support.' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -124,44 +157,58 @@ serve(async (req) => {
       )
     }
 
-    // Truncate content to fit within token limits
-    const truncatedResume = smartTruncate(resumeContent, 2500);
-    const truncatedJobDescription = smartTruncate(jobDescription, 2000);
-    const candidateInfo = formatCandidateInfo(candidateData);
+    // Analyze job requirements
+    const jobAnalysis = analyzeJobRequirements(jobDescription);
+    console.log('📊 Job analysis:', jobAnalysis);
+    
+    // Extract candidate skills
+    const candidateSkills = extractKeySkills(resumeContent);
+    console.log('🎯 Candidate skills:', candidateSkills);
+    
+    // Format candidate information
+    const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
+    
+    // Create enhanced AI prompt
+    const prompt = `You are an expert resume writer and career counselor. Create a tailored resume that follows this specific structure:
 
-    const prompt = `You are a professional resume writer and ATS optimization specialist. Create a tailored, professional resume using the EXACT candidate information provided below.
-
+CANDIDATE INFORMATION:
 ${candidateInfo}
 
 ORIGINAL RESUME CONTENT:
-${truncatedResume}
+${resumeContent.substring(0, 2500)}
 
-JOB POSTING:
+TARGET JOB:
 Position: ${jobTitle || 'Not specified'}
 Company: ${companyName || 'Not specified'}
-Description: ${truncatedJobDescription}
+Required Skills: ${jobAnalysis.requiredSkills.join(', ')}
+Experience Level: ${jobAnalysis.experienceLevel}
 
-CRITICAL INSTRUCTIONS:
-1. YOU MUST use the EXACT candidate information provided above - DO NOT use placeholders like [Your Name], [Your Email], etc.
-2. Start with a professional header containing the candidate's actual contact information
-3. Use the candidate's real name, email, phone, and address from the candidate information section
-4. Write a compelling professional summary tailored to this specific role using the candidate's actual experience
-5. Include the candidate's actual work experience, education, and skills
-6. Enhance and tailor the content to match the job requirements while keeping all information truthful
-7. Use keywords from the job description naturally throughout
-8. Ensure all sections are complete and professional
-9. Format for ATS compatibility with clear section headers
-10. DO NOT include any placeholders, brackets, or instructions for the user to fill in information
+Job Description:
+${jobDescription.substring(0, 2000)}
 
-REQUIRED SECTIONS:
-- Professional header with actual contact information (name, email, phone, address, LinkedIn if available)
-- Professional summary tailored to the specific role
-- Work experience with actual companies, dates, and achievements
-- Education with actual degrees and institutions
-- Skills relevant to the role
-- Certifications if applicable
+INSTRUCTIONS:
+1. **CAREER PROFILE** (MOST IMPORTANT): Write exactly 3 compelling sentences that:
+   - Highlight the candidate's ${jobAnalysis.experienceLevel} experience level
+   - Mention 3-4 most relevant skills from: ${candidateSkills.join(', ')}
+   - Emphasize measurable impact and value proposition
+   - Align with the specific job requirements
 
-Generate a complete, ready-to-use resume with all actual candidate information filled in:`;
+2. **CONTACT INFORMATION**: Use the exact candidate details provided above (name, email, phone)
+
+3. **TAILORED EXPERIENCE**: 
+   - Rewrite job descriptions to highlight achievements relevant to ${jobTitle}
+   - Use keywords from job description: ${jobAnalysis.requiredSkills.slice(0, 6).join(', ')}
+   - Focus on quantifiable results and impact
+
+4. **SKILLS SECTION**: Prioritize skills that match job requirements
+
+5. **FORMAT**: Create ATS-friendly formatting with clear section headers
+
+CRITICAL: Start with candidate's actual contact information, then the 3-sentence career profile, then experience.
+
+Generate a complete, professional resume:`;
+
+    console.log('🤖 Sending request to OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -174,7 +221,7 @@ Generate a complete, ready-to-use resume with all actual candidate information f
         messages: [
           {
             role: 'system',
-            content: 'You are an expert resume writer. You MUST use the exact candidate information provided in the prompt. Never use placeholders like [Your Name] or [Your Email]. Always use the actual candidate data provided. Create professional, complete resumes with real information that are ready to use immediately.'
+            content: 'You are an expert resume writer who creates compelling, ATS-optimized resumes. You MUST use the exact candidate information provided and create a 3-sentence career profile that highlights impact and value. Always use real candidate data, never placeholders.'
           },
           {
             role: 'user',
@@ -188,7 +235,7 @@ Generate a complete, ready-to-use resume with all actual candidate information f
 
     if (!response.ok) {
       const error = await response.json()
-      console.error('OpenAI API error:', error)
+      console.error('❌ OpenAI API error:', error)
       
       if (error.error?.code === 'rate_limit_exceeded') {
         return new Response(
@@ -222,27 +269,46 @@ Generate a complete, ready-to-use resume with all actual candidate information f
       )
     }
 
-    // Generate a simple score based on keyword matching
-    const jobKeywords = truncatedJobDescription.toLowerCase().match(/\b\w{3,}\b/g) || []
-    const resumeKeywords = tailoredResume.toLowerCase().match(/\b\w{3,}\b/g) || []
-    const matchedKeywords = jobKeywords.filter(keyword => 
-      resumeKeywords.includes(keyword)
-    )
-    const score = Math.min(95, Math.max(75, Math.round((matchedKeywords.length / jobKeywords.length) * 100)))
+    // Enhanced scoring based on keyword matching and structure
+    const resumeKeywords = tailoredResume.toLowerCase();
+    const skillMatches = jobAnalysis.requiredSkills.filter(skill => 
+      resumeKeywords.includes(skill.toLowerCase())
+    ).length;
+    
+    const hasCareerProfile = resumeKeywords.includes('career') || resumeKeywords.includes('profile') || resumeKeywords.includes('summary');
+    const hasContactInfo = candidateData?.personalInfo?.name ? 
+      resumeKeywords.includes(candidateData.personalInfo.name.toLowerCase()) : true;
+    
+    // Calculate comprehensive score
+    const keywordScore = Math.round((skillMatches / Math.max(jobAnalysis.requiredSkills.length, 1)) * 40);
+    const structureScore = (hasCareerProfile ? 30 : 0) + (hasContactInfo ? 20 : 0);
+    const baseScore = 10; // Base score for successful generation
+    
+    const finalScore = Math.min(95, Math.max(65, keywordScore + structureScore + baseScore));
+
+    console.log('✅ Resume tailored successfully. Score:', finalScore);
 
     return new Response(
       JSON.stringify({
         tailoredResume,
-        score,
+        score: finalScore,
+        analysis: {
+          skillsMatched: skillMatches,
+          requiredSkills: jobAnalysis.requiredSkills.length,
+          candidateSkills: candidateSkills,
+          experienceLevel: jobAnalysis.experienceLevel,
+          hasCareerProfile,
+          hasContactInfo
+        },
         suggestions: {
-          keywordsMatched: matchedKeywords.length,
-          totalKeywords: jobKeywords.length,
+          keywordsMatched: skillMatches,
+          totalKeywords: jobAnalysis.requiredSkills.length,
           recommendations: [
-            'Resume includes actual candidate contact information',
-            'Professional summary tailored to the specific role',
-            'Keywords from job description naturally integrated',
-            'Content structured for ATS compatibility',
-            'All candidate information properly included'
+            '3-sentence career profile crafted for the specific role',
+            `${skillMatches} of ${jobAnalysis.requiredSkills.length} required skills highlighted`,
+            'Experience sections tailored to job requirements',
+            'ATS-optimized formatting implemented',
+            hasContactInfo ? 'Candidate contact information properly included' : 'Contact information needs verification'
           ]
         }
       }),
@@ -252,9 +318,12 @@ Generate a complete, ready-to-use resume with all actual candidate information f
     )
 
   } catch (error) {
-    console.error('Error in tailor-cv function:', error)
+    console.error('❌ Error in tailor-cv function:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

@@ -16,8 +16,12 @@ const Header = () => {
     <header className="border-b bg-white">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-job-green">
-            AfricanTechJobs
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/fc987f83-1bf7-4f42-8dfe-79ed6de6927d.png" 
+              alt="AfricanTechJobs" 
+              className="h-8 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}

@@ -180,7 +180,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isExplicitLogout, setIsExplicitLogout] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -191,13 +190,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     const initializeAuth = async () => {
       try {
-        // Check if user explicitly logged out
-        const logoutFlag = localStorage.getItem('explicit_logout');
-        if (logoutFlag === 'true') {
-          console.log('🔐 AuthProvider: Explicit logout detected, clearing state');
-          localStorage.removeItem('explicit_logout');
-          cleanupAuthState();
-          setIsExplicitLogout(true);
+        // Check if user has been explicitly logged out recently
+        const logoutTimestamp = localStorage.getItem('explicit_logout_timestamp');
+        const now = Date.now();
+        const isRecentLogout = logoutTimestamp && (now - parseInt(logoutTimestamp)) < 5000; // 5 seconds
+        
+        if (isRecentLogout) {
+          console.log('🔐 AuthProvider: Recent explicit logout detected, skipping session restoration');
+          localStorage.removeItem('explicit_logout_timestamp');
           setIsLoading(false);
           return;
         }
@@ -209,12 +209,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           console.log('🔐 AuthProvider: Auth state changed:', event, session?.user?.email || 'No session');
           
-          // If user explicitly logged out, don't restore session
-          if (isExplicitLogout && event === 'SIGNED_IN') {
-            console.log('🔐 AuthProvider: Ignoring sign-in event due to explicit logout');
-            return;
-          }
-          
           // Validate session before setting
           const validatedSession = session?.expires_at && (session.expires_at * 1000) > Date.now() ? session : null;
           
@@ -224,7 +218,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (event === 'SIGNED_IN' && validatedSession?.user) {
             console.log('🔐 AuthProvider: User signed in successfully');
-            setIsExplicitLogout(false); // Reset logout flag
             
             // Check if this is a recovery flow - if so, redirect to reset password page
             if (isRecoveryFlow()) {
@@ -264,27 +257,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }, 100);
           } else if (event === 'SIGNED_OUT') {
             console.log('🔐 AuthProvider: User signed out');
-            setIsExplicitLogout(false); // Reset when officially signed out
           }
         });
 
         authSubscription = subscription;
 
-        // THEN get initial session with retry logic (only if not explicit logout)
-        if (!isExplicitLogout) {
-          const initialSession = await getSessionWithRetry();
+        // THEN get initial session with retry logic
+        const initialSession = await getSessionWithRetry();
+        
+        if (mounted) {
+          console.log('🔐 AuthProvider: Initial session retrieved:', initialSession?.user?.email || 'No session');
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
           
-          if (mounted) {
-            console.log('🔐 AuthProvider: Initial session retrieved:', initialSession?.user?.email || 'No session');
-            setSession(initialSession);
-            setUser(initialSession?.user ?? null);
-            
-            // Defer profile creation for existing session
-            if (initialSession?.user) {
-              setTimeout(() => {
-                ensureUserProfileDeferred(initialSession.user);
-              }, 100);
-            }
+          // Defer profile creation for existing session
+          if (initialSession?.user) {
+            setTimeout(() => {
+              ensureUserProfileDeferred(initialSession.user);
+            }, 100);
           }
         }
 
@@ -323,7 +313,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authSubscription.unsubscribe();
       }
     };
-  }, [navigate, isExplicitLogout]);
+  }, [navigate]);
 
   const loginWithEmail = async (email: string, redirect_to?: string) => {
     setIsLoading(true);
@@ -350,11 +340,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     setIsLoading(true);
     try {
-      console.log('🔐 AuthProvider: Starting comprehensive sign out process');
+      console.log('🔐 AuthProvider: Starting sign out process');
       
-      // Set explicit logout flag FIRST
-      localStorage.setItem('explicit_logout', 'true');
-      setIsExplicitLogout(true);
+      // Set explicit logout timestamp FIRST to prevent session restoration
+      localStorage.setItem('explicit_logout_timestamp', Date.now().toString());
       
       // Clean up local state immediately
       setSession(null);
@@ -363,11 +352,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Comprehensive auth state cleanup
       cleanupAuthState();
-      
-      // Additional cleanup - force clear any remaining auth state
-      setTimeout(() => {
-        cleanupAuthState();
-      }, 100);
       
       // Try to sign out with Supabase (but don't wait for it or fail on errors)
       try {
@@ -380,27 +364,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('🔐 AuthProvider: Sign out complete, navigating to home page');
       
-      // Small delay to ensure cleanup completes before redirect
-      setTimeout(() => {
-        // Force a page reload to ensure completely clean state and redirect to home page
-        window.location.href = '/';
-      }, 200);
+      // Use React Router navigation instead of window.location.href
+      navigate('/', { replace: true });
       
     } catch (error: any) {
       console.error('🔐 AuthProvider: Exception during sign out:', error);
       
       // Even if there's an exception, try to clean up and navigate
-      localStorage.setItem('explicit_logout', 'true');
+      localStorage.setItem('explicit_logout_timestamp', Date.now().toString());
       cleanupAuthState();
       setSession(null);
       setUser(null);
       setAuthError(null);
-      setIsExplicitLogout(true);
       
       toast.error('Sign out failed, but local session cleared');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 200);
+      navigate('/', { replace: true });
     } finally {
       setIsLoading(false);
     }

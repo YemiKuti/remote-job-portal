@@ -23,7 +23,7 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(initialTab);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,27 +108,18 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
       const sanitizedEmail = sanitizeInput(resetEmail);
       const redirectUrl = `${window.location.origin}/reset-password`;
       
-      console.log('🔐 Auth: Sending password reset email', { email: sanitizedEmail, redirectUrl });
-      
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
         redirectTo: redirectUrl
       });
 
-      if (error) {
-        console.error('🔐 Auth: Password reset error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('🔐 Auth: Password reset email sent successfully');
       toast.success("Password reset email sent! Check your inbox for instructions.");
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (error: any) {
       console.error("Error sending password reset:", error);
-      // Show success message even if there's an error to prevent email enumeration
       toast.success("If an account with that email exists, you will receive a password reset link.");
-      setShowForgotPassword(false);
-      setResetEmail("");
     } finally {
       setIsResettingPassword(false);
     }
@@ -284,12 +275,6 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
     }
   };
 
-  const handleTabChange = (value: string) => {
-    if (value === 'signin' || value === 'signup') {
-      setActiveTab(value);
-    }
-  };
-
   if (showForgotPassword) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] px-4">
@@ -368,7 +353,7 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
         </CardHeader>
         <CardContent>
           {showTabs ? (
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               {initialTab === 'signin' && (
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>

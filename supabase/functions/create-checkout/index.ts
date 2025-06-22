@@ -73,7 +73,7 @@ serve(async (req) => {
     // Create product if it doesn't exist
     const productName = getProductName(userType, plan);
     const productDescription = getProductDescription(userType, plan);
-    const productInterval = getProductInterval(plan);
+    const productInterval = getProductInterval(plan, userType);
     const productPrice = calculatePrice(userType, plan, annual);
 
     logStep("Creating checkout session with", { 
@@ -136,9 +136,9 @@ function getProductName(userType: string, plan: string): string {
     if (plan === 'Quarterly') return 'Job Seeker Quarterly Plan';
     if (plan === 'Annual') return 'Job Seeker Annual Plan';
   } else if (userType === 'employer') {
-    if (plan === 'Basic') return 'Employer Basic Plan';
-    if (plan === 'Pro') return 'Employer Pro Plan';
-    if (plan === 'Enterprise') return 'Employer Enterprise Plan';
+    if (plan === 'Single') return 'Single Job Posting';
+    if (plan === 'Package5') return '5 Jobs Package';
+    if (plan === 'Package10') return '10 Jobs Package';
   }
   return `${userType} ${plan} Plan`;
 }
@@ -150,20 +150,22 @@ function getProductDescription(userType: string, plan: string): string {
     if (plan === 'Quarterly') return 'Access to premium job listings for 3 months';
     if (plan === 'Annual') return 'Access to premium job listings for 1 year';
   } else if (userType === 'employer') {
-    if (plan === 'Basic') return 'Post up to 5 job listings';
-    if (plan === 'Pro') return 'Post up to 15 job listings with enhanced visibility';
-    if (plan === 'Enterprise') return 'Unlimited job postings with premium features';
+    if (plan === 'Single') return 'Post 1 job listing for 30 days';
+    if (plan === 'Package5') return 'Post 5 job listings with enhanced features';
+    if (plan === 'Package10') return 'Post 10 job listings with premium features';
   }
   return `${userType} subscription plan - ${plan}`;
 }
 
 // Helper function to get product interval
-function getProductInterval(plan: string): string | null {
-  if (plan === 'Monthly') return 'month';
-  if (plan === 'Quarterly') return 'month'; // Still monthly billing for quarterly plan
-  if (plan === 'Annual') return 'year';
-  // For employer plans, we're assuming monthly billing
-  return 'month';
+function getProductInterval(plan: string, userType: string): string | null {
+  if (userType === 'jobSeeker') {
+    if (plan === 'Monthly') return 'month';
+    if (plan === 'Quarterly') return 'month';
+    if (plan === 'Annual') return 'year';
+  }
+  // Employer packages are one-time payments
+  return null;
 }
 
 // Helper function to calculate price based on plan and billing frequency
@@ -173,9 +175,9 @@ function calculatePrice(userType: string, plan: string, annual: boolean): number
     if (plan === 'Quarterly') return annual ? 20 : 25;
     if (plan === 'Annual') return annual ? 72 : 90;
   } else if (userType === 'employer') {
-    if (plan === 'Basic') return annual ? 40 : 50;
-    if (plan === 'Pro') return annual ? 80 : 100;
-    if (plan === 'Enterprise') return annual ? 160 : 200;
+    if (plan === 'Single') return 20;
+    if (plan === 'Package5') return 70;
+    if (plan === 'Package10') return 150;
   }
   return 0;
 }

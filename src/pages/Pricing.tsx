@@ -23,31 +23,26 @@ const COMMON_FEATURES = [
 
 // Employer plan features
 const EMPLOYER_FEATURES = {
-  basic: [
-    "5 job postings",
-    "1 featured job",
-    "30-day listings",
+  single: [
+    "1 job posting",
+    "30-day listing",
     "Basic company profile",
     "Email support"
   ],
-  pro: [
-    "15 job postings",
-    "3 featured jobs",
+  package5: [
+    "5 job postings",
     "60-day listings",
     "Enhanced company profile",
     "Priority email support",
-    "Candidate management",
-    "Application analytics"
+    "Basic analytics"
   ],
-  enterprise: [
-    "Unlimited job postings",
-    "10 featured jobs",
+  package10: [
+    "10 job postings",
     "90-day listings",
     "Premium company profile",
-    "Dedicated account manager",
-    "Advanced analytics dashboard",
-    "API access",
-    "Custom integration options"
+    "Priority support",
+    "Advanced analytics",
+    "Featured job placement"
   ]
 };
 
@@ -159,17 +154,19 @@ const Pricing = () => {
               </TabsList>
             </Tabs>
             
-            <div className="flex items-center gap-3 mb-8">
-              <Label htmlFor="billing-toggle">Monthly</Label>
-              <Switch 
-                id="billing-toggle" 
-                checked={annual}
-                onCheckedChange={(checked) => setAnnual(checked)}
-              />
-              <Label htmlFor="billing-toggle" className="flex items-center gap-2">
-                Annual <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">Save 20%</span>
-              </Label>
-            </div>
+            {userType === 'jobSeeker' && (
+              <div className="flex items-center gap-3 mb-8">
+                <Label htmlFor="billing-toggle">Monthly</Label>
+                <Switch 
+                  id="billing-toggle" 
+                  checked={annual}
+                  onCheckedChange={(checked) => setAnnual(checked)}
+                />
+                <Label htmlFor="billing-toggle" className="flex items-center gap-2">
+                  Annual <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">Save 20%</span>
+                </Label>
+              </div>
+            )}
           </div>
 
           {userType === 'jobSeeker' ? (
@@ -203,22 +200,19 @@ const Pricing = () => {
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8 justify-center">
-              {/* Employer Plans */}
+              {/* Single Job Package */}
               <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
                 <div className="p-6 border-b">
-                  <h3 className="text-2xl font-bold">Basic</h3>
+                  <h3 className="text-2xl font-bold">Single Job</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">£{annual ? 40 : 50}<span className="text-sm text-gray-500 font-normal">/month</span></div>
-                    {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (£{40*12})</div>
-                    )}
+                    <div className="text-3xl font-bold">£20<span className="text-sm text-gray-500 font-normal">/job</span></div>
                   </div>
-                  <p className="text-gray-500 mt-2">For startups and small businesses</p>
+                  <p className="text-gray-500 mt-2">Perfect for occasional hiring</p>
                 </div>
                 
                 <div className="p-6">
                   <ul className="space-y-4">
-                    {EMPLOYER_FEATURES.basic.map((feature, index) => (
+                    {EMPLOYER_FEATURES.single.map((feature, index) => (
                       <li key={index} className="flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
                         <span>{feature}</span>
@@ -228,7 +222,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(annual ? 40 : 50, "GBP", "Basic")}
+                    onClick={() => handleSubscribe(20, "GBP", "Single")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}
@@ -236,22 +230,21 @@ const Pricing = () => {
                 </div>
               </div>
               
+              {/* 5 Jobs Package */}
               <div className="border-2 border-job-green rounded-lg overflow-hidden shadow-lg bg-white relative">
                 <div className="absolute -top-3 right-6 bg-job-green text-white text-xs font-bold px-3 py-1 rounded">POPULAR</div>
                 <div className="p-6 border-b">
-                  <h3 className="text-2xl font-bold">Pro</h3>
+                  <h3 className="text-2xl font-bold">5 Jobs Package</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">£{annual ? 80 : 100}<span className="text-sm text-gray-500 font-normal">/month</span></div>
-                    {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (£{80*12})</div>
-                    )}
+                    <div className="text-3xl font-bold">£70<span className="text-sm text-gray-500 font-normal">/package</span></div>
+                    <div className="text-sm text-green-600 mt-1">£14 per job (Save £30)</div>
                   </div>
-                  <p className="text-gray-500 mt-2">For growing companies</p>
+                  <p className="text-gray-500 mt-2">Best for growing companies</p>
                 </div>
                 
                 <div className="p-6">
                   <ul className="space-y-4">
-                    {EMPLOYER_FEATURES.pro.map((feature, index) => (
+                    {EMPLOYER_FEATURES.package5.map((feature, index) => (
                       <li key={index} className="flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
                         <span>{feature}</span>
@@ -261,7 +254,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(annual ? 80 : 100, "GBP", "Pro")}
+                    onClick={() => handleSubscribe(70, "GBP", "Package5")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}
@@ -269,21 +262,20 @@ const Pricing = () => {
                 </div>
               </div>
               
+              {/* 10 Jobs Package */}
               <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
                 <div className="p-6 border-b">
-                  <h3 className="text-2xl font-bold">Enterprise</h3>
+                  <h3 className="text-2xl font-bold">10 Jobs Package</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">£{annual ? 160 : 200}<span className="text-sm text-gray-500 font-normal">/month</span></div>
-                    {annual && (
-                      <div className="text-sm text-green-600 mt-1">Billed annually (£{160*12})</div>
-                    )}
+                    <div className="text-3xl font-bold">£150<span className="text-sm text-gray-500 font-normal">/package</span></div>
+                    <div className="text-sm text-green-600 mt-1">£15 per job (Save £50)</div>
                   </div>
-                  <p className="text-gray-500 mt-2">For large organizations</p>
+                  <p className="text-gray-500 mt-2">For active recruiters</p>
                 </div>
                 
                 <div className="p-6">
                   <ul className="space-y-4">
-                    {EMPLOYER_FEATURES.enterprise.map((feature, index) => (
+                    {EMPLOYER_FEATURES.package10.map((feature, index) => (
                       <li key={index} className="flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
                         <span>{feature}</span>
@@ -293,7 +285,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(annual ? 160 : 200, "GBP", "Enterprise")}
+                    onClick={() => handleSubscribe(150, "GBP", "Package10")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}

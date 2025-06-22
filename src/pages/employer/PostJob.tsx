@@ -49,19 +49,19 @@ const PostJob = () => {
     );
   }
 
-  // Reached post limit (only for paid tiers now)
-  if (!canPost) {
+  // Reached post limit for paid packages
+  if (!canPost && subscriptionTier) {
     return (
       <DashboardLayout userType="employer">
         <div className="max-w-lg mx-auto mt-10">
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>
-              You've reached your job posting limit for your <b>{subscriptionTier}</b> plan ({postLimit} jobs).
+              You've used all job postings from your <b>{subscriptionTier}</b> package ({postLimit} jobs).
               <div className="mt-2">
                 <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
                   <a href="/pricing" target="_self">
                     <Crown className="mr-2 h-4 w-4" />
-                    Upgrade Plan
+                    Purchase More Jobs
                   </a>
                 </Button>
               </div>
@@ -73,10 +73,10 @@ const PostJob = () => {
           </Alert>
           <div className="flex items-center justify-center gap-3 text-sm">
             <span>
-              Jobs posted: <Badge variant="secondary">{activePostsCount} / {postLimit}</Badge>
+              Jobs used: <Badge variant="secondary">{activePostsCount} / {postLimit}</Badge>
             </span>
             <span>
-              Current Plan: <Badge variant={hasActiveSubscription ? "default" : "outline"}>
+              Current Package: <Badge variant={hasActiveSubscription ? "default" : "outline"}>
                 {subscriptionTier || "Free"}
               </Badge>
             </span>
@@ -86,7 +86,7 @@ const PostJob = () => {
     );
   }
 
-  // User has access and is under limit (or unlimited for free tier)
+  // User has access (either free with unlimited posts or paid package with remaining credits)
   return (
     <DashboardLayout userType="employer">
       <div className="space-y-6 max-w-2xl mx-auto">
@@ -99,16 +99,16 @@ const PostJob = () => {
         <div className="flex items-center justify-between bg-gray-50 border px-4 py-3 rounded mb-6">
           <div className="flex gap-4">
             <span>
-              <span className="font-medium">Current Plan:</span>{" "}
+              <span className="font-medium">Current Package:</span>{" "}
               <Badge variant={hasActiveSubscription ? "default" : "outline"}>
                 {subscriptionTier || "Free"}
               </Badge>
             </span>
-            {postLimit !== null ? (
+            {subscriptionTier ? (
               <span>
-                <span className="font-medium">Job Posts Left:</span>{" "}
+                <span className="font-medium">Jobs Remaining:</span>{" "}
                 <Badge variant={activePostsCount === postLimit ? "destructive" : "outline"}>
-                  {Math.max(0, postLimit - activePostsCount)}
+                  {Math.max(0, (postLimit || 0) - activePostsCount)}
                 </Badge>
               </span>
             ) : (
@@ -123,7 +123,7 @@ const PostJob = () => {
           <Button asChild size="sm" variant="outline">
             <a href="/pricing" target="_self">
               <Crown className="mr-1 h-3 w-3" />
-              {hasActiveSubscription ? "Manage Plan" : "Upgrade"}
+              {hasActiveSubscription ? "Buy More Jobs" : "View Packages"}
             </a>
           </Button>
         </div>
@@ -133,7 +133,7 @@ const PostJob = () => {
             <AlertDescription>
               You're using our free plan with unlimited job postings! 
               <a href="/pricing" className="ml-1 text-job-blue hover:underline">
-                Upgrade for premium features and analytics.
+                Purchase job packages for enhanced features and priority placement.
               </a>
             </AlertDescription>
           </Alert>

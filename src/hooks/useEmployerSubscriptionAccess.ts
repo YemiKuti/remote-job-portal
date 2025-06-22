@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSupabase";
 
-export type EmployerSubscriptionTier = "Basic" | "Pro" | "Enterprise" | null;
+export type EmployerSubscriptionTier = "Single" | "Package5" | "Package10" | null;
 
 type SubscriptionAccessResult = {
   loading: boolean;
@@ -17,10 +17,11 @@ type SubscriptionAccessResult = {
   refresh: () => void;
 };
 
-const TIER_LIMITS: Record<Exclude<EmployerSubscriptionTier, null>, number | null> = {
-  Basic: 5,
-  Pro: 15,
-  Enterprise: null,
+// Updated to reflect the new package system - these are now credits, not recurring limits
+const PACKAGE_CREDITS: Record<Exclude<EmployerSubscriptionTier, null>, number> = {
+  Single: 1,
+  Package5: 5,
+  Package10: 10,
 };
 
 export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
@@ -30,9 +31,9 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Determine the current tier and post limit
+  // Determine the current tier and available credits
   const tier = (subscription_tier as EmployerSubscriptionTier) || null;
-  const postLimit = tier ? TIER_LIMITS[tier] : null; // Free tier now has unlimited posts
+  const availableCredits = tier ? PACKAGE_CREDITS[tier] : 0;
 
   const fetchActivePostCount = async () => {
     if (!user) return;
@@ -64,15 +65,16 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
     fetchActivePostCount();
   };
 
-  // Allow posting if user is authenticated - no limits for free tier now
-  const canPost = !!user && (postLimit === null || activePostsCount < postLimit);
+  // For package-based system: user can post if they have available credits from their package
+  // Free users get unlimited posts
+  const canPost = !!user && (!tier || activePostsCount < availableCredits);
 
   return {
     loading: subLoading || loading,
     error: subError || error,
     hasActiveSubscription: !!subscribed,
     subscriptionTier: tier,
-    postLimit,
+    postLimit: availableCredits || null,
     activePostsCount,
     canPost,
     refresh,

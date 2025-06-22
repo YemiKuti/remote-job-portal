@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,6 +122,18 @@ const JobDetail = () => {
     return checkingApplication || !!existingApplication;
   };
 
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const postDate = new Date(date);
+    const diffTime = Math.abs(now.getTime() - postDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "1 day ago";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -174,18 +185,6 @@ const JobDetail = () => {
       </div>
     );
   }
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date();
-    const postDate = new Date(date);
-    const diffTime = Math.abs(now.getTime() - postDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -291,7 +290,7 @@ const JobDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Job Description */}
+            {/* Job Description - Fixed formatting */}
             <Card className="shadow-lg border-0 mb-6">
               <CardHeader>
                 <CardTitle className="text-xl text-gray-900 flex items-center gap-2">
@@ -299,12 +298,16 @@ const JobDetail = () => {
                   Job Description
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <RichTextRenderer content={job.description} variant="job" />
+              <CardContent className="prose max-w-none">
+                <RichTextRenderer 
+                  content={job.description} 
+                  variant="job"
+                  className="text-gray-700 leading-relaxed"
+                />
               </CardContent>
             </Card>
 
-            {/* Requirements */}
+            {/* Requirements - Fixed formatting */}
             {job.requirements && (
               <Card className="shadow-lg border-0 mb-6">
                 <CardHeader>
@@ -313,21 +316,29 @@ const JobDetail = () => {
                     Requirements
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="prose max-w-none">
-                    {Array.isArray(job.requirements) ? (
-                      <ul className="space-y-2">
-                        {job.requirements.map((req, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-500 mt-1 flex-shrink-0" />
-                            <RichTextRenderer content={req} />
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <RichTextRenderer content={job.requirements} />
-                    )}
-                  </div>
+                <CardContent className="prose max-w-none">
+                  {Array.isArray(job.requirements) ? (
+                    <div className="space-y-3">
+                      {job.requirements.map((req, index) => (
+                        <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <RichTextRenderer 
+                              content={req} 
+                              variant="compact"
+                              className="text-gray-700"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <RichTextRenderer 
+                      content={job.requirements} 
+                      variant="job"
+                      className="text-gray-700 leading-relaxed"
+                    />
+                  )}
                 </CardContent>
               </Card>
             )}

@@ -100,12 +100,28 @@ const validateSession = (session: Session | null) => {
   }
 };
 
-// Selective auth state cleanup - only clear specific keys
+// Check if this is an explicit logout (within last 5 seconds)
+const isRecentExplicitLogout = () => {
+  const logoutTimestamp = localStorage.getItem('explicit_logout_timestamp');
+  if (!logoutTimestamp) return false;
+  
+  const timeSinceLogout = Date.now() - parseInt(logoutTimestamp);
+  const isRecent = timeSinceLogout < 5000; // 5 seconds
+  
+  if (!isRecent) {
+    // Clean up old logout timestamps
+    localStorage.removeItem('explicit_logout_timestamp');
+  }
+  
+  return isRecent;
+};
+
+// Selective auth state cleanup - only clear specific keys when explicitly logging out
 const cleanupAuthState = () => {
   console.log('🔐 AuthProvider: Cleaning up auth state');
   
   try {
-    // Only remove specific auth keys, not all sb- keys
+    // Only remove specific auth keys that might cause conflicts
     const keysToRemove = [
       'supabase.auth.token',
       'sb-mmbrvcndxhipaoxysvwr-auth-token'
@@ -138,24 +154,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     const initializeAuth = async () => {
       try {
-        // Check for recent explicit logout
-        const logoutTimestamp = localStorage.getItem('explicit_logout_timestamp');
-        if (logoutTimestamp) {
-          const timeSinceLogout = Date.now() - parseInt(logoutTimestamp);
-          if (timeSinceLogout < 3000) { // 3 seconds
-            console.log('🔐 AuthProvider: Recent explicit logout detected, clearing state');
-            localStorage.removeItem('explicit_logout_timestamp');
-            if (mounted) {
-              setIsLoading(false);
-            }
-            return;
-          } else {
-            // Clean up old logout timestamps
-            localStorage.removeItem('explicit_logout_timestamp');
+        // Check for recent explicit logout first
+        if (isRecentExplicitLogout()) {
+          console.log('🔐 AuthProvider: Recent explicit logout detected, clearing state');
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            setIsLoading(false);
           }
+          return;
         }
         
-        // Set up auth state listener FIRST
+        // Set up auth state listener FIRST to catch all events
         console.log('🔐 AuthProvider: Setting up auth state listener');
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (!mounted) return;
@@ -191,13 +201,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (currentPath === '/auth' || currentPath === '/signin' || currentPath === '/admin-signin') {
               setTimeout(() => {
                 if (userRole === 'admin') {
-                  navigate('/admin');
+                  navigate('/admin', { replace: true });
                 } else if (userRole === 'employer') {
-                  navigate('/employer');
+                  navigate('/employer', { replace: true });
                 } else if (userRole === 'candidate') {
-                  navigate('/candidate');
+                  navigate('/candidate', { replace: true });
                 } else {
-                  navigate('/');
+                  navigate('/', { replace: true });
                 }
               }, 100);
             }
@@ -255,7 +265,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.warn('🔐 AuthProvider: Auth initialization timed out');
         setIsLoading(false);
       }
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
 
     initializeAuth().finally(() => {
       clearTimeout(timeoutId);

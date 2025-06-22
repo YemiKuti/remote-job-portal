@@ -557,6 +557,7 @@ export type Database = {
           salary_currency: string | null
           salary_max: number | null
           salary_min: number | null
+          sponsored: boolean
           status: string
           tech_stack: string[]
           title: string
@@ -593,6 +594,7 @@ export type Database = {
           salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
+          sponsored?: boolean
           status?: string
           tech_stack?: string[]
           title: string
@@ -629,6 +631,7 @@ export type Database = {
           salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
+          sponsored?: boolean
           status?: string
           tech_stack?: string[]
           title?: string
@@ -1170,6 +1173,7 @@ export type Database = {
           job_application_type?: string
           job_application_value?: string
           job_employer_id?: string
+          job_sponsored?: boolean
         }
         Returns: string
       }
@@ -1215,6 +1219,7 @@ export type Database = {
           application_type: string
           application_value: string
           employer_id: string
+          sponsored: boolean
           created_at: string
           updated_at: string
         }[]
@@ -1282,6 +1287,7 @@ export type Database = {
           job_status?: string
           job_application_type?: string
           job_application_value?: string
+          job_sponsored?: boolean
         }
         Returns: boolean
       }

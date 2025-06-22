@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
@@ -85,6 +86,7 @@ export interface AdminJob {
   logo?: string;
   application_type?: string;
   application_value?: string;
+  sponsored?: boolean;
   rejection_reason?: string;
   approval_date?: string;
   approved_by?: string;
@@ -456,10 +458,29 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
   
   try {
     const { data, error } = await supabase
-      .from('jobs')
-      .insert(jobData)
-      .select('id')
-      .single();
+      .rpc('admin_create_job', {
+        job_title: jobData.title,
+        job_company: jobData.company,
+        job_location: jobData.location,
+        job_description: jobData.description,
+        job_requirements: jobData.requirements,
+        job_employment_type: jobData.employment_type,
+        job_experience_level: jobData.experience_level,
+        job_salary_min: jobData.salary_min,
+        job_salary_max: jobData.salary_max,
+        job_salary_currency: jobData.salary_currency,
+        job_tech_stack: jobData.tech_stack,
+        job_visa_sponsorship: jobData.visa_sponsorship,
+        job_remote: jobData.remote,
+        job_company_size: jobData.company_size,
+        job_application_deadline: jobData.application_deadline,
+        job_logo: jobData.logo,
+        job_status: jobData.status,
+        job_application_type: jobData.application_type,
+        job_application_value: jobData.application_value,
+        job_employer_id: jobData.employer_id,
+        job_sponsored: jobData.sponsored
+      });
     
     if (error) {
       console.error('Error creating admin job:', error);
@@ -467,7 +488,7 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
     }
     
     console.log('Admin job created successfully:', data);
-    return data.id;
+    return data;
   } catch (error: any) {
     console.error('Error in createAdminJob:', error);
     throw new Error(error.message || 'Failed to create job');
@@ -500,7 +521,8 @@ export const updateAdminJob = async (jobId: string, jobData: any): Promise<strin
         job_logo: jobData.logo,
         job_status: jobData.status,
         job_application_type: jobData.application_type,
-        job_application_value: jobData.application_value
+        job_application_value: jobData.application_value,
+        job_sponsored: jobData.sponsored
       });
     
     if (error) {

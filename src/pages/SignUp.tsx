@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Auth from "@/components/Auth";
 
-const SignIn = () => {
+const SignUp = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -13,18 +13,18 @@ const SignIn = () => {
         <div className="container mx-auto py-12 px-4 md:px-6">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold">Sign In</h1>
+              <h1 className="text-3xl font-bold">Create Your Account</h1>
               <p className="text-gray-600 mt-2">
-                Welcome back to AfricanTechJobs
+                Join AfricanTechJobs and start your career journey
               </p>
               <p className="text-sm text-gray-500 mt-4">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-blue-600 hover:underline">
-                  Create one here
+                Already have an account?{" "}
+                <Link to="/signin" className="text-blue-600 hover:underline">
+                  Sign in here
                 </Link>
               </p>
             </div>
-            <Auth initialTab="signin" />
+            <Auth initialTab="signup" />
           </div>
         </div>
       </main>
@@ -33,4 +33,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SignUp;

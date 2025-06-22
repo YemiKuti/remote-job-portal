@@ -8,6 +8,7 @@ import Index from './pages/Index';
 import JobsBrowse from './pages/JobsBrowse';
 import JobDetail from './pages/JobDetail';
 import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
 import Pricing from './pages/Pricing';
 import FAQ from './pages/FAQ';
 import Blog from './pages/Blog';
@@ -66,6 +67,7 @@ function App() {
             <Route path="/jobs" element={<JobsBrowse />} />
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />

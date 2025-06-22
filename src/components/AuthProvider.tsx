@@ -82,92 +82,41 @@ const ensureUserProfileDeferred = async (user: User) => {
   }
 };
 
-// Session validation with cleanup
-const validateAndCleanupSession = async (session: Session | null) => {
+// Session validation - only check if clearly expired
+const validateSession = (session: Session | null) => {
   if (!session) return null;
   
   try {
-    // Quick validation of session
     const now = new Date().getTime() / 1000;
-    if (session.expires_at && session.expires_at < now) {
-      console.log('🔐 Session expired, cleaning up');
-      await supabase.auth.signOut();
+    // Only invalidate if clearly expired (with 5 minute buffer)
+    if (session.expires_at && session.expires_at < (now - 300)) {
+      console.log('🔐 Session clearly expired, cleaning up');
       return null;
     }
     return session;
   } catch (error) {
-    console.error('🔐 Session validation error, cleaning up:', error);
-    await supabase.auth.signOut();
+    console.error('🔐 Session validation error:', error);
     return null;
   }
 };
 
-// Enhanced session retrieval with retry logic
-const getSessionWithRetry = async (maxRetries = 1) => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔐 AuthProvider: Getting session (attempt ${attempt}/${maxRetries})`);
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error(`🔐 AuthProvider: Session error on attempt ${attempt}:`, error);
-        if (attempt === maxRetries) throw error;
-        
-        // Short backoff
-        await new Promise(resolve => setTimeout(resolve, 500));
-        continue;
-      }
-      
-      return await validateAndCleanupSession(session);
-    } catch (error) {
-      console.error(`🔐 AuthProvider: Exception on attempt ${attempt}:`, error);
-      if (attempt === maxRetries) return null;
-      
-      // Short backoff
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
-  return null;
-};
-
-// Comprehensive auth state cleanup utility
+// Selective auth state cleanup - only clear specific keys
 const cleanupAuthState = () => {
-  console.log('🔐 AuthProvider: Starting comprehensive auth state cleanup');
+  console.log('🔐 AuthProvider: Cleaning up auth state');
   
   try {
-    // Clear standard Supabase auth keys
+    // Only remove specific auth keys, not all sb- keys
     const keysToRemove = [
       'supabase.auth.token',
-      'sb-mmbrvcndxhipaoxysvwr-auth-token',
-      'sb-auth-token',
-      'supabase.auth.session',
+      'sb-mmbrvcndxhipaoxysvwr-auth-token'
     ];
     
-    // Remove specific keys
     keysToRemove.forEach(key => {
       localStorage.removeItem(key);
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.removeItem(key);
       }
     });
-    
-    // Clear all keys that start with 'sb-' (Supabase storage pattern)
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-') || key.startsWith('supabase.auth.') || key.includes('mmbrvcndxhipaoxysvwr')) {
-        localStorage.removeItem(key);
-        console.log('🔐 Removed localStorage key:', key);
-      }
-    });
-    
-    // Clear sessionStorage if available
-    if (typeof sessionStorage !== 'undefined') {
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('sb-') || key.startsWith('supabase.auth.') || key.includes('mmbrvcndxhipaoxysvwr')) {
-          sessionStorage.removeItem(key);
-          console.log('🔐 Removed sessionStorage key:', key);
-        }
-      });
-    }
     
     console.log('🔐 AuthProvider: Auth state cleanup completed');
   } catch (error) {
@@ -184,22 +133,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     console.log('🔐 AuthProvider: Starting auth initialization');
-    let authTimeout: NodeJS.Timeout;
     let mounted = true;
     let authSubscription: any = null;
     
     const initializeAuth = async () => {
       try {
-        // Check if user has been explicitly logged out recently
+        // Check for recent explicit logout
         const logoutTimestamp = localStorage.getItem('explicit_logout_timestamp');
-        const now = Date.now();
-        const isRecentLogout = logoutTimestamp && (now - parseInt(logoutTimestamp)) < 5000; // 5 seconds
-        
-        if (isRecentLogout) {
-          console.log('🔐 AuthProvider: Recent explicit logout detected, skipping session restoration');
-          localStorage.removeItem('explicit_logout_timestamp');
-          setIsLoading(false);
-          return;
+        if (logoutTimestamp) {
+          const timeSinceLogout = Date.now() - parseInt(logoutTimestamp);
+          if (timeSinceLogout < 3000) { // 3 seconds
+            console.log('🔐 AuthProvider: Recent explicit logout detected, clearing state');
+            localStorage.removeItem('explicit_logout_timestamp');
+            if (mounted) {
+              setIsLoading(false);
+            }
+            return;
+          } else {
+            // Clean up old logout timestamps
+            localStorage.removeItem('explicit_logout_timestamp');
+          }
         }
         
         // Set up auth state listener FIRST
@@ -210,30 +163,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log('🔐 AuthProvider: Auth state changed:', event, session?.user?.email || 'No session');
           
           // Validate session before setting
-          const validatedSession = session?.expires_at && (session.expires_at * 1000) > Date.now() ? session : null;
+          const validatedSession = validateSession(session);
           
           setSession(validatedSession);
           setUser(validatedSession?.user ?? null);
-          setAuthError(null); // Clear any previous errors
+          setAuthError(null);
           
           if (event === 'SIGNED_IN' && validatedSession?.user) {
             console.log('🔐 AuthProvider: User signed in successfully');
             
-            // Check if this is a recovery flow - if so, redirect to reset password page
+            // Check if this is a recovery flow
             if (isRecoveryFlow()) {
               console.log('🔐 AuthProvider: Recovery flow detected, redirecting to reset-password');
-              // Defer profile creation to avoid blocking
               setTimeout(() => {
                 ensureUserProfileDeferred(validatedSession.user);
               }, 100);
-              // Force redirect to reset password page for recovery flows
               navigate('/reset-password', { replace: true });
               return;
             }
             
             // Normal sign-in flow - redirect based on role
             const userRole = validatedSession.user.user_metadata?.role;
-            console.log('🔐 AuthProvider: Normal sign-in, redirecting based on role:', userRole);
+            console.log('🔐 AuthProvider: Normal sign-in, user role:', userRole);
             
             // Only redirect if we're on auth pages
             const currentPath = window.location.pathname;
@@ -251,7 +202,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               }, 100);
             }
             
-            // Defer profile creation to avoid blocking
+            // Defer profile creation
             setTimeout(() => {
               ensureUserProfileDeferred(validatedSession.user);
             }, 100);
@@ -262,18 +213,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         authSubscription = subscription;
 
-        // THEN get initial session with retry logic
-        const initialSession = await getSessionWithRetry();
+        // Get initial session
+        console.log('🔐 AuthProvider: Getting initial session');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('🔐 AuthProvider: Error getting session:', error);
+        }
         
         if (mounted) {
-          console.log('🔐 AuthProvider: Initial session retrieved:', initialSession?.user?.email || 'No session');
-          setSession(initialSession);
-          setUser(initialSession?.user ?? null);
+          const validatedSession = validateSession(session);
+          console.log('🔐 AuthProvider: Initial session retrieved:', validatedSession?.user?.email || 'No session');
+          
+          setSession(validatedSession);
+          setUser(validatedSession?.user ?? null);
           
           // Defer profile creation for existing session
-          if (initialSession?.user) {
+          if (validatedSession?.user) {
             setTimeout(() => {
-              ensureUserProfileDeferred(initialSession.user);
+              ensureUserProfileDeferred(validatedSession.user);
             }, 100);
           }
         }
@@ -281,9 +239,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error('🔐 AuthProvider: Exception during initialization:', error);
         if (mounted) {
-          // Don't set an error for timeout - just proceed without auth
           console.log('🔐 AuthProvider: Proceeding without authentication due to initialization error');
-          cleanupAuthState();
         }
       } finally {
         if (mounted) {
@@ -293,22 +249,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Set timeout for auth initialization (reduced to 3 seconds)
-    authTimeout = setTimeout(() => {
+    // Initialize auth with timeout protection
+    const timeoutId = setTimeout(() => {
       if (isLoading && mounted) {
-        console.warn('🔐 AuthProvider: Auth initialization timed out, proceeding without auth');
+        console.warn('🔐 AuthProvider: Auth initialization timed out');
         setIsLoading(false);
-        // Don't set authError for timeout - just proceed
-        cleanupAuthState();
       }
-    }, 3000);
+    }, 5000); // 5 second timeout
 
-    // Initialize auth
-    initializeAuth();
+    initializeAuth().finally(() => {
+      clearTimeout(timeoutId);
+    });
 
     return () => {
       mounted = false;
-      clearTimeout(authTimeout);
+      clearTimeout(timeoutId);
       if (authSubscription) {
         authSubscription.unsubscribe();
       }
@@ -342,7 +297,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🔐 AuthProvider: Starting sign out process');
       
-      // Set explicit logout timestamp FIRST to prevent session restoration
+      // Set explicit logout timestamp to prevent session restoration
       localStorage.setItem('explicit_logout_timestamp', Date.now().toString());
       
       // Clean up local state immediately
@@ -350,34 +305,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setAuthError(null);
       
-      // Comprehensive auth state cleanup
-      cleanupAuthState();
-      
-      // Try to sign out with Supabase (but don't wait for it or fail on errors)
+      // Try to sign out with Supabase
       try {
         await supabase.auth.signOut({ scope: 'global' });
         console.log('🔐 AuthProvider: Successfully signed out via API');
       } catch (error: any) {
-        console.warn('🔐 AuthProvider: Sign out API failed, but continuing with cleanup:', error.message);
-        // Continue with navigation even if API call fails
+        console.warn('🔐 AuthProvider: Sign out API failed:', error.message);
       }
       
-      console.log('🔐 AuthProvider: Sign out complete, navigating to home page');
+      // Clean up auth state
+      cleanupAuthState();
       
-      // Use React Router navigation instead of window.location.href
+      console.log('🔐 AuthProvider: Sign out complete, navigating to home page');
       navigate('/', { replace: true });
       
     } catch (error: any) {
       console.error('🔐 AuthProvider: Exception during sign out:', error);
       
-      // Even if there's an exception, try to clean up and navigate
+      // Even if there's an exception, try to clean up
       localStorage.setItem('explicit_logout_timestamp', Date.now().toString());
       cleanupAuthState();
       setSession(null);
       setUser(null);
       setAuthError(null);
       
-      toast.error('Sign out failed, but local session cleared');
+      toast.error('Sign out completed');
       navigate('/', { replace: true });
     } finally {
       setIsLoading(false);
@@ -388,14 +340,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🔐 AuthProvider: Refreshing session');
       const { data } = await supabase.auth.refreshSession();
-      const validatedSession = await validateAndCleanupSession(data.session);
+      const validatedSession = validateSession(data.session);
       setSession(validatedSession);
       setUser(validatedSession?.user ?? null);
       return validatedSession;
     } catch (error: any) {
       console.error("🔐 AuthProvider: Error refreshing session:", error);
       setAuthError('Failed to refresh session');
-      cleanupAuthState();
       return null;
     }
   };

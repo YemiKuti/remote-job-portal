@@ -85,7 +85,29 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
           // Update existing job
           const response = await supabase
             .from("jobs")
-            .update(jobData)
+            .update({
+              title: jobData.title,
+              company: jobData.company,
+              location: jobData.location,
+              description: jobData.description,
+              requirements: jobData.requirements,
+              salary_min: jobData.salary_min,
+              salary_max: jobData.salary_max,
+              salary_currency: jobData.salary_currency,
+              employment_type: jobData.employment_type,
+              experience_level: jobData.experience_level,
+              tech_stack: jobData.tech_stack,
+              visa_sponsorship: jobData.visa_sponsorship,
+              remote: jobData.remote,
+              company_size: jobData.company_size,
+              application_deadline: jobData.application_deadline,
+              logo: jobData.logo,
+              status: jobData.status,
+              application_type: jobData.application_type,
+              application_value: jobData.application_value,
+              sponsored: jobData.sponsored,
+              updated_at: new Date().toISOString()
+            })
             .eq("id", jobId);
 
           if (response.error) {
@@ -96,7 +118,29 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
           // Create new job
           const response = await supabase
             .from("jobs")
-            .insert(jobData)
+            .insert({
+              title: jobData.title,
+              company: jobData.company,
+              location: jobData.location,
+              description: jobData.description,
+              requirements: jobData.requirements,
+              salary_min: jobData.salary_min,
+              salary_max: jobData.salary_max,
+              salary_currency: jobData.salary_currency,
+              employment_type: jobData.employment_type,
+              experience_level: jobData.experience_level,
+              tech_stack: jobData.tech_stack,
+              visa_sponsorship: jobData.visa_sponsorship,
+              remote: jobData.remote,
+              company_size: jobData.company_size,
+              application_deadline: jobData.application_deadline,
+              logo: jobData.logo,
+              status: jobData.status,
+              application_type: jobData.application_type,
+              application_value: jobData.application_value,
+              sponsored: jobData.sponsored,
+              employer_id: jobData.employer_id
+            })
             .select();
 
           if (response.error) {

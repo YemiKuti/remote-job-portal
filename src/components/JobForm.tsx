@@ -64,9 +64,11 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
   // Handle form submission with draft/publish logic
   const onSubmit = async (values: JobFormValues, isDraft: boolean = false) => {
     // Set the appropriate status based on whether it's a draft or publish action
-    const submissionValues = {
+    const status = isDraft ? "draft" as const : (isAdmin ? "active" as const : "pending" as const);
+    
+    const submissionValues: JobFormValues = {
       ...values,
-      status: isDraft ? "draft" : (isAdmin ? "active" : "pending")
+      status
     };
     
     await handleSubmit(submissionValues);

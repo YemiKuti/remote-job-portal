@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -56,17 +57,40 @@ const Pricing = () => {
   
   // Check if user is authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Auth check error:", error);
+          setIsAuthenticated(false);
+        } else {
+          setIsAuthenticated(!!data.session?.user);
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecked(true);
+      }
     };
     
     checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+      setAuthChecked(true);
+    });
+
+    return () => subscription.unsubscribe();
   }, [supabase.auth]);
   
   const handleSubscribe = async (price: number, currency: string, plan: string) => {
+    console.log('🛒 Starting subscription process', { plan, userType, annual, isAuthenticated });
+    
     setSelectedPlan(plan);
     
     // If user is not authenticated, redirect to sign in
@@ -84,31 +108,89 @@ const Pricing = () => {
       }, 1500);
       return;
     }
+
+    // Verify we still have a valid session
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('🛒 Session verification failed:', sessionError);
+      toast.error("Your session has expired. Please sign in again.");
+      navigate("/signin");
+      return;
+    }
     
     // User is authenticated, proceed with checkout
     setIsLoading(true);
     
     try {
+      console.log('🛒 Calling create-checkout function');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { plan, annual, userType }
+        body: { plan, annual, userType },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('🛒 Checkout error:', error);
+        
+        if (error.message?.includes('Invalid or expired token')) {
+          toast.error("Your session has expired. Please sign in again.");
+          // Sign out and redirect to login
+          await supabase.auth.signOut();
+          navigate("/signin");
+          return;
+        }
+        
+        throw error;
+      }
       
       if (data?.url) {
+        console.log('🛒 Redirecting to checkout:', data.url);
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned");
       }
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      toast.error("Failed to create checkout session", {
-        description: "Please try again later",
+    } catch (error: any) {
+      console.error("🛒 Error creating checkout session:", error);
+      
+      let errorMessage = "Failed to create checkout session";
+      let errorDescription = "Please try again later";
+      
+      if (error.message?.includes('Invalid or expired token')) {
+        errorMessage = "Session expired";
+        errorDescription = "Please sign in again";
+        // Clear any stale session data
+        await supabase.auth.signOut();
+        setTimeout(() => navigate("/signin"), 2000);
+      } else if (error.message?.includes('Payment system not configured')) {
+        errorMessage = "Payment system unavailable";
+        errorDescription = "Please contact support";
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription,
       });
     } finally {
       setIsLoading(false);
+      setSelectedPlan(null);
     }
   };
+
+  // Show loading state while checking authentication
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="space-y-4 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -132,6 +214,14 @@ const Pricing = () => {
               <AlertDescription className="flex items-center">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Creating your checkout session...
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!isAuthenticated && (
+            <Alert className="mb-8 bg-amber-50 border-amber-200">
+              <AlertDescription>
+                Please sign in to subscribe to a plan. You'll be redirected to complete your purchase after logging in.
               </AlertDescription>
             </Alert>
           )}

@@ -23,7 +23,7 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(initialTab);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -353,7 +353,7 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
         </CardHeader>
         <CardContent>
           {showTabs ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
               {initialTab === 'signin' && (
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>

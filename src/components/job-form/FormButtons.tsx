@@ -11,11 +11,12 @@ interface FormButtonsProps {
   isAdmin?: boolean;
   loading?: boolean;
   jobId?: string;
+  onSubmit?: (values: JobFormValues, isDraft: boolean) => void;
 }
 
-export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
+export const FormButtons = ({ isAdmin, loading, jobId, onSubmit }: FormButtonsProps) => {
   const navigate = useNavigate();
-  const { watch } = useFormContext<JobFormValues>();
+  const { watch, handleSubmit } = useFormContext<JobFormValues>();
   const isSponsored = watch("sponsored");
 
   const handleCancel = () => {
@@ -23,6 +24,18 @@ export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
       navigate("/admin/jobs");
     } else {
       navigate("/employer/jobs");
+    }
+  };
+
+  const handleSaveAsDraft = () => {
+    if (onSubmit) {
+      handleSubmit((values) => onSubmit(values, true))();
+    }
+  };
+
+  const handlePublish = () => {
+    if (onSubmit) {
+      handleSubmit((values) => onSubmit(values, false))();
     }
   };
 
@@ -52,9 +65,10 @@ export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
         
         <div className="flex space-x-2">
           <Button
-            type="submit"
+            type="button"
             variant="outline"
             disabled={loading}
+            onClick={handleSaveAsDraft}
           >
             {loading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -65,8 +79,9 @@ export const FormButtons = ({ isAdmin, loading, jobId }: FormButtonsProps) => {
           </Button>
           
           <Button
-            type="submit"
+            type="button"
             disabled={loading}
+            onClick={handlePublish}
           >
             {loading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -35,7 +35,7 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
       company: "",
       location: "",
       description: "",
-      requirements: "", // Fixed: Changed from [] to ""
+      requirements: "",
       salary_min: undefined,
       salary_max: undefined,
       salary_currency: "USD",
@@ -61,16 +61,22 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
   // Combined loading state
   const loading = submitting || fetching;
 
-  // Handle form submission
-  const onSubmit = async (values: JobFormValues) => {
-    await handleSubmit(values);
+  // Handle form submission with draft/publish logic
+  const onSubmit = async (values: JobFormValues, isDraft: boolean = false) => {
+    // Set the appropriate status based on whether it's a draft or publish action
+    const submissionValues = {
+      ...values,
+      status: isDraft ? "draft" : (isAdmin ? "active" : "pending")
+    };
+    
+    await handleSubmit(submissionValues);
   };
 
   return (
     <Card>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-6">
             <BasicInfoSection form={form} />
             
             <JobDescriptionSection form={form} />
@@ -99,8 +105,13 @@ const JobForm = ({ jobId, isAdmin = false, afterSubmit }: JobFormProps) => {
               <JobStatusSection form={form} />
             )}
             
-            <FormButtons isAdmin={isAdmin} loading={loading} jobId={jobId} />
-          </form>
+            <FormButtons 
+              isAdmin={isAdmin} 
+              loading={loading} 
+              jobId={jobId}
+              onSubmit={onSubmit}
+            />
+          </div>
         </Form>
       </CardContent>
     </Card>

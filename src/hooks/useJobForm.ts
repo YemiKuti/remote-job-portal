@@ -51,7 +51,7 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         company: values.company,
         location: values.location,
         description: values.description,
-        requirements: processRequirements(values.requirements), // Convert string to string[]
+        requirements: processRequirements(values.requirements),
         salary_min: values.salary_min,
         salary_max: values.salary_max,
         salary_currency: values.salary_currency,
@@ -67,7 +67,6 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         application_type: values.application_type,
         application_value: values.application_value,
         sponsored: values.sponsored,
-        // Always use the current user's ID as the employer_id
         employer_id: user.id
       };
 
@@ -107,13 +106,24 @@ export const useJobForm = ({ jobId, isAdmin = false, afterSubmit }: UseJobFormPr
         }
       }
 
+      // Show appropriate success message based on status
+      const isDraft = values.status === "draft";
+      const isPending = values.status === "pending";
+      
+      let successMessage = "";
+      if (jobId) {
+        successMessage = "The job has been updated successfully.";
+      } else if (isDraft) {
+        successMessage = "Your job has been saved as a draft.";
+      } else if (isPending) {
+        successMessage = "Your job has been submitted for approval and will be reviewed by our team.";
+      } else {
+        successMessage = "Job has been created successfully.";
+      }
+
       toast({
-        title: jobId ? "Job Updated" : "Job Created",
-        description: jobId 
-          ? "The job has been updated successfully." 
-          : isAdmin 
-            ? "Job has been created successfully."
-            : "Your job has been created and is pending approval.",
+        title: jobId ? "Job Updated" : (isDraft ? "Draft Saved" : "Job Submitted"),
+        description: successMessage,
       });
 
       // Call afterSubmit callback if provided, otherwise navigate

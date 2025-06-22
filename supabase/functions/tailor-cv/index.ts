@@ -7,8 +7,100 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Enhanced function to extract comprehensive keywords from job description
+const extractJobKeywords = (jobDescription: string, jobTitle: string): {
+  technicalSkills: string[],
+  softSkills: string[],
+  industryTerms: string[],
+  requirements: string[],
+  allKeywords: string[]
+} => {
+  const lowerDesc = jobDescription.toLowerCase();
+  const lowerTitle = jobTitle.toLowerCase();
+  
+  // Technical skills and tools
+  const technicalKeywords = [
+    'javascript', 'typescript', 'react', 'vue', 'angular', 'node.js', 'python', 'java', 'c++', 'c#',
+    'sql', 'nosql', 'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch',
+    'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'gitlab', 'github',
+    'git', 'agile', 'scrum', 'devops', 'ci/cd', 'microservices', 'api', 'rest', 'graphql',
+    'machine learning', 'ai', 'data science', 'analytics', 'tableau', 'power bi',
+    'html', 'css', 'sass', 'webpack', 'vite', 'npm', 'yarn', 'express', 'nestjs',
+    'spring', 'django', 'flask', 'laravel', 'rails', 'php', 'ruby', 'golang', 'rust',
+    'swift', 'kotlin', 'flutter', 'react native', 'ionic', 'xamarin',
+    'terraform', 'ansible', 'chef', 'puppet', 'nagios', 'prometheus', 'grafana'
+  ];
+  
+  // Soft skills and competencies
+  const softSkillsKeywords = [
+    'leadership', 'management', 'communication', 'collaboration', 'teamwork',
+    'problem solving', 'analytical', 'critical thinking', 'decision making',
+    'project management', 'time management', 'organization', 'planning',
+    'mentoring', 'coaching', 'training', 'presentation', 'public speaking',
+    'negotiation', 'customer service', 'stakeholder management', 'vendor management',
+    'strategic thinking', 'innovation', 'creativity', 'adaptability', 'flexibility'
+  ];
+  
+  // Industry-specific terms
+  const industryKeywords = [
+    'fintech', 'healthcare', 'edtech', 'e-commerce', 'saas', 'b2b', 'b2c',
+    'startup', 'enterprise', 'compliance', 'security', 'gdpr', 'hipaa',
+    'agile methodology', 'waterfall', 'lean', 'six sigma', 'itil',
+    'digital transformation', 'cloud migration', 'modernization'
+  ];
+  
+  // Extract matching technical skills
+  const foundTechnicalSkills = technicalKeywords.filter(keyword => 
+    lowerDesc.includes(keyword) || lowerTitle.includes(keyword)
+  );
+  
+  // Extract matching soft skills
+  const foundSoftSkills = softSkillsKeywords.filter(keyword => 
+    lowerDesc.includes(keyword) || lowerTitle.includes(keyword)
+  );
+  
+  // Extract matching industry terms
+  const foundIndustryTerms = industryKeywords.filter(keyword => 
+    lowerDesc.includes(keyword) || lowerTitle.includes(keyword)
+  );
+  
+  // Extract requirements using patterns
+  const requirementPatterns = [
+    /(\d+\+?\s*years?\s*(?:of\s*)?experience)/gi,
+    /(bachelor'?s?\s*degree)/gi,
+    /(master'?s?\s*degree)/gi,
+    /(certification)/gi,
+    /(experience\s+(?:with|in)\s+[\w\s,]+)/gi,
+    /(proficiency\s+(?:with|in)\s+[\w\s,]+)/gi,
+    /(knowledge\s+(?:of|in)\s+[\w\s,]+)/gi
+  ];
+  
+  const requirements: string[] = [];
+  requirementPatterns.forEach(pattern => {
+    const matches = jobDescription.match(pattern);
+    if (matches) {
+      requirements.push(...matches.slice(0, 3)); // Limit to avoid too many matches
+    }
+  });
+  
+  // Combine all keywords
+  const allKeywords = [
+    ...foundTechnicalSkills,
+    ...foundSoftSkills,
+    ...foundIndustryTerms
+  ].slice(0, 15); // Limit to top 15 keywords
+  
+  return {
+    technicalSkills: foundTechnicalSkills,
+    softSkills: foundSoftSkills,
+    industryTerms: foundIndustryTerms,
+    requirements,
+    allKeywords
+  };
+};
+
 // Enhanced function to extract key skills from resume content
-const extractKeySkills = (resumeContent: string): string[] => {
+const extractResumeSkills = (resumeContent: string): string[] => {
   const skillsSection = resumeContent.toLowerCase();
   const commonSkills = [
     'javascript', 'typescript', 'react', 'node.js', 'python', 'java', 'c++', 'sql',
@@ -22,61 +114,14 @@ const extractKeySkills = (resumeContent: string): string[] => {
     skillsSection.includes(skill.toLowerCase())
   );
   
-  return foundSkills.slice(0, 8); // Limit to top 8 skills
-};
-
-// Enhanced function to extract job requirements and key qualifications
-const analyzeJobRequirements = (jobDescription: string): {
-  requiredSkills: string[],
-  experienceLevel: string,
-  keyQualifications: string[]
-} => {
-  const lowerDesc = jobDescription.toLowerCase();
-  
-  // Extract required skills
-  const skillKeywords = [
-    'javascript', 'typescript', 'react', 'node.js', 'python', 'java', 'sql',
-    'aws', 'azure', 'docker', 'kubernetes', 'agile', 'leadership', 'management',
-    'communication', 'problem solving', 'analytical', 'machine learning', 'data'
-  ];
-  
-  const requiredSkills = skillKeywords.filter(skill => 
-    lowerDesc.includes(skill)
-  );
-  
-  // Determine experience level
-  let experienceLevel = 'mid-level';
-  if (lowerDesc.includes('senior') || lowerDesc.includes('lead') || lowerDesc.includes('principal')) {
-    experienceLevel = 'senior';
-  } else if (lowerDesc.includes('junior') || lowerDesc.includes('entry') || lowerDesc.includes('graduate')) {
-    experienceLevel = 'junior';
-  }
-  
-  // Extract key qualifications
-  const qualificationPatterns = [
-    /(\d+\+?\s*years?\s*(?:of\s*)?experience)/gi,
-    /(bachelor'?s?\s*degree)/gi,
-    /(master'?s?\s*degree)/gi,
-    /(certification)/gi,
-    /(proven track record)/gi
-  ];
-  
-  const keyQualifications: string[] = [];
-  qualificationPatterns.forEach(pattern => {
-    const matches = jobDescription.match(pattern);
-    if (matches) {
-      keyQualifications.push(...matches.slice(0, 2));
-    }
-  });
-  
-  return { requiredSkills, experienceLevel, keyQualifications };
+  return foundSkills.slice(0, 12); // Limit to top 12 skills
 };
 
 // Enhanced function to format candidate information for AI processing
 const formatCandidateInfo = (candidateData: any, resumeContent: string): string => {
   if (!candidateData && !resumeContent) return '';
   
-  const extractedSkills = extractKeySkills(resumeContent);
+  const extractedSkills = extractResumeSkills(resumeContent);
   
   let candidateSection = '\n\nCANDIDATE PROFILE:\n';
   
@@ -95,7 +140,7 @@ const formatCandidateInfo = (candidateData: any, resumeContent: string): string 
   
   // Key Skills
   if (extractedSkills.length > 0) {
-    candidateSection += `\nKey Technical Skills: ${extractedSkills.join(', ')}\n`;
+    candidateSection += `\nCurrent Technical Skills: ${extractedSkills.join(', ')}\n`;
   }
   
   // Experience Summary
@@ -106,7 +151,7 @@ const formatCandidateInfo = (candidateData: any, resumeContent: string): string 
       if (exp.duration) candidateSection += ` (${exp.duration})`;
       candidateSection += '\n';
       if (exp.description) {
-        const shortDesc = exp.description.substring(0, 150);
+        const shortDesc = exp.description.substring(0, 200);
         candidateSection += `   Key achievements: ${shortDesc}...\n`;
       }
     });
@@ -157,19 +202,30 @@ serve(async (req) => {
       )
     }
 
-    // Analyze job requirements
-    const jobAnalysis = analyzeJobRequirements(jobDescription);
-    console.log('📊 Job analysis:', jobAnalysis);
+    // Extract comprehensive keywords from job description
+    const jobKeywords = extractJobKeywords(jobDescription, jobTitle || '');
+    console.log('🎯 Extracted job keywords:', jobKeywords);
     
     // Extract candidate skills
-    const candidateSkills = extractKeySkills(resumeContent);
-    console.log('🎯 Candidate skills:', candidateSkills);
+    const candidateSkills = extractResumeSkills(resumeContent);
+    console.log('📊 Candidate current skills:', candidateSkills);
+    
+    // Identify skill gaps and matches
+    const skillMatches = candidateSkills.filter(skill => 
+      jobKeywords.allKeywords.includes(skill)
+    );
+    const skillGaps = jobKeywords.technicalSkills.filter(skill => 
+      !candidateSkills.includes(skill)
+    ).slice(0, 5); // Top 5 missing skills
+    
+    console.log('✅ Skill matches:', skillMatches);
+    console.log('⚠️ Skill gaps:', skillGaps);
     
     // Format candidate information
     const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
     
-    // Create enhanced AI prompt
-    const prompt = `You are an expert resume writer and career counselor. Create a tailored resume that follows this specific structure:
+    // Create enhanced AI prompt with keyword integration strategy
+    const prompt = `You are an expert resume writer and ATS optimization specialist. Create a tailored resume that strategically incorporates job-specific keywords while maintaining authenticity.
 
 CANDIDATE INFORMATION:
 ${candidateInfo}
@@ -177,38 +233,63 @@ ${candidateInfo}
 ORIGINAL RESUME CONTENT:
 ${resumeContent.substring(0, 2500)}
 
-TARGET JOB:
+TARGET JOB ANALYSIS:
 Position: ${jobTitle || 'Not specified'}
 Company: ${companyName || 'Not specified'}
-Required Skills: ${jobAnalysis.requiredSkills.join(', ')}
-Experience Level: ${jobAnalysis.experienceLevel}
 
-Job Description:
+EXTRACTED JOB KEYWORDS TO INTEGRATE:
+Technical Skills: ${jobKeywords.technicalSkills.join(', ')}
+Soft Skills: ${jobKeywords.softSkills.join(', ')}
+Industry Terms: ${jobKeywords.industryTerms.join(', ')}
+
+CANDIDATE SKILL ANALYSIS:
+Current Skills (to highlight): ${candidateSkills.join(', ')}
+Matching Keywords: ${skillMatches.join(', ')}
+Missing Keywords to Incorporate: ${skillGaps.join(', ')}
+
+Job Description Context:
 ${jobDescription.substring(0, 2000)}
 
-INSTRUCTIONS:
-1. **CAREER PROFILE** (MOST IMPORTANT): Write exactly 3 compelling sentences that:
-   - Highlight the candidate's ${jobAnalysis.experienceLevel} experience level
-   - Mention 3-4 most relevant skills from: ${candidateSkills.join(', ')}
-   - Emphasize measurable impact and value proposition
-   - Align with the specific job requirements
+CRITICAL KEYWORD INTEGRATION INSTRUCTIONS:
+1. **STRATEGIC KEYWORD PLACEMENT**: Naturally integrate these keywords throughout the resume:
+   - Use exact keyword phrases from the job description when possible
+   - Include variations and synonyms of key terms
+   - Incorporate missing technical skills where relevant to past experience
+   - Weave in soft skills and industry terms organically
 
-2. **CONTACT INFORMATION**: Use the exact candidate details provided above (name, email, phone)
+2. **CAREER PROFILE** (HIGHEST PRIORITY): Write exactly 3 compelling sentences that:
+   - Include 4-5 most critical keywords from the job requirements
+   - Highlight measurable impact using industry-specific terminology
+   - Use exact phrases from job description where authentic
+   - Demonstrate value proposition with keyword-rich language
 
-3. **TAILORED EXPERIENCE**: 
-   - Rewrite job descriptions to highlight achievements relevant to ${jobTitle}
-   - Use keywords from job description: ${jobAnalysis.requiredSkills.slice(0, 6).join(', ')}
-   - Focus on quantifiable results and impact
+3. **EXPERIENCE OPTIMIZATION**:
+   - Rewrite job descriptions to include missing keywords naturally
+   - Use action verbs that match the job posting language
+   - Incorporate technical terms and tools mentioned in job requirements
+   - Add relevant industry terminology and methodologies
+   - Quantify achievements using keywords and metrics
 
-4. **SKILLS SECTION**: Prioritize skills that match job requirements
+4. **SKILLS SECTION ENHANCEMENT**:
+   - Prioritize skills that exactly match job requirements
+   - Include variations of required technologies
+   - Add complementary skills mentioned in job description
+   - Group technical and soft skills strategically
 
-5. **FORMAT**: Create ATS-friendly formatting with clear section headers
+5. **ATS OPTIMIZATION**:
+   - Use exact keyword phrases as they appear in job description
+   - Include both acronyms and full forms (e.g., "AI" and "Artificial Intelligence")
+   - Integrate keywords in context, not just as lists
+   - Ensure keyword density appears natural
 
-CRITICAL: Start with candidate's actual contact information, then the 3-sentence career profile, then experience.
+KEYWORD INTEGRATION TARGETS:
+- Must include: ${jobKeywords.allKeywords.slice(0, 8).join(', ')}
+- Requirements to address: ${jobKeywords.requirements.slice(0, 3).join('; ')}
+- Technical focus areas: ${jobKeywords.technicalSkills.slice(0, 6).join(', ')}
 
-Generate a complete, professional resume:`;
+Generate a complete, keyword-optimized resume that reads naturally while maximizing ATS compatibility:`;
 
-    console.log('🤖 Sending request to OpenAI...');
+    console.log('🤖 Sending enhanced request to OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -221,15 +302,15 @@ Generate a complete, professional resume:`;
         messages: [
           {
             role: 'system',
-            content: 'You are an expert resume writer who creates compelling, ATS-optimized resumes. You MUST use the exact candidate information provided and create a 3-sentence career profile that highlights impact and value. Always use real candidate data, never placeholders.'
+            content: 'You are an expert resume writer and ATS optimization specialist. You excel at naturally integrating job-specific keywords while maintaining authenticity and readability. You MUST use exact candidate information and create keyword-rich content that passes ATS systems while sounding professional and genuine.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 2500,
-        temperature: 0.3,
+        max_tokens: 2800,
+        temperature: 0.2, // Lower temperature for more consistent keyword integration
       }),
     })
 
@@ -269,48 +350,86 @@ Generate a complete, professional resume:`;
       )
     }
 
-    // Enhanced scoring based on keyword matching and structure
-    const resumeKeywords = tailoredResume.toLowerCase();
-    const skillMatches = jobAnalysis.requiredSkills.filter(skill => 
-      resumeKeywords.includes(skill.toLowerCase())
+    // Enhanced scoring based on keyword integration
+    const resumeText = tailoredResume.toLowerCase();
+    
+    // Calculate keyword match scores
+    const technicalMatches = jobKeywords.technicalSkills.filter(skill => 
+      resumeText.includes(skill.toLowerCase())
     ).length;
     
-    const hasCareerProfile = resumeKeywords.includes('career') || resumeKeywords.includes('profile') || resumeKeywords.includes('summary');
+    const softSkillMatches = jobKeywords.softSkills.filter(skill => 
+      resumeText.includes(skill.toLowerCase())
+    ).length;
+    
+    const industryMatches = jobKeywords.industryTerms.filter(term => 
+      resumeText.includes(term.toLowerCase())
+    ).length;
+    
+    const totalPossibleMatches = jobKeywords.technicalSkills.length + 
+                               jobKeywords.softSkills.length + 
+                               jobKeywords.industryTerms.length;
+    
+    const totalMatches = technicalMatches + softSkillMatches + industryMatches;
+    
+    // Enhanced scoring algorithm
+    const keywordScore = totalPossibleMatches > 0 ? 
+      Math.round((totalMatches / totalPossibleMatches) * 50) : 20;
+    
+    const hasCareerProfile = resumeText.includes('profile') || 
+                           resumeText.includes('summary') || 
+                           resumeText.includes('objective');
+    
     const hasContactInfo = candidateData?.personalInfo?.name ? 
-      resumeKeywords.includes(candidateData.personalInfo.name.toLowerCase()) : true;
+      resumeText.includes(candidateData.personalInfo.name.toLowerCase()) : true;
     
-    // Calculate comprehensive score
-    const keywordScore = Math.round((skillMatches / Math.max(jobAnalysis.requiredSkills.length, 1)) * 40);
-    const structureScore = (hasCareerProfile ? 30 : 0) + (hasContactInfo ? 20 : 0);
-    const baseScore = 10; // Base score for successful generation
+    const structureScore = (hasCareerProfile ? 25 : 10) + (hasContactInfo ? 15 : 5);
+    const baseScore = 10;
     
-    const finalScore = Math.min(95, Math.max(65, keywordScore + structureScore + baseScore));
+    const finalScore = Math.min(98, Math.max(70, keywordScore + structureScore + baseScore));
 
-    console.log('✅ Resume tailored successfully. Score:', finalScore);
+    console.log('✅ Resume tailored successfully. Final Score:', finalScore);
+    console.log('📊 Keyword integration:', {
+      technical: `${technicalMatches}/${jobKeywords.technicalSkills.length}`,
+      softSkills: `${softSkillMatches}/${jobKeywords.softSkills.length}`,
+      industry: `${industryMatches}/${jobKeywords.industryTerms.length}`
+    });
 
     return new Response(
       JSON.stringify({
         tailoredResume,
         score: finalScore,
         analysis: {
-          skillsMatched: skillMatches,
-          requiredSkills: jobAnalysis.requiredSkills.length,
-          candidateSkills: candidateSkills,
-          experienceLevel: jobAnalysis.experienceLevel,
+          keywordIntegration: {
+            technicalSkills: technicalMatches,
+            softSkills: softSkillMatches,
+            industryTerms: industryMatches,
+            totalMatches,
+            totalPossible: totalPossibleMatches
+          },
+          skillAnalysis: {
+            candidateSkills,
+            jobKeywords: jobKeywords.allKeywords,
+            skillMatches,
+            skillGaps
+          },
           hasCareerProfile,
           hasContactInfo
         },
         suggestions: {
-          keywordsMatched: skillMatches,
-          totalKeywords: jobAnalysis.requiredSkills.length,
+          keywordsIntegrated: `${totalMatches} of ${totalPossibleMatches} job keywords successfully integrated`,
           recommendations: [
-            '3-sentence career profile crafted for the specific role',
-            `${skillMatches} of ${jobAnalysis.requiredSkills.length} required skills highlighted`,
-            'Experience sections tailored to job requirements',
-            'ATS-optimized formatting implemented',
-            hasContactInfo ? 'Candidate contact information properly included' : 'Contact information needs verification'
+            `✅ ${technicalMatches} technical skills from job requirements incorporated`,
+            `✅ ${softSkillMatches} soft skills naturally integrated`,
+            `✅ ${industryMatches} industry-specific terms included`,
+            '✅ 3-sentence career profile optimized for target role',
+            '✅ ATS-friendly keyword placement throughout resume',
+            hasContactInfo ? '✅ Contact information properly formatted' : '⚠️ Contact information needs verification',
+            `✅ ${skillMatches.length} existing skills highlighted as job matches`,
+            skillGaps.length > 0 ? `📈 ${skillGaps.length} additional keywords strategically added` : '✅ All relevant keywords already present'
           ]
-        }
+        },
+        extractedKeywords: jobKeywords
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

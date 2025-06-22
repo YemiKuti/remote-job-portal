@@ -112,6 +112,8 @@ const Header = () => {
                     setIsMenuOpen(false);
                   }}
                   className="bg-job-green hover:bg-job-darkGreen text-white"
+                >
+                  Sign Up
                 </Button>
               </div>
             </div>

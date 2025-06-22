@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AdminUser {
@@ -535,6 +534,29 @@ export const updateAdminJob = async (jobId: string, jobData: any): Promise<strin
   } catch (error: any) {
     console.error('Error in updateAdminJob:', error);
     throw new Error(error.message || 'Failed to update job');
+  }
+};
+
+// Delete admin job
+export const deleteAdminJob = async (jobId: string): Promise<boolean> => {
+  console.log('Deleting admin job:', jobId);
+  
+  try {
+    const { error } = await supabase
+      .from('jobs')
+      .delete()
+      .eq('id', jobId);
+    
+    if (error) {
+      console.error('Error deleting admin job:', error);
+      throw new Error(`Failed to delete job: ${error.message}`);
+    }
+    
+    console.log('Admin job deleted successfully');
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteAdminJob:', error);
+    throw new Error(error.message || 'Failed to delete job');
   }
 };
 

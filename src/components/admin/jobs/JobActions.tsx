@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle, XCircle, History, MoreHorizontal } from "lucide-react";
+import { Eye, CheckCircle, XCircle, History, MoreHorizontal, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -9,8 +10,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { JobApprovalDialog } from "./JobApprovalDialog";
 import { JobApprovalHistory } from "./JobApprovalHistory";
+import { deleteAdminJob } from "@/utils/api/adminApi";
+import { useToast } from "@/hooks/use-toast";
 
 interface JobActionsProps {
   job: {
@@ -24,11 +37,14 @@ interface JobActionsProps {
 
 export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [approvalDialog, setApprovalDialog] = useState<{
     isOpen: boolean;
     action: 'approve' | 'reject' | null;
   }>({ isOpen: false, action: null });
   const [historyDialog, setHistoryDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const handleApprovalSuccess = () => {
     onJobAction();
@@ -40,6 +56,30 @@ export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
 
   const closeApprovalDialog = () => {
     setApprovalDialog({ isOpen: false, action: null });
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAdminJob(job.id);
+      
+      toast({
+        title: "Job Deleted",
+        description: "The job has been successfully deleted.",
+      });
+      
+      onJobAction();
+      setDeleteDialog(false);
+    } catch (error: any) {
+      console.error('Error deleting job:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete job. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -111,6 +151,15 @@ export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
                 </DropdownMenuItem>
               </>
             )}
+            
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => setDeleteDialog(true)}
+              className="text-red-600"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Job
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -128,6 +177,27 @@ export const JobActions = ({ job, onJobAction }: JobActionsProps) => {
         onClose={() => setHistoryDialog(false)}
         job={job}
       />
+
+      <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{job.title}" at {job.company}? This action cannot be undone and will permanently remove the job listing and all associated applications.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete Job"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

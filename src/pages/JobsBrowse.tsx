@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSubscription } from '@/hooks/useSupabase';
@@ -26,8 +27,8 @@ const JobsBrowse = () => {
   const [activeFilters, setActiveFilters] = useState<any>({});
   const navigate = useNavigate();
 
-  // Job limit for free users - changed from 5 to 3
-  const FREE_JOB_LIMIT = 3;
+  // Job limit for free users - changed from 3 to 7
+  const FREE_JOB_LIMIT = 7;
   const shouldLimitJobs = !subscribed && !subscriptionLoading;
   const displayedJobs = shouldLimitJobs ? filteredJobs.slice(0, FREE_JOB_LIMIT) : filteredJobs;
   const hasMoreJobs = shouldLimitJobs && filteredJobs.length > FREE_JOB_LIMIT;
@@ -280,7 +281,7 @@ const JobsBrowse = () => {
                 </Card>
               )}
 
-              {/* Force show subscription prompt for testing if there are more than 3 jobs total */}
+              {/* Force show subscription prompt for testing if there are more than 7 jobs total */}
               {!hasMoreJobs && filteredJobs.length > FREE_JOB_LIMIT && (
                 <Card className="border-2 border-orange-200 bg-orange-50">
                   <CardContent className="text-center py-4">

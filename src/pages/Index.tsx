@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import JobCard from "@/components/JobCard";
@@ -14,8 +15,8 @@ import { Link } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSupabase";
 import { useActiveJobs } from "@/hooks/useActiveJobs";
 
-const MAX_JOBS_DEFAULT = 3; // Changed from 5 to 3
-const MAX_JOBS_SEARCH = 3;
+const MAX_JOBS_DEFAULT = 7; // Changed from 3 to 7
+const MAX_JOBS_SEARCH = 7; // Changed from 3 to 7
 
 const Index = () => {
   const { jobs: allJobs, loading, error } = useActiveJobs();
@@ -30,7 +31,7 @@ const Index = () => {
         new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       );
       
-      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT (now 3)
+      // If user is subscribed, show all jobs, otherwise limit to MAX_JOBS_DEFAULT (now 7)
       setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
     }
   }, [allJobs, subscribed, loading]);

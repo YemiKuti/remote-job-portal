@@ -108,18 +108,27 @@ export default function Auth({ initialRole = 'candidate', initialTab = 'signin' 
       const sanitizedEmail = sanitizeInput(resetEmail);
       const redirectUrl = `${window.location.origin}/reset-password`;
       
+      console.log('🔐 Auth: Sending password reset email', { email: sanitizedEmail, redirectUrl });
+      
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
         redirectTo: redirectUrl
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔐 Auth: Password reset error:', error);
+        throw error;
+      }
 
+      console.log('🔐 Auth: Password reset email sent successfully');
       toast.success("Password reset email sent! Check your inbox for instructions.");
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (error: any) {
       console.error("Error sending password reset:", error);
+      // Show success message even if there's an error to prevent email enumeration
       toast.success("If an account with that email exists, you will receive a password reset link.");
+      setShowForgotPassword(false);
+      setResetEmail("");
     } finally {
       setIsResettingPassword(false);
     }

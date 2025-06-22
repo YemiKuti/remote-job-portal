@@ -20,11 +20,12 @@ export default function ResetPassword() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [hasLegacyToken, setHasLegacyToken] = useState(false);
 
   useEffect(() => {
     const checkResetSession = async () => {
-      // Parse URL fragment for recovery tokens
+      console.log('🔐 ResetPassword: Checking reset session');
+      
+      // Parse URL parameters for recovery tokens
       const hash = window.location.hash.substring(1);
       const hashParams = new URLSearchParams(hash);
       
@@ -35,55 +36,52 @@ export default function ResetPassword() {
       const type = hashParams.get('type') || searchParams.get('type');
       const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-      
-      // Handle legacy 'token' parameter from older email formats
-      const legacyToken = searchParams.get('token');
 
-      console.log('🔐 Reset session check:', { 
+      console.log('🔐 ResetPassword: Recovery parameters:', { 
         type, 
         hasAccessToken: !!accessToken, 
         hasRefreshToken: !!refreshToken,
-        hasLegacyToken: !!legacyToken,
         hash,
         search: location.search
       });
 
-      // Handle legacy token format - allow password reset without requiring existing session
-      if (legacyToken && type === 'recovery') {
-        console.log('🔐 Legacy token detected, allowing password reset');
-        setHasLegacyToken(true);
-        setIsValidSession(true);
-        toast.success('Please set your new password below.');
-        // Clear the URL parameters to clean up the interface
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (type === 'recovery' && accessToken && refreshToken) {
-        console.log('🔐 Standard recovery tokens detected, setting up session');
+      if (type === 'recovery' && accessToken && refreshToken) {
+        console.log('🔐 ResetPassword: Valid recovery tokens found, setting up session');
         
         try {
-          const { error } = await supabase.auth.setSession({
+          // Set the session with the recovery tokens
+          const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
           });
 
           if (error) {
-            console.error('Error setting recovery session:', error);
-            toast.error('Invalid recovery link. Please request a new password reset.');
-            navigate('/auth');
-          } else {
+            console.error('🔐 ResetPassword: Error setting recovery session:', error);
+            toast.error('Invalid or expired reset link. Please request a new password reset.');
+            navigate('/signin');
+            return;
+          }
+
+          if (data.session) {
+            console.log('🔐 ResetPassword: Recovery session established successfully');
             setIsValidSession(true);
             toast.success('Please set your new password below.');
-            // Clear the URL fragment to clean up the interface
+            // Clean up the URL parameters
             window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            console.error('🔐 ResetPassword: No session returned from setSession');
+            toast.error('Invalid reset link. Please request a new password reset.');
+            navigate('/signin');
           }
         } catch (error) {
-          console.error('Error during session setup:', error);
-          toast.error('Invalid recovery link. Please request a new password reset.');
-          navigate('/auth');
+          console.error('🔐 ResetPassword: Exception during session setup:', error);
+          toast.error('Invalid reset link. Please request a new password reset.');
+          navigate('/signin');
         }
       } else {
-        console.log('🔐 No valid recovery tokens found, redirecting to auth');
+        console.log('🔐 ResetPassword: No valid recovery tokens found, redirecting to signin');
         toast.error('Invalid reset link. Please request a new password reset.');
-        navigate('/auth');
+        navigate('/signin');
       }
       
       setIsCheckingSession(false);
@@ -94,6 +92,8 @@ export default function ResetPassword() {
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔐 ResetPassword: Starting password update process');
     
     if (!newPassword || !confirmNewPassword) {
       toast.error('Please fill in all fields');
@@ -115,35 +115,43 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      // For legacy tokens, we need to handle password update differently
-      if (hasLegacyToken) {
-        // For legacy tokens, we'll attempt to update the password directly
-        // This may require the user to be signed in first
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // If no session exists, we can't update the password with legacy tokens
-          toast.error('This reset link format is no longer supported. Please request a new password reset.');
-          navigate('/auth');
-          return;
-        }
+      // Verify we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('🔐 ResetPassword: No active session for password update');
+        toast.error('Session expired. Please request a new password reset.');
+        navigate('/signin');
+        return;
       }
 
+      console.log('🔐 ResetPassword: Updating password with valid session');
+
+      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔐 ResetPassword: Error updating password:', error);
+        throw error;
+      }
 
-      toast.success('Password updated successfully! You can now sign in with your new password.');
-      navigate('/auth');
+      console.log('🔐 ResetPassword: Password updated successfully');
+      
+      // Sign out to ensure clean state
+      await supabase.auth.signOut();
+      
+      toast.success('Password updated successfully! Please sign in with your new password.');
+      navigate('/signin');
     } catch (error: any) {
-      console.error('Error updating password:', error);
-      if (hasLegacyToken) {
-        toast.error('This reset link has expired. Please request a new password reset.');
-        navigate('/auth');
+      console.error('🔐 ResetPassword: Exception during password update:', error);
+      
+      if (error.message?.includes('session_not_found') || error.message?.includes('invalid_session')) {
+        toast.error('Session expired. Please request a new password reset.');
+        navigate('/signin');
       } else {
-        toast.error('Failed to update password. Please try again.');
+        toast.error('Failed to update password. Please try again or request a new reset link.');
       }
     } finally {
       setIsLoading(false);
@@ -181,13 +189,6 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {hasLegacyToken && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  You're using an older reset link format. If you encounter any issues, please request a new password reset.
-                </p>
-              </div>
-            )}
             <form onSubmit={handlePasswordUpdate} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>
@@ -235,7 +236,7 @@ export default function ResetPassword() {
                   type="button" 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => navigate('/auth')}
+                  onClick={() => navigate('/signin')}
                   disabled={isLoading}
                 >
                   Cancel

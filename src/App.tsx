@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Account from '@/pages/Account'
@@ -32,6 +31,7 @@ import AdminSignIn from '@/pages/AdminSignIn';
 import AdminDashboard from '@/pages/AdminDashboard';
 import UsersAdmin from '@/pages/admin/Users';
 import JobsAdmin from '@/pages/admin/Jobs';
+import CompaniesAdmin from '@/pages/admin/Companies';
 import SettingsAdmin from '@/pages/admin/Settings';
 import BlogManagement from '@/pages/admin/BlogManagement';
 import CreateJob from '@/pages/admin/CreateJob';
@@ -88,6 +88,7 @@ const App = () => {
           <Route path="/admin/jobs" element={<AdminRoute><JobsAdmin /></AdminRoute>} />
           <Route path="/admin/jobs/new" element={<AdminRoute><CreateJob /></AdminRoute>} />
           <Route path="/admin/jobs/:id/edit" element={<AdminRoute><AdminEditJob /></AdminRoute>} />
+          <Route path="/admin/companies" element={<AdminRoute><CompaniesAdmin /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><SettingsAdmin /></AdminRoute>} />
           <Route path="/admin/blog" element={<AdminRoute><BlogManagement /></AdminRoute>} />
 

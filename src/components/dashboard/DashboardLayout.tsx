@@ -33,6 +33,8 @@ import {
   Users,
   Menu,
   Sparkles,
+  Globe,
+  Server,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -79,9 +81,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
   ];
 
   const adminNavigation: NavItem[] = [
+    { name: 'Website Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
+    { name: 'Companies', href: '/admin/companies', icon: Building },
+    { name: 'Job Scraper', href: '/job-scraper', icon: Server },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

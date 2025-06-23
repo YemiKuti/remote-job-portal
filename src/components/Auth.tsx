@@ -43,7 +43,7 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       window.history.replaceState({}, document.title, location.pathname + location.search);
     }
 
-    // Check if this is a password recovery flow and redirect to reset-password page immediately
+    // Check for email confirmation or recovery flow
     const hash = window.location.hash.substring(1);
     const search = window.location.search;
     const hashParams = new URLSearchParams(hash);
@@ -52,11 +52,21 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     const type = hashParams.get('type') || searchParams.get('type');
     const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
     
-    console.log('🔐 Auth component: Checking for recovery flow', { type, hasAccessToken: !!accessToken });
+    console.log('🔐 Auth component: Checking URL params', { type, hasAccessToken: !!accessToken });
     
+    // Handle email confirmation
+    if (type === 'signup' && accessToken) {
+      console.log('🔐 Auth component: Email confirmation detected');
+      toast.success("Email confirmed! You can now sign in to your account.");
+      // Clear the URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setActiveTab("signin");
+      return;
+    }
+    
+    // Handle password recovery
     if (type === 'recovery' && accessToken) {
-      console.log('🔐 Auth component: Recovery flow detected, redirecting to reset-password immediately');
-      // Use replace to avoid adding to history stack
+      console.log('🔐 Auth component: Recovery flow detected, redirecting to reset-password');
       navigate(`/reset-password${search}${window.location.hash}`, { replace: true });
       return;
     }
@@ -217,7 +227,7 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
             role: selectedRole,
             full_name: sanitizedFullName,
           },
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: `${window.location.origin}/auth?type=signup`
         },
       });
 
@@ -239,6 +249,11 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       if (data.user && !data.session) {
         toast.success("Account created! Please check your email to confirm your account before signing in.");
         setActiveTab("signin");
+        // Clear the form
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setFullName("");
       } else if (data.user && data.session) {
         toast.success("Account created successfully!");
         // Let the AuthProvider handle the redirect
@@ -271,13 +286,24 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       const sanitizedEmail = sanitizeInput(email);
       const sanitizedPassword = sanitizeInput(password);
       
+      console.log('🔐 Attempting sign in with:', { email: sanitizedEmail });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: sanitizedEmail,
         password: sanitizedPassword,
       });
 
+      console.log('🔐 Sign in response:', { data, error });
+
       if (error) {
-        toast.error("Invalid credentials. Please check your email and password.");
+        console.error("Sign in error:", error);
+        if (error.message.includes('Email not confirmed')) {
+          toast.error("Please check your email and click the confirmation link before signing in.");
+        } else if (error.message.includes('Invalid login credentials')) {
+          toast.error("Invalid email or password. Please check your credentials.");
+        } else {
+          toast.error("Sign in failed. Please check your credentials and try again.");
+        }
         return;
       }
 

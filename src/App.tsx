@@ -5,6 +5,7 @@ import Account from '@/pages/Account'
 import Index from '@/pages/Index'
 import Pricing from '@/pages/Pricing'
 import AuthPage from '@/pages/Auth'
+import JobsBrowse from '@/pages/JobsBrowse'
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
 import PostJob from '@/pages/employer/PostJob';
@@ -34,6 +35,7 @@ const App = () => {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/jobs" element={<JobsBrowse />} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}

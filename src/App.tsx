@@ -39,6 +39,7 @@ const App = () => {
           <Route path="/job-seeker/jobs" element={<JobsBrowse />} />
           <Route path="/job-seeker/applications" element={<ProtectedRoute><CandidateApplications /></ProtectedRoute>} />
           <Route path="/job-seeker/saved" element={<ProtectedRoute><CandidateSavedJobs /></ProtectedRoute>} />
+          <Route path="/job-seeker/messages" element={<ProtectedRoute><CandidateMessages /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}
@@ -61,7 +62,7 @@ const App = () => {
           <Route path="/employer/candidates" element={<ProtectedEmployerRoute><Candidates /></ProtectedEmployerRoute>} />
           <Route path="/employer/messages" element={<ProtectedEmployerRoute><EmployerMessages /></ProtectedEmployerRoute>} />
           <Route path="/employer/company" element={<ProtectedEmployerRoute><Company /></ProtectedEmployerRoute>} />
-          <Route path="/employer/settings" element={<ProtectedEmployerRoute><EmployerSettings /></ProtectedEmployerRoute>} />
+          <Route path="/employer/settings" element={<ProtectedEmployerRoute><EmployerSettings /></ProtectedRouteEmployerRoute>} />
           <Route path="/employer/subscription" element={<ProtectedEmployerRoute><EmployerSubscription /></ProtectedEmployerRoute>} />
         </Routes>
       </AuthProvider>

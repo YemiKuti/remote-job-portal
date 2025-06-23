@@ -29,6 +29,7 @@ import CandidateSettings from '@/pages/candidate/Settings';
 import Profile from '@/pages/Profile';
 import AdminSignIn from '@/pages/AdminSignIn';
 import AdminDashboard from '@/pages/AdminDashboard';
+import UsersAdmin from '@/pages/admin/Users';
 import { AdminRoute } from '@/components/AdminRoute';
 
 const App = () => {
@@ -74,6 +75,7 @@ const App = () => {
           {/* Admin Routes */}
           <Route path="/admin-signin" element={<AdminSignIn />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><UsersAdmin /></AdminRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

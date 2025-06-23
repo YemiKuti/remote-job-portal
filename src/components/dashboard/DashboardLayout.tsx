@@ -61,6 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const jobSeekerNavigation: NavItem[] = [
+    { name: 'Website Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/job-seeker', icon: LayoutDashboard },
     { name: 'Jobs', href: '/job-seeker/jobs', icon: Briefcase },
     { name: 'Saved Jobs', href: '/job-seeker/saved', icon: Home },

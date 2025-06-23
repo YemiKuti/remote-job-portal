@@ -20,76 +20,84 @@ export default function ResetPassword() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [hasLegacyToken, setHasLegacyToken] = useState(false);
 
   useEffect(() => {
-    const checkResetSession = async () => {
-      // Parse URL fragment for recovery tokens
-      const hash = window.location.hash.substring(1);
-      const hashParams = new URLSearchParams(hash);
-      
-      // Also check search params as fallback
-      const searchParams = new URLSearchParams(location.search);
-      
-      // Check both hash and query parameters for tokens
-      const type = hashParams.get('type') || searchParams.get('type');
-      const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-      
-      // Handle legacy 'token' parameter from older email formats
-      const legacyToken = searchParams.get('token');
-
-      console.log('🔐 Reset session check:', { 
-        type, 
-        hasAccessToken: !!accessToken, 
-        hasRefreshToken: !!refreshToken,
-        hasLegacyToken: !!legacyToken,
-        hash,
-        search: location.search
-      });
-
-      // Handle legacy token format - allow password reset without requiring existing session
-      if (legacyToken && type === 'recovery') {
-        console.log('🔐 Legacy token detected, allowing password reset');
-        setHasLegacyToken(true);
-        setIsValidSession(true);
-        toast.success('Please set your new password below.');
-        // Clear the URL parameters to clean up the interface
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (type === 'recovery' && accessToken && refreshToken) {
-        console.log('🔐 Standard recovery tokens detected, setting up session');
+    const handlePasswordRecovery = async () => {
+      try {
+        // Parse URL parameters for recovery tokens
+        const hash = window.location.hash.substring(1);
+        const search = window.location.search;
+        const hashParams = new URLSearchParams(hash);
+        const searchParams = new URLSearchParams(search);
         
-        try {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
+        // Check for recovery parameters
+        const type = hashParams.get('type') || searchParams.get('type');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+        
+        console.log('🔐 Reset Password: Checking recovery tokens', { 
+          type, 
+          hasAccessToken: !!accessToken, 
+          hasRefreshToken: !!refreshToken 
+        });
 
-          if (error) {
-            console.error('Error setting recovery session:', error);
-            toast.error('Invalid recovery link. Please request a new password reset.');
-            navigate('/auth');
-          } else {
+        if (type === 'recovery' && accessToken) {
+          if (refreshToken) {
+            // Standard recovery flow with both tokens
+            console.log('🔐 Reset Password: Setting up session with tokens');
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+
+            if (error) {
+              console.error('🔐 Reset Password: Session setup error:', error);
+              toast.error('Invalid or expired reset link. Please request a new one.');
+              navigate('/auth');
+              return;
+            }
+
+            console.log('🔐 Reset Password: Session established successfully');
             setIsValidSession(true);
             toast.success('Please set your new password below.');
-            // Clear the URL fragment to clean up the interface
+            
+            // Clean up URL without causing page reload
             window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            // Handle case where only access token is present
+            console.log('🔐 Reset Password: Access token only, attempting to verify session');
+            
+            // Try to get the current session to see if we can proceed
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (session && !sessionError) {
+              console.log('🔐 Reset Password: Valid session found');
+              setIsValidSession(true);
+              toast.success('Please set your new password below.');
+              window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+              console.log('🔐 Reset Password: No valid session, redirecting to auth');
+              toast.error('Invalid or expired reset link. Please request a new one.');
+              navigate('/auth');
+              return;
+            }
           }
-        } catch (error) {
-          console.error('Error during session setup:', error);
-          toast.error('Invalid recovery link. Please request a new password reset.');
+        } else {
+          console.log('🔐 Reset Password: No recovery tokens found, redirecting');
+          toast.error('Invalid reset link. Please request a new password reset.');
           navigate('/auth');
+          return;
         }
-      } else {
-        console.log('🔐 No valid recovery tokens found, redirecting to auth');
-        toast.error('Invalid reset link. Please request a new password reset.');
+      } catch (error) {
+        console.error('🔐 Reset Password: Error during recovery setup:', error);
+        toast.error('An error occurred. Please try requesting a new reset link.');
         navigate('/auth');
+      } finally {
+        setIsCheckingSession(false);
       }
-      
-      setIsCheckingSession(false);
     };
 
-    checkResetSession();
+    handlePasswordRecovery();
   }, [location, navigate]);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
@@ -115,35 +123,40 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      // For legacy tokens, we need to handle password update differently
-      if (hasLegacyToken) {
-        // For legacy tokens, we'll attempt to update the password directly
-        // This may require the user to be signed in first
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // If no session exists, we can't update the password with legacy tokens
-          toast.error('This reset link format is no longer supported. Please request a new password reset.');
-          navigate('/auth');
-          return;
-        }
-      }
-
+      console.log('🔐 Reset Password: Attempting to update password');
+      
+      // Update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔐 Reset Password: Password update error:', error);
+        throw error;
+      }
 
-      toast.success('Password updated successfully! You can now sign in with your new password.');
-      navigate('/auth');
+      console.log('🔐 Reset Password: Password updated successfully');
+      toast.success('Password updated successfully! Redirecting to sign in...');
+      
+      // Sign out the user to ensure clean state
+      await supabase.auth.signOut();
+      
+      // Small delay before redirect to ensure the toast is visible
+      setTimeout(() => {
+        navigate('/auth', { 
+          replace: true,
+          state: { message: 'Password updated successfully. Please sign in with your new password.' }
+        });
+      }, 1500);
+
     } catch (error: any) {
-      console.error('Error updating password:', error);
-      if (hasLegacyToken) {
-        toast.error('This reset link has expired. Please request a new password reset.');
+      console.error('🔐 Reset Password: Password update failed:', error);
+      
+      if (error.message?.includes('session_not_found') || error.message?.includes('invalid_token')) {
+        toast.error('Your reset link has expired. Please request a new password reset.');
         navigate('/auth');
       } else {
-        toast.error('Failed to update password. Please try again.');
+        toast.error('Failed to update password. Please try again or request a new reset link.');
       }
     } finally {
       setIsLoading(false);
@@ -181,13 +194,6 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {hasLegacyToken && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  You're using an older reset link format. If you encounter any issues, please request a new password reset.
-                </p>
-              </div>
-            )}
             <form onSubmit={handlePasswordUpdate} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>

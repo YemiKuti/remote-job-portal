@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,14 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
+    // Show success message if coming from password reset
+    const state = location.state as { message?: string } | null;
+    if (state?.message) {
+      toast.success(state.message);
+      // Clear the state to prevent showing the message again
+      window.history.replaceState({}, document.title, location.pathname + location.search);
+    }
+
     // Check if this is a password recovery flow and redirect to reset-password page immediately
     const hash = window.location.hash.substring(1);
     const search = window.location.search;
@@ -348,7 +355,7 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "signin" | "signup")}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>

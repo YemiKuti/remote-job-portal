@@ -17,7 +17,6 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  Settings,
   Crown,
   CreditCard
 } from 'lucide-react';
@@ -288,15 +287,11 @@ const CandidateDashboard = () => {
         <Separator />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="notifications">
               <Bell className="h-4 w-4 mr-2" />
               Notifications
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Preferences
             </TabsTrigger>
           </TabsList>
 
@@ -605,10 +600,6 @@ const CandidateDashboard = () => {
 
           <TabsContent value="notifications" className="space-y-6">
             {user && <NotificationCenter userId={user.id} />}
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            {user && <NotificationPreferences userId={user.id} userType="candidate" />}
           </TabsContent>
         </Tabs>
       </div>

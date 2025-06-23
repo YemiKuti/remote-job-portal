@@ -36,6 +36,7 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/jobs" element={<JobsBrowse />} />
+          <Route path="/job-seeker/jobs" element={<JobsBrowse />} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}

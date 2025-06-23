@@ -41,6 +41,7 @@ import AdminEditJob from '@/pages/admin/EditJob';
 import { AdminRoute } from '@/components/AdminRoute';
 import SettingsRedirect from '@/components/SettingsRedirect';
 import CheckoutSuccess from '@/pages/CheckoutSuccess';
+import ResetPassword from '@/pages/ResetPassword';
 
 const App = () => {
   return (
@@ -50,6 +51,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/jobs" element={<JobsBrowse />} />
             <Route path="/job-scraper" element={<JobScraper />} />

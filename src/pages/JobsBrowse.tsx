@@ -243,43 +243,56 @@ const JobsBrowse = () => {
                 ))}
               </div>
 
-              {/* Subscription Prompt - This should always show when hasMoreJobs is true */}
-              {hasMoreJobs && (
-                <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-                  <CardContent className="text-center py-8">
-                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Crown className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Want to see more jobs?
-                    </h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                      You're viewing {FREE_JOB_LIMIT} of {filteredJobs.length} available jobs. 
-                      Subscribe to unlock all job listings and premium features.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              {/* Subscribe to see more jobs - Always show after job list */}
+              <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardContent className="text-center py-8">
+                  <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Crown className="w-8 h-8 text-primary" />
+                  </div>
+                  
+                  {hasMoreJobs ? (
+                    <>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        Want to see more jobs?
+                      </h3>
+                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                        You're viewing {FREE_JOB_LIMIT} of {filteredJobs.length} available jobs. 
+                        Subscribe to unlock all job listings and premium features.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        Get Premium Access
+                      </h3>
+                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                        Subscribe to unlock premium features, job alerts, and enhanced search capabilities to find your perfect job faster.
+                      </p>
+                    </>
+                  )}
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <Button 
+                      onClick={handleSubscribeClick}
+                      className="bg-primary hover:bg-primary/90 text-white px-6 py-2"
+                    >
+                      Subscribe Now
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    {!user && (
                       <Button 
-                        onClick={handleSubscribeClick}
-                        className="bg-primary hover:bg-primary/90 text-white px-6 py-2"
+                        variant="outline"
+                        onClick={() => navigate('/signin')}
                       >
-                        Subscribe Now
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        Sign In to Continue
                       </Button>
-                      {!user && (
-                        <Button 
-                          variant="outline"
-                          onClick={() => navigate('/signin')}
-                        >
-                          Sign In to Continue
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-4">
-                      Join thousands of professionals finding their dream jobs
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-4">
+                    Join thousands of professionals finding their dream jobs
+                  </p>
+                </CardContent>
+              </Card>
 
               {/* Force show subscription prompt for testing if there are more than 7 jobs total */}
               {!hasMoreJobs && filteredJobs.length > FREE_JOB_LIMIT && (

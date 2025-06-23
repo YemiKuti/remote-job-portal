@@ -15,7 +15,9 @@ import {
   AlertCircle,
   RefreshCw,
   Bell,
-  Settings
+  Settings,
+  Crown,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { EmployerNotificationCenter } from '@/components/employer/EmployerNotificationCenter';
@@ -24,6 +26,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEmployerSubscriptionAccess } from '@/hooks/useEmployerSubscriptionAccess';
 
 interface DashboardStats {
   totalJobs: number;
@@ -44,6 +47,18 @@ const EmployerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Subscription access hook
+  const {
+    hasActiveSubscription,
+    subscriptionTier,
+    postLimit,
+    activePostsCount,
+    canPost,
+    loading: subLoading,
+    error: subError,
+    refresh: refreshSubscription
+  } = useEmployerSubscriptionAccess();
 
   useEffect(() => {
     if (user) {
@@ -96,6 +111,24 @@ const EmployerDashboard = () => {
       fetchDashboardStats();
     } else {
       navigate('/auth?role=employer');
+    }
+  };
+
+  const getSubscriptionBadgeColor = (tier: string | null) => {
+    switch (tier?.toLowerCase()) {
+      case 'single': return 'bg-blue-100 text-blue-800';
+      case 'package5': return 'bg-purple-100 text-purple-800';
+      case 'package10': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSubscriptionDisplayName = (tier: string | null) => {
+    switch (tier?.toLowerCase()) {
+      case 'single': return 'Single Job Package';
+      case 'package5': return '5 Jobs Package';
+      case 'package10': return '10 Jobs Package';
+      default: return tier || 'Premium';
     }
   };
 
@@ -164,6 +197,109 @@ const EmployerDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Subscription Status Card */}
+            <Card className="border-2 border-dashed border-purple-200 bg-purple-50/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-purple-600" />
+                  Subscription Status
+                </CardTitle>
+                <CardDescription>
+                  Your current job posting package and available credits
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {subLoading ? (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                    <div className="h-3 bg-gray-200 rounded w-32"></div>
+                  </div>
+                ) : hasActiveSubscription ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getSubscriptionBadgeColor(subscriptionTier)}>
+                            {getSubscriptionDisplayName(subscriptionTier)}
+                          </Badge>
+                          <span className="text-sm text-green-600 font-medium">Active</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {activePostsCount} of {postLimit} job postings used
+                        </p>
+                      </div>
+                      <Link to="/pricing">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Upgrade Package
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ Featured Listings</div>
+                        <div className="text-muted-foreground">Enhanced visibility</div>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ Application Management</div>
+                        <div className="text-muted-foreground">Advanced filtering & sorting</div>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ Priority Support</div>
+                        <div className="text-muted-foreground">Get help when you need it</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Badge variant="outline">Free Plan</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Purchase a job posting package to get started
+                        </p>
+                      </div>
+                      <Link to="/pricing">
+                        <Button size="sm" className="flex items-center gap-2">
+                          <Crown className="h-4 w-4" />
+                          Buy Package
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">Featured Listings</div>
+                        <div className="text-muted-foreground">Purchase to unlock</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">Application Management</div>
+                        <div className="text-muted-foreground">Purchase to unlock</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">Priority Support</div>
+                        <div className="text-muted-foreground">Purchase to unlock</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={refreshSubscription}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh Status
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>

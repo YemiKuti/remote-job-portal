@@ -208,10 +208,10 @@ const CandidateDashboard = () => {
 
   const getSubscriptionDisplayName = (tier: string | null) => {
     switch (tier?.toLowerCase()) {
-      case 'monthly': return 'Premium Monthly';
-      case 'quarterly': return 'Premium Quarterly';
-      case 'annual': return 'Premium Annual';
-      default: return tier || 'Premium';
+      case 'monthly': return 'Premium Subscription';
+      case 'quarterly': return 'Premium Subscription';
+      case 'annual': return 'Premium Subscription';
+      default: return tier || 'Premium Subscription';
     }
   };
 

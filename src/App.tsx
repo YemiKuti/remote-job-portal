@@ -27,6 +27,9 @@ import TailoredResumes from '@/pages/candidate/TailoredResumes';
 import CandidateMessages from '@/pages/candidate/Messages';
 import CandidateSettings from '@/pages/candidate/Settings';
 import Profile from '@/pages/Profile';
+import AdminSignIn from '@/pages/AdminSignIn';
+import AdminDashboard from '@/pages/AdminDashboard';
+import { AdminRoute } from '@/components/AdminRoute';
 
 const App = () => {
   return (
@@ -44,7 +47,6 @@ const App = () => {
           <Route path="/job-seeker/saved" element={<ProtectedRoute><CandidateSavedJobs /></ProtectedRoute>} />
           <Route path="/job-seeker/messages" element={<ProtectedRoute><CandidateMessages /></ProtectedRoute>} />
           <Route path="/job-seeker/settings" element={<ProtectedRoute><CandidateSettings /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}
           <Route path="/account" element={<Account />} />
@@ -68,6 +70,12 @@ const App = () => {
           <Route path="/employer/company" element={<ProtectedEmployerRoute><Company /></ProtectedEmployerRoute>} />
           <Route path="/employer/settings" element={<ProtectedEmployerRoute><EmployerSettings /></ProtectedEmployerRoute>} />
           <Route path="/employer/subscription" element={<ProtectedEmployerRoute><EmployerSubscription /></ProtectedEmployerRoute>} />
+
+          {/* Admin Routes */}
+          <Route path="/admin-signin" element={<AdminSignIn />} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </Router>

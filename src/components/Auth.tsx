@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -297,8 +298,8 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
 
       if (error) {
         console.error("Sign in error:", error);
-        if (error.message.includes('Email not confirmed')) {
-          toast.error("Please check your email and click the confirmation link before signing in.");
+        if (error.message.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+          toast.error("Email verification required. Please check your email and click the confirmation link before signing in.");
         } else if (error.message.includes('Invalid login credentials')) {
           toast.error("Invalid email or password. Please check your credentials.");
         } else {

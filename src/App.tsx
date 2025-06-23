@@ -5,6 +5,7 @@ import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Account from '@/pages/Account'
+import Index from '@/pages/Index'
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
 import PostJob from '@/pages/employer/PostJob';
@@ -23,7 +24,7 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<div>Home Page - Coming Soon</div>} />
+          <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthComponent />} />
           <Route path="*" element={<NotFound />} />
 

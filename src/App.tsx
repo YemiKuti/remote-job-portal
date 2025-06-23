@@ -40,6 +40,7 @@ const App = () => {
           <Route path="/job-seeker/applications" element={<ProtectedRoute><CandidateApplications /></ProtectedRoute>} />
           <Route path="/job-seeker/saved" element={<ProtectedRoute><CandidateSavedJobs /></ProtectedRoute>} />
           <Route path="/job-seeker/messages" element={<ProtectedRoute><CandidateMessages /></ProtectedRoute>} />
+          <Route path="/job-seeker/settings" element={<ProtectedRoute><CandidateSettings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}

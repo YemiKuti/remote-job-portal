@@ -72,6 +72,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
   ];
 
   const employerNavigation: NavItem[] = [
+    { name: 'Website Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/employer', icon: LayoutDashboard },
     { name: 'Jobs', href: '/employer/jobs', icon: Briefcase },
     { name: 'Candidates', href: '/employer/candidates', icon: Users },

@@ -40,6 +40,7 @@ import CreateJob from '@/pages/admin/CreateJob';
 import AdminEditJob from '@/pages/admin/EditJob';
 import { AdminRoute } from '@/components/AdminRoute';
 import SettingsRedirect from '@/components/SettingsRedirect';
+import CheckoutSuccess from '@/pages/CheckoutSuccess';
 
 const App = () => {
   return (
@@ -52,6 +53,7 @@ const App = () => {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/jobs" element={<JobsBrowse />} />
             <Route path="/job-scraper" element={<JobScraper />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsRedirect /></ProtectedRoute>} />
             <Route path="/job-seeker" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />

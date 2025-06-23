@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -18,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "@/components/ModeToggle"
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
+import { useSubscription } from '@/hooks/useSupabase';
 import {
   Briefcase,
   Building,
@@ -34,11 +36,13 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '../ui/badge';
 
 interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<any>;
+  isPremium?: boolean;
 }
 
 interface DashboardLayoutProps {
@@ -48,22 +52,23 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, userType }) => {
   const { user, signOut } = useAuth();
+  const { subscribed } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const jobSeekerNavigation = [
+  const jobSeekerNavigation: NavItem[] = [
     { name: 'Dashboard', href: '/job-seeker', icon: LayoutDashboard },
     { name: 'Jobs', href: '/job-seeker/jobs', icon: Briefcase },
     { name: 'Saved Jobs', href: '/job-seeker/saved', icon: Home },
     { name: 'Applications', href: '/job-seeker/applications', icon: Users },
-    { name: 'Tailored CVs', href: '/candidate/tailored-resumes', icon: Sparkles },
+    { name: 'Tailored CVs', href: '/candidate/tailored-resumes', icon: Sparkles, isPremium: true },
     { name: 'Messages', href: '/job-seeker/messages', icon: MessageSquare },
     { name: 'Settings', href: '/job-seeker/settings', icon: Settings },
   ];
 
-  const employerNavigation = [
+  const employerNavigation: NavItem[] = [
     { name: 'Dashboard', href: '/employer', icon: LayoutDashboard },
     { name: 'Jobs', href: '/employer/jobs', icon: Briefcase },
     { name: 'Candidates', href: '/employer/candidates', icon: Users },
@@ -73,7 +78,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
     { name: 'Settings', href: '/employer/settings', icon: Settings },
   ];
 
-  const adminNavigation = [
+  const adminNavigation: NavItem[] = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
@@ -103,6 +108,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
     }
   };
 
+  const renderNavItem = (item: NavItem, isMobile: boolean = false) => {
+    const isActive = location.pathname === item.href;
+    const isPremiumLocked = item.isPremium && !subscribed;
+    
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        className={`flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-gray-100 ${
+          isActive ? 'bg-gray-100 font-medium' : ''
+        } ${isPremiumLocked ? 'opacity-75' : ''}`}
+        onClick={() => isMobile && setIsMenuOpen(false)}
+      >
+        <item.icon className="h-5 w-5" />
+        <span className="flex-1">{item.name}</span>
+        {isPremiumLocked && (
+          <Crown className="h-3 w-3 text-amber-500" />
+        )}
+      </Link>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 text-gray-700">
       {/* Mobile Navigation */}
@@ -121,17 +148,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
             </SheetDescription>
           </SheetHeader>
           <div className="py-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-gray-100 ${location.pathname === item.href ? 'bg-gray-100 font-medium' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
+            {navigation.map((item) => renderNavItem(item, true))}
             <Button variant="ghost" className="justify-start w-full" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -151,13 +168,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
           <ul className="space-y-2">
             {navigation.map((item) => (
               <li key={item.name}>
-                <Link
-                  to={item.href}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md hover:bg-gray-100 ${location.pathname === item.href ? 'bg-gray-100 font-medium' : ''}`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </Link>
+                {renderNavItem(item)}
               </li>
             ))}
           </ul>

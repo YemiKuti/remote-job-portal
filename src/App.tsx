@@ -1,12 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Account from '@/pages/Account'
 import Index from '@/pages/Index'
 import Pricing from '@/pages/Pricing'
+import AuthPage from '@/pages/Auth'
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
 import PostJob from '@/pages/employer/PostJob';
@@ -26,7 +24,7 @@ const App = () => {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthComponent />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="*" element={<NotFound />} />
 
@@ -48,23 +46,5 @@ const App = () => {
     </Router>
   );
 };
-
-function AuthComponent() {
-  const session = useSession()
-  const supabase = useSupabaseClient()
-
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <Auth
-          supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
-          providers={['google', 'github']}
-          redirectTo={`${window.location.origin}/account`}
-        />
-      </div>
-    </div>
-  )
-}
 
 export default App;

@@ -12,11 +12,14 @@ import {
   RefreshCw, 
   CheckCircle2,
   ArrowRight,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { useEmployerSubscriptionAccess } from '@/hooks/useEmployerSubscriptionAccess';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useSupabaseClient } from '@/hooks/useSupabase';
+import { useState } from 'react';
 
 const Subscription = () => {
   const {
@@ -29,6 +32,38 @@ const Subscription = () => {
     error,
     refresh: refreshSubscription
   } = useEmployerSubscriptionAccess();
+
+  const supabase = useSupabaseClient();
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+
+  const handlePurchasePackage = async (packageType: string) => {
+    setIsProcessing(packageType);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          plan: packageType, 
+          annual: false, 
+          userType: 'employer' 
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      toast.error("Failed to create checkout session", {
+        description: "Please try again later",
+      });
+    } finally {
+      setIsProcessing(null);
+    }
+  };
 
   const getSubscriptionBadgeColor = (tier: string | null) => {
     switch (tier?.toLowerCase()) {
@@ -201,11 +236,21 @@ const Subscription = () => {
                     </li>
                   ))}
                 </ul>
-                <Link to="/pricing">
-                  <Button className="w-full" variant="outline">
-                    Purchase Package
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => handlePurchasePackage('Single')}
+                  disabled={isProcessing === 'Single'}
+                >
+                  {isProcessing === 'Single' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Purchase Package'
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
@@ -228,11 +273,20 @@ const Subscription = () => {
                     </li>
                   ))}
                 </ul>
-                <Link to="/pricing">
-                  <Button className="w-full">
-                    Purchase Package
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full"
+                  onClick={() => handlePurchasePackage('Package5')}
+                  disabled={isProcessing === 'Package5'}
+                >
+                  {isProcessing === 'Package5' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Purchase Package'
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
@@ -252,11 +306,21 @@ const Subscription = () => {
                     </li>
                   ))}
                 </ul>
-                <Link to="/pricing">
-                  <Button className="w-full" variant="outline">
-                    Purchase Package
-                  </Button>
-                </Link>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => handlePurchasePackage('Package10')}
+                  disabled={isProcessing === 'Package10'}
+                >
+                  {isProcessing === 'Package10' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Purchase Package'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </div>

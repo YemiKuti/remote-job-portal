@@ -209,10 +209,10 @@ const CandidateDashboard = () => {
 
   const getSubscriptionDisplayName = (tier: string | null) => {
     switch (tier?.toLowerCase()) {
-      case 'monthly': return 'Job Seeker Monthly';
-      case 'quarterly': return 'Job Seeker Quarterly';
-      case 'annual': return 'Job Seeker Annual';
-      default: return tier || 'Active';
+      case 'monthly': return 'Premium Monthly';
+      case 'quarterly': return 'Premium Quarterly';
+      case 'annual': return 'Premium Annual';
+      default: return tier || 'Premium';
     }
   };
 

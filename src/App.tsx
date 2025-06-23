@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Account from '@/pages/Account'
@@ -36,6 +37,7 @@ import BlogManagement from '@/pages/admin/BlogManagement';
 import CreateJob from '@/pages/admin/CreateJob';
 import AdminEditJob from '@/pages/admin/EditJob';
 import { AdminRoute } from '@/components/AdminRoute';
+import SettingsRedirect from '@/components/SettingsRedirect';
 
 const App = () => {
   return (
@@ -48,6 +50,7 @@ const App = () => {
           <Route path="/jobs" element={<JobsBrowse />} />
           <Route path="/job-scraper" element={<JobScraper />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsRedirect /></ProtectedRoute>} />
           <Route path="/job-seeker" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
           <Route path="/job-seeker/jobs" element={<JobsBrowse />} />
           <Route path="/job-seeker/applications" element={<ProtectedRoute><CandidateApplications /></ProtectedRoute>} />

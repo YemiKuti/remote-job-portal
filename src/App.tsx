@@ -37,6 +37,7 @@ const App = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/jobs" element={<JobsBrowse />} />
           <Route path="/job-seeker/jobs" element={<JobsBrowse />} />
+          <Route path="/job-seeker/applications" element={<ProtectedRoute><CandidateApplications /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}

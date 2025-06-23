@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { passwordSchema, emailSchema, sanitizeInput, checkRateLimit } from "@/utils/security";
 import { SecureInput } from "@/components/security/SecureInput";
 
@@ -34,6 +33,7 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [showEmailNotConfirmed, setShowEmailNotConfirmed] = useState(false);
 
   useEffect(() => {
     // Show success message if coming from password reset
@@ -299,6 +299,7 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       if (error) {
         console.error("Sign in error:", error);
         if (error.message.includes('Email not confirmed') || error.code === 'email_not_confirmed') {
+          setShowEmailNotConfirmed(true);
           toast.error("Email verification required. Please check your email and click the confirmation link before signing in.");
         } else if (error.message.includes('Invalid login credentials')) {
           toast.error("Invalid email or password. Please check your credentials.");
@@ -403,6 +404,23 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
             
             <TabsContent value="signin">
               <div className="space-y-4">
+                {showEmailNotConfirmed && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="h-6 w-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-orange-800 mb-1">
+                          Email Not Confirmed
+                        </h3>
+                        <p className="text-sm text-orange-700">
+                          Please check your email inbox and click the confirmation link before signing in. 
+                          If you can't find the email, check your spam folder.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button 
                   onClick={handleGoogleSignIn}
                   variant="outline" 

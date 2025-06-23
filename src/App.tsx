@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Account from '@/pages/Account'
@@ -31,6 +30,7 @@ import AdminSignIn from '@/pages/AdminSignIn';
 import AdminDashboard from '@/pages/AdminDashboard';
 import UsersAdmin from '@/pages/admin/Users';
 import JobsAdmin from '@/pages/admin/Jobs';
+import SettingsAdmin from '@/pages/admin/Settings';
 import { AdminRoute } from '@/components/AdminRoute';
 
 const App = () => {
@@ -78,6 +78,7 @@ const App = () => {
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><UsersAdmin /></AdminRoute>} />
           <Route path="/admin/jobs" element={<AdminRoute><JobsAdmin /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><SettingsAdmin /></AdminRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

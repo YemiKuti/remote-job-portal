@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,9 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  Settings
+  Settings,
+  Crown,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { fetchCandidateApplications, fetchSavedJobs } from '@/utils/api/candidateApi';
@@ -26,6 +27,7 @@ import { NotificationCenter } from '@/components/candidate/NotificationCenter';
 import { NotificationPreferences } from '@/components/NotificationPreferences';
 import { Link, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSubscription, useManageSubscription } from '@/hooks/useSupabase';
 
 interface DashboardData {
   applications: any[];
@@ -48,6 +50,10 @@ const CandidateDashboard = () => {
   const { user, isLoading: authLoading, authError } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Subscription hooks
+  const { subscribed, subscription_tier, subscription_end, loading: subLoading, checkSubscription } = useSubscription();
+  const { openCustomerPortal, isLoading: portalLoading } = useManageSubscription();
   
   const [data, setData] = useState<DashboardData>({
     applications: [],
@@ -183,6 +189,24 @@ const CandidateDashboard = () => {
     });
   };
 
+  const formatSubscriptionEnd = (dateString: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getSubscriptionBadgeColor = (tier: string | null) => {
+    switch (tier?.toLowerCase()) {
+      case 'basic': return 'bg-blue-100 text-blue-800';
+      case 'premium': return 'bg-purple-100 text-purple-800';
+      case 'enterprise': return 'bg-gold-100 text-gold-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   // Show loading spinner for auth or initial overall loading
   if (authLoading || (loading.overall && data.applications.length === 0)) {
     return (
@@ -268,6 +292,111 @@ const CandidateDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Subscription Status Card */}
+            <Card className="border-2 border-dashed border-blue-200 bg-blue-50/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-blue-600" />
+                  Subscription Status
+                </CardTitle>
+                <CardDescription>
+                  Your current subscription plan and benefits
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {subLoading ? (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                    <div className="h-3 bg-gray-200 rounded w-32"></div>
+                  </div>
+                ) : subscribed ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getSubscriptionBadgeColor(subscription_tier)}>
+                            {subscription_tier || 'Active'} Plan
+                          </Badge>
+                          <span className="text-sm text-green-600 font-medium">Active</span>
+                        </div>
+                        {subscription_end && (
+                          <p className="text-sm text-muted-foreground">
+                            Renews on {formatSubscriptionEnd(subscription_end)}
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={openCustomerPortal}
+                        disabled={portalLoading}
+                        className="flex items-center gap-2"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        {portalLoading ? 'Loading...' : 'Manage'}
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ Premium Jobs</div>
+                        <div className="text-muted-foreground">Access to exclusive listings</div>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ AI Resume Tailoring</div>
+                        <div className="text-muted-foreground">Optimize for each application</div>
+                      </div>
+                      <div className="text-center p-3 bg-white rounded-lg border">
+                        <div className="font-semibold text-green-600">✓ Priority Support</div>
+                        <div className="text-muted-foreground">Get help when you need it</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Badge variant="outline">Free Plan</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Upgrade to access premium features
+                        </p>
+                      </div>
+                      <Link to="/pricing">
+                        <Button size="sm" className="flex items-center gap-2">
+                          <Crown className="h-4 w-4" />
+                          Upgrade Now
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">Premium Jobs</div>
+                        <div className="text-muted-foreground">Upgrade to unlock</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">AI Resume Tailoring</div>
+                        <div className="text-muted-foreground">Upgrade to unlock</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg border">
+                        <div className="font-semibold text-gray-400">Priority Support</div>
+                        <div className="text-muted-foreground">Upgrade to unlock</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={checkSubscription}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh Status
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Show individual section errors */}
             {(errors.applications || errors.savedJobs) && (
               <Alert>

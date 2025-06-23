@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -56,11 +55,24 @@ serve(async (req) => {
 
     // Look up customer or create new one
     let customerId;
+    let customerCurrency = 'gbp'; // Default to GBP
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
+      
+      // Check existing subscriptions to determine currency
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        limit: 1
+      });
+      
+      if (subscriptions.data.length > 0) {
+        const existingSub = subscriptions.data[0];
+        customerCurrency = existingSub.items.data[0].price.currency;
+        logStep("Found existing subscription currency", { customerCurrency });
+      }
     } else {
       const newCustomer = await stripe.customers.create({
         email: user.email,
@@ -70,7 +82,7 @@ serve(async (req) => {
       logStep("Created new customer", { customerId });
     }
 
-    // Create product if it doesn't exist
+    // Create product details with consistent currency
     const productName = getProductName(userType, plan);
     const productDescription = getProductDescription(userType, plan);
     const productInterval = getProductInterval(plan, userType);
@@ -81,21 +93,22 @@ serve(async (req) => {
       productDescription, 
       productInterval, 
       productPrice,
-      annual
+      annual,
+      currency: customerCurrency
     });
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session with consistent currency
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [{
         price_data: {
-          currency: "gbp",
+          currency: customerCurrency,
           product_data: {
             name: productName,
             description: productDescription,
           },
-          unit_amount: productPrice * 100, // Convert to cents
+          unit_amount: Math.round(convertCurrency(productPrice, 'gbp', customerCurrency) * 100), // Convert to customer's currency
           recurring: productInterval ? {
             interval: productInterval
           } : undefined,
@@ -128,6 +141,22 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to convert currency (simplified conversion for demo)
+function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
+  // Simple conversion rates - in production, use a real currency API
+  const rates: { [key: string]: number } = {
+    'gbp': 1,
+    'usd': 1.27,
+    'eur': 1.17
+  };
+  
+  if (fromCurrency === toCurrency) return amount;
+  
+  // Convert to GBP first, then to target currency
+  const gbpAmount = amount / rates[fromCurrency.toLowerCase()];
+  return gbpAmount * rates[toCurrency.toLowerCase()];
+}
 
 // Helper function to get product name
 function getProductName(userType: string, plan: string): string {

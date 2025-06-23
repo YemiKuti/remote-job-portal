@@ -26,6 +26,7 @@ import CandidateSavedJobs from '@/pages/candidate/SavedJobs';
 import TailoredResumes from '@/pages/candidate/TailoredResumes';
 import CandidateMessages from '@/pages/candidate/Messages';
 import CandidateSettings from '@/pages/candidate/Settings';
+import Profile from '@/pages/Profile';
 
 const App = () => {
   return (
@@ -36,6 +37,7 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/jobs" element={<JobsBrowse />} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/job-seeker" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
           <Route path="/job-seeker/jobs" element={<JobsBrowse />} />
           <Route path="/job-seeker/applications" element={<ProtectedRoute><CandidateApplications /></ProtectedRoute>} />

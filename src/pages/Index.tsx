@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import JobCard from "@/components/JobCard";
@@ -9,11 +8,14 @@ import HeroSection from "@/components/HeroSection";
 import FeaturedCompanies from "@/components/FeaturedCompanies";
 import Testimonials from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { SearchFilters, Job } from "@/types";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSupabase";
 import { useActiveJobs } from "@/hooks/useActiveJobs";
+import { useAuth } from "@/components/AuthProvider";
+import { Crown, ArrowRight } from "lucide-react";
 
 const MAX_JOBS_DEFAULT = 7; // Changed from 3 to 7
 const MAX_JOBS_SEARCH = 7; // Changed from 3 to 7
@@ -24,6 +26,8 @@ const Index = () => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const { subscribed, loading: subscriptionLoading } = useSubscription();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (!loading && allJobs.length > 0) {
@@ -132,6 +136,14 @@ const Index = () => {
     setFilteredJobs(subscribed ? sortedJobs : sortedJobs.slice(0, MAX_JOBS_DEFAULT));
     setIsFiltering(false);
   };
+
+  const handleSubscribeClick = () => {
+    navigate('/pricing');
+  };
+
+  // Determine if we should show the subscription prompt
+  const shouldLimitJobs = !subscribed && !subscriptionLoading;
+  const hasMoreJobs = shouldLimitJobs && allJobs.length > MAX_JOBS_DEFAULT;
 
   // Show loading state
   if (loading) {
@@ -263,9 +275,62 @@ const Index = () => {
               
               {filteredJobs.length > 0 ? (
                 <div className="space-y-6">
-                  {filteredJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
-                  ))}
+                  <div className="space-y-6">
+                    {filteredJobs.map((job) => (
+                      <JobCard key={job.id} job={job} />
+                    ))}
+                  </div>
+
+                  {/* Subscribe to see more jobs section */}
+                  <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                    <CardContent className="text-center py-8">
+                      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Crown className="w-8 h-8 text-primary" />
+                      </div>
+                      
+                      {hasMoreJobs ? (
+                        <>
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            Want to see more jobs?
+                          </h3>
+                          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                            You're viewing {MAX_JOBS_DEFAULT} of {allJobs.length} available jobs. 
+                            Subscribe to unlock all job listings and premium features.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            Get Premium Access
+                          </h3>
+                          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                            Subscribe to unlock premium features, job alerts, and enhanced search capabilities to find your perfect job faster.
+                          </p>
+                        </>
+                      )}
+                      
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                        <Button 
+                          onClick={handleSubscribeClick}
+                          className="bg-primary hover:bg-primary/90 text-white px-6 py-2"
+                        >
+                          Subscribe Now
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                        {!user && (
+                          <Button 
+                            variant="outline"
+                            onClick={() => navigate('/signin')}
+                          >
+                            Sign In to Continue
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-4">
+                        Join thousands of professionals finding their dream jobs
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               ) : (
                 <div className="text-center py-16">
@@ -280,21 +345,6 @@ const Index = () => {
                       View All Jobs
                     </Button>
                   )}
-                </div>
-              )}
-              
-              {/* Subscription Prompt: if unsubscribed, more jobs exist than shown */}
-              {filteredJobs.length > 0 && !subscribed && allJobs.length > MAX_JOBS_DEFAULT && (
-                <div className="mt-10 text-center">
-                  <p className="mb-4 text-gray-600">
-                    Want to see more jobs?
-                  </p>
-                  <Button className="bg-job-green hover:bg-job-darkGreen">
-                    <Link to="/pricing">Subscribe Now</Link>
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Subscribe to unlock all available jobs and features.
-                  </p>
                 </div>
               )}
             </div>

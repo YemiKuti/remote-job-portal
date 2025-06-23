@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -31,6 +30,7 @@ import {
   User,
   Users,
   Menu,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +58,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
     { name: 'Jobs', href: '/job-seeker/jobs', icon: Briefcase },
     { name: 'Saved Jobs', href: '/job-seeker/saved', icon: Home },
     { name: 'Applications', href: '/job-seeker/applications', icon: Users },
+    { name: 'Tailored CVs', href: '/candidate/tailored-resumes', icon: Sparkles },
     { name: 'Messages', href: '/job-seeker/messages', icon: MessageSquare },
     { name: 'Settings', href: '/job-seeker/settings', icon: Settings },
   ];

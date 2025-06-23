@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Account from '@/pages/Account'
@@ -5,6 +6,7 @@ import Index from '@/pages/Index'
 import Pricing from '@/pages/Pricing'
 import AuthPage from '@/pages/Auth'
 import JobsBrowse from '@/pages/JobsBrowse'
+import JobScraper from '@/pages/JobScraper'
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
 import PostJob from '@/pages/employer/PostJob';
@@ -43,6 +45,7 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/jobs" element={<JobsBrowse />} />
+          <Route path="/job-scraper" element={<JobScraper />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/job-seeker" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
           <Route path="/job-seeker/jobs" element={<JobsBrowse />} />

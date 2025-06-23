@@ -30,6 +30,7 @@ import Profile from '@/pages/Profile';
 import AdminSignIn from '@/pages/AdminSignIn';
 import AdminDashboard from '@/pages/AdminDashboard';
 import UsersAdmin from '@/pages/admin/Users';
+import JobsAdmin from '@/pages/admin/Jobs';
 import { AdminRoute } from '@/components/AdminRoute';
 
 const App = () => {
@@ -76,6 +77,7 @@ const App = () => {
           <Route path="/admin-signin" element={<AdminSignIn />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><UsersAdmin /></AdminRoute>} />
+          <Route path="/admin/jobs" element={<AdminRoute><JobsAdmin /></AdminRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

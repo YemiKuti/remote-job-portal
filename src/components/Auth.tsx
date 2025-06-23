@@ -113,7 +113,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
     
     try {
       const sanitizedEmail = sanitizeInput(resetEmail);
-      // Use the reset-password page as redirect URL
       const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
@@ -127,7 +126,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       setResetEmail("");
     } catch (error: any) {
       console.error("Error sending password reset:", error);
-      // Generic message to prevent email enumeration
       toast.success("If an account with that email exists, you will receive a password reset link.");
     } finally {
       setIsResettingPassword(false);
@@ -209,6 +207,8 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       const sanitizedPassword = sanitizeInput(password);
       const sanitizedFullName = sanitizeInput(fullName);
       
+      console.log('🔐 Attempting sign up with:', { email: sanitizedEmail, role: selectedRole });
+      
       const { data, error } = await supabase.auth.signUp({
         email: sanitizedEmail,
         password: sanitizedPassword,
@@ -217,16 +217,31 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
             role: selectedRole,
             full_name: sanitizedFullName,
           },
+          emailRedirectTo: `${window.location.origin}/auth`
         },
       });
 
-      if (error) throw error;
+      console.log('🔐 Sign up response:', { data, error });
+
+      if (error) {
+        console.error("Sign up error:", error);
+        if (error.message.includes('rate limit')) {
+          toast.error("Too many attempts. Please wait before trying again.");
+        } else if (error.message.includes('already registered')) {
+          toast.error("An account with this email already exists. Please sign in instead.");
+          setActiveTab("signin");
+        } else {
+          toast.error(error.message || "Failed to create account. Please try again.");
+        }
+        return;
+      }
 
       if (data.user && !data.session) {
-        toast.success("Check your email for the confirmation link!");
-      } else {
+        toast.success("Account created! Please check your email to confirm your account before signing in.");
+        setActiveTab("signin");
+      } else if (data.user && data.session) {
         toast.success("Account created successfully!");
-        navigate("/");
+        // Let the AuthProvider handle the redirect
       }
     } catch (error: any) {
       console.error("Error signing up:", error);
@@ -262,7 +277,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       });
 
       if (error) {
-        // Generic error message to prevent user enumeration
         toast.error("Invalid credentials. Please check your email and password.");
         return;
       }
@@ -270,7 +284,6 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       const userRole = data.user?.user_metadata?.role;
       toast.success("Signed in successfully!");
       
-      // Navigate based on role
       if (userRole === 'admin') {
         navigate('/admin');
       } else if (userRole === 'employer') {

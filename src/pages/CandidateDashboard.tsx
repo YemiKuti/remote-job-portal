@@ -207,12 +207,7 @@ const CandidateDashboard = () => {
   };
 
   const getSubscriptionDisplayName = (tier: string | null) => {
-    switch (tier?.toLowerCase()) {
-      case 'monthly': return 'Premium Subscription';
-      case 'quarterly': return 'Premium Subscription';
-      case 'annual': return 'Premium Subscription';
-      default: return tier || 'Premium Subscription';
-    }
+    return 'Premium Subscription';
   };
 
   // Show loading spinner for auth or initial overall loading
@@ -319,7 +314,7 @@ const CandidateDashboard = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Badge className={getSubscriptionBadgeColor(subscription_tier)}>
-                            {getSubscriptionDisplayName(subscription_tier)}
+                            Premium Subscription
                           </Badge>
                           <span className="text-sm text-green-600 font-medium">Active</span>
                         </div>

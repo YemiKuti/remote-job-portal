@@ -7,6 +7,7 @@ import Index from '@/pages/Index'
 import Pricing from '@/pages/Pricing'
 import AuthPage from '@/pages/Auth'
 import JobsBrowse from '@/pages/JobsBrowse'
+import JobDetail from '@/pages/JobDetail'
 import JobScraper from '@/pages/JobScraper'
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
@@ -54,6 +55,7 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/jobs" element={<JobsBrowse />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/job-scraper" element={<JobScraper />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

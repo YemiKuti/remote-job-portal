@@ -538,16 +538,19 @@ export type Database = {
           company: string
           company_size: string | null
           created_at: string | null
+          days_valid: number | null
           description: string
           employer_id: string | null
           employment_type: string
           experience_level: string
+          expires_at: string | null
           id: string
           is_featured: boolean | null
           is_verified: boolean | null
           last_reviewed_at: string | null
           location: string
           logo: string | null
+          posted_at: string | null
           rejected_by: string | null
           rejection_date: string | null
           rejection_reason: string | null
@@ -575,16 +578,19 @@ export type Database = {
           company: string
           company_size?: string | null
           created_at?: string | null
+          days_valid?: number | null
           description: string
           employer_id?: string | null
           employment_type: string
           experience_level: string
+          expires_at?: string | null
           id?: string
           is_featured?: boolean | null
           is_verified?: boolean | null
           last_reviewed_at?: string | null
           location: string
           logo?: string | null
+          posted_at?: string | null
           rejected_by?: string | null
           rejection_date?: string | null
           rejection_reason?: string | null
@@ -612,16 +618,19 @@ export type Database = {
           company?: string
           company_size?: string | null
           created_at?: string | null
+          days_valid?: number | null
           description?: string
           employer_id?: string | null
           employment_type?: string
           experience_level?: string
+          expires_at?: string | null
           id?: string
           is_featured?: boolean | null
           is_verified?: boolean | null
           last_reviewed_at?: string | null
           location?: string
           logo?: string | null
+          posted_at?: string | null
           rejected_by?: string | null
           rejection_date?: string | null
           rejection_reason?: string | null
@@ -1298,6 +1307,10 @@ export type Database = {
       admin_update_user_role: {
         Args: { target_user_id: string; new_role: string }
         Returns: boolean
+      }
+      expire_old_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       find_or_create_conversation: {
         Args: {

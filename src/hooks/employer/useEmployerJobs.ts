@@ -11,6 +11,8 @@ interface Job {
   views: number | null;
   created_at: string | null;
   status: string;
+  expires_at: string | null;
+  posted_at: string | null;
 }
 
 export const useEmployerJobs = () => {
@@ -27,7 +29,7 @@ export const useEmployerJobs = () => {
       try {
         const { data, error } = await supabase
           .from('jobs')
-          .select('id, title, applications, views, created_at, status')
+          .select('id, title, applications, views, created_at, status, expires_at, posted_at')
           .eq('employer_id', user.id)
           .order('created_at', { ascending: false });
         

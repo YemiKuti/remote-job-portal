@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +16,8 @@ import {
   Bell,
   Settings,
   Crown,
-  CreditCard
+  CreditCard,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { EmployerNotificationCenter } from '@/components/employer/EmployerNotificationCenter';
@@ -33,6 +33,7 @@ interface DashboardStats {
   activeJobs: number;
   totalApplications: number;
   totalViews: number;
+  expiringJobs: number;
 }
 
 const EmployerDashboard = () => {
@@ -42,7 +43,8 @@ const EmployerDashboard = () => {
     totalJobs: 0,
     activeJobs: 0,
     totalApplications: 0,
-    totalViews: 0
+    totalViews: 0,
+    expiringJobs: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,10 +79,10 @@ const EmployerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch job statistics
+      // Fetch job statistics with expiration data
       const { data: jobs, error: jobsError } = await supabase
         .from('jobs')
-        .select('id, status, views, applications')
+        .select('id, status, views, applications, expires_at')
         .eq('employer_id', user.id);
 
       if (jobsError) throw jobsError;
@@ -90,12 +92,22 @@ const EmployerDashboard = () => {
       const activeJobs = jobs?.filter(job => job.status === 'active').length || 0;
       const totalApplications = jobs?.reduce((sum, job) => sum + (job.applications || 0), 0) || 0;
       const totalViews = jobs?.reduce((sum, job) => sum + (job.views || 0), 0) || 0;
+      
+      // Calculate expiring jobs (within 30 days)
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      const expiringJobs = jobs?.filter(job => {
+        if (job.status !== 'active' || !job.expires_at) return false;
+        const expirationDate = new Date(job.expires_at);
+        return expirationDate <= thirtyDaysFromNow;
+      }).length || 0;
 
       setStats({
         totalJobs,
         activeJobs,
         totalApplications,
-        totalViews
+        totalViews,
+        expiringJobs
       });
     } catch (error: any) {
       console.error('Error fetching dashboard stats:', error);
@@ -227,6 +239,9 @@ const EmployerDashboard = () => {
                         <p className="text-sm text-muted-foreground">
                           {activePostsCount} of {postLimit} job postings used
                         </p>
+                        <p className="text-xs text-muted-foreground">
+                          ✓ All active jobs have a 6-month validity period
+                        </p>
                       </div>
                       <Link to="/pricing">
                         <Button 
@@ -245,8 +260,8 @@ const EmployerDashboard = () => {
                         <div className="text-muted-foreground">Enhanced visibility</div>
                       </div>
                       <div className="text-center p-3 bg-white rounded-lg border">
-                        <div className="font-semibold text-green-600">✓ Application Management</div>
-                        <div className="text-muted-foreground">Advanced filtering & sorting</div>
+                        <div className="font-semibold text-green-600">✓ 6-Month Validity</div>
+                        <div className="text-muted-foreground">Extended job posting period</div>
                       </div>
                       <div className="text-center p-3 bg-white rounded-lg border">
                         <div className="font-semibold text-green-600">✓ Priority Support</div>
@@ -276,7 +291,7 @@ const EmployerDashboard = () => {
                         <div className="text-muted-foreground">Purchase to unlock</div>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg border">
-                        <div className="font-semibold text-gray-400">Application Management</div>
+                        <div className="font-semibold text-gray-400">6-Month Validity</div>
                         <div className="text-muted-foreground">Purchase to unlock</div>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg border">
@@ -301,7 +316,7 @@ const EmployerDashboard = () => {
             </Card>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
@@ -343,6 +358,19 @@ const EmployerDashboard = () => {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.expiringJobs}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Within 30 days
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Rate</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -356,6 +384,19 @@ const EmployerDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Expiring Jobs Alert */}
+            {stats.expiringJobs > 0 && (
+              <Alert className="border-orange-200 bg-orange-50">
+                <Clock className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  You have {stats.expiringJobs} job{stats.expiringJobs > 1 ? 's' : ''} expiring within 30 days. 
+                  <Link to="/employer/jobs" className="ml-1 underline font-medium">
+                    Review your job listings
+                  </Link> to extend or renew them.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-3">

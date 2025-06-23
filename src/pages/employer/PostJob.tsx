@@ -59,7 +59,7 @@ const PostJob = () => {
               You've used all job postings from your <b>{subscriptionTier}</b> package ({postLimit} jobs).
               <div className="mt-2">
                 <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
-                  <a href="/pricing" target="_self">
+                  <a href="/employer/subscription" target="_self">
                     <Crown className="mr-2 h-4 w-4" />
                     Purchase More Jobs
                   </a>
@@ -121,7 +121,7 @@ const PostJob = () => {
             )}
           </div>
           <Button asChild size="sm" variant="outline">
-            <a href="/pricing" target="_self">
+            <a href="/employer/subscription" target="_self">
               <Crown className="mr-1 h-3 w-3" />
               {hasActiveSubscription ? "Buy More Jobs" : "View Packages"}
             </a>
@@ -132,7 +132,7 @@ const PostJob = () => {
             <Crown className="h-4 w-4" />
             <AlertDescription>
               You're using our free plan with unlimited job postings! 
-              <a href="/pricing" className="ml-1 text-job-blue hover:underline">
+              <a href="/employer/subscription" className="ml-1 text-job-blue hover:underline">
                 Purchase job packages for enhanced features and priority placement.
               </a>
             </AlertDescription>

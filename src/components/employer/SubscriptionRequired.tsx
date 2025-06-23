@@ -35,7 +35,7 @@ export const SubscriptionRequired = ({
           <Badge variant="secondary">{employerPlan}</Badge>
         </div>
       )}
-      <Link to="/pricing">
+      <Link to="/employer/subscription">
         <Button className="bg-job-blue hover:bg-job-darkBlue w-full mb-2">
           <Crown className="mr-2 h-4 w-4" />
           View Subscription Plans

@@ -243,7 +243,7 @@ const EmployerDashboard = () => {
                           ✓ All active jobs have a 6-month validity period
                         </p>
                       </div>
-                      <Link to="/pricing">
+                      <Link to="/employer/subscription">
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -278,7 +278,7 @@ const EmployerDashboard = () => {
                           Purchase a job posting package to get started
                         </p>
                       </div>
-                      <Link to="/pricing">
+                      <Link to="/employer/subscription">
                         <Button size="sm" className="flex items-center gap-2">
                           <Crown className="h-4 w-4" />
                           Buy Package

@@ -200,10 +200,19 @@ const CandidateDashboard = () => {
 
   const getSubscriptionBadgeColor = (tier: string | null) => {
     switch (tier?.toLowerCase()) {
-      case 'basic': return 'bg-blue-100 text-blue-800';
-      case 'premium': return 'bg-purple-100 text-purple-800';
-      case 'enterprise': return 'bg-gold-100 text-gold-800';
+      case 'monthly': return 'bg-blue-100 text-blue-800';
+      case 'quarterly': return 'bg-purple-100 text-purple-800';
+      case 'annual': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSubscriptionDisplayName = (tier: string | null) => {
+    switch (tier?.toLowerCase()) {
+      case 'monthly': return 'Job Seeker Monthly';
+      case 'quarterly': return 'Job Seeker Quarterly';
+      case 'annual': return 'Job Seeker Annual';
+      default: return tier || 'Active';
     }
   };
 
@@ -315,7 +324,7 @@ const CandidateDashboard = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Badge className={getSubscriptionBadgeColor(subscription_tier)}>
-                            {subscription_tier || 'Active'} Plan
+                            {getSubscriptionDisplayName(subscription_tier)}
                           </Badge>
                           <span className="text-sm text-green-600 font-medium">Active</span>
                         </div>

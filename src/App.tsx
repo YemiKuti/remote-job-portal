@@ -1,188 +1,88 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
+import Account from '@/pages/Account'
+import Home from '@/pages/Home';
+import Jobs from '@/pages/Jobs';
+import JobDetail from '@/pages/JobDetail';
+import PostJob from '@/pages/PostJob';
+import EditJob from '@/pages/EditJob';
+import EmployerDashboard from '@/pages/EmployerDashboard';
+import EmployerJobs from '@/pages/employer/Jobs';
+import Candidates from '@/pages/Candidates';
+import EmployerMessages from '@/pages/employer/Messages';
+import Company from '@/pages/employer/Company';
+import EmployerSettings from '@/pages/employer/Settings';
+import Pricing from '@/pages/Pricing';
+import About from '@/pages/About';
+import Contact from '@/pages/Contact';
+import Terms from '@/pages/Terms';
+import Privacy from '@/pages/Privacy';
+import CookiePolicy from '@/pages/CookiePolicy';
+import NotFound from '@/pages/NotFound';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ProtectedEmployerRoute } from '@/components/ProtectedEmployerRoute';
+import { AuthProvider } from '@/components/AuthProvider';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import EmployerSubscription from "@/pages/employer/Subscription";
 
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-import Index from './pages/Index';
-import JobsBrowse from './pages/JobsBrowse';
-import JobDetail from './pages/JobDetail';
-import SignIn from './pages/SignIn';
-import Pricing from './pages/Pricing';
-import FAQ from './pages/FAQ';
-import Blog from './pages/Blog';
-import BlogPost from './pages/BlogPost';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import NotFound from './pages/NotFound';
-import AuthPage from './pages/Auth';
-import ResetPassword from './pages/ResetPassword';
-import Profile from './pages/Profile';
-import UserProfilePage from './pages/UserProfilePage';
-
-import EmployerDashboard from './pages/EmployerDashboard';
-import Jobs from './pages/employer/Jobs';
-import PostJob from './pages/employer/PostJob';
-import EditJob from './pages/employer/EditJob';
-import Settings from './pages/employer/Settings';
-import Messages from './pages/employer/Messages';
-import Candidates from './pages/employer/Candidates';
-import EmployerCompany from './pages/employer/Company';
-
-import AdminDashboard from './pages/AdminDashboard';
-import AdminSignIn from './pages/AdminSignIn';
-import Companies from './pages/admin/Companies';
-import Users from './pages/admin/Users';
-import AdminSettings from './pages/admin/Settings';
-import CreateJob from './pages/admin/CreateJob';
-import AdminEditJob from './pages/admin/EditJob';
-import AdminJobs from './pages/admin/Jobs';
-import BlogManagement from './pages/admin/BlogManagement';
-import BlogEditor from './pages/admin/BlogEditor';
-
-import CandidateDashboard from './pages/CandidateDashboard';
-import CandidateProfile from './pages/candidate/Profile';
-import CandidateApplications from './pages/candidate/Applications';
-import CandidateSavedJobs from './pages/candidate/SavedJobs';
-import CandidateMessages from './pages/candidate/Messages';
-import CandidateSettings from './pages/candidate/Settings';
-import TailoredResumes from './pages/candidate/TailoredResumes';
-
-import { AuthProvider } from './components/AuthProvider';
-import { AdminRoute } from './components/AdminRoute';
-import { ProtectedEmployerRoute } from './components/employer/ProtectedEmployerRoute';
-
-const queryClient = new QueryClient();
-
-function App() {
+const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <Toaster />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/jobs" element={<JobsBrowse />} />
-            <Route path="/jobs/:id" element={<JobDetail />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/user/:userId" element={<UserProfilePage />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="*" element={<NotFound />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:id" element={<JobDetail />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/auth" element={<AuthComponent />} />
+          <Route path="*" element={<NotFound />} />
 
-            {/* Admin Sign-in Route (Public but redirects if already admin) */}
-            <Route path="/admin-signin" element={<AdminSignIn />} />
+          {/* Job Seeker Routes */}
+          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 
-            {/* Protected Employer Routes */}
-            <Route path="/employer" element={
-              <ProtectedEmployerRoute>
-                <EmployerDashboard />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/jobs" element={
-              <ProtectedEmployerRoute>
-                <Jobs />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/jobs/new" element={
-              <ProtectedEmployerRoute>
-                <PostJob />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/jobs/:id/edit" element={
-              <ProtectedEmployerRoute>
-                <EditJob />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/candidates" element={
-              <ProtectedEmployerRoute>
-                <Candidates />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/company" element={
-              <ProtectedEmployerRoute>
-                <EmployerCompany />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/messages" element={
-              <ProtectedEmployerRoute>
-                <Messages />
-              </ProtectedEmployerRoute>
-            } />
-            <Route path="/employer/settings" element={
-              <ProtectedEmployerRoute>
-                <Settings />
-              </ProtectedEmployerRoute>
-            } />
-
-            {/* Protected Admin Routes */}
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } />
-            <Route path="/admin/jobs" element={
-              <AdminRoute>
-                <AdminJobs />
-              </AdminRoute>
-            } />
-            <Route path="/admin/jobs/new" element={
-              <AdminRoute>
-                <CreateJob />
-              </AdminRoute>
-            } />
-            <Route path="/admin/jobs/:id/edit" element={
-              <AdminRoute>
-                <AdminEditJob />
-              </AdminRoute>
-            } />
-            <Route path="/admin/companies" element={
-              <AdminRoute>
-                <Companies />
-              </AdminRoute>
-            } />
-            <Route path="/admin/users" element={
-              <AdminRoute>
-                <Users />
-              </AdminRoute>
-            } />
-            <Route path="/admin/blog" element={
-              <AdminRoute>
-                <BlogManagement />
-              </AdminRoute>
-            } />
-            <Route path="/admin/blog/create" element={
-              <AdminRoute>
-                <BlogEditor />
-              </AdminRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <AdminRoute>
-                <AdminSettings />
-              </AdminRoute>
-            } />
-
-            {/* Candidate Routes */}
-            <Route path="/candidate" element={<CandidateDashboard />} />
-            <Route path="/candidate/profile" element={<CandidateProfile />} />
-            <Route path="/candidate/applications" element={<CandidateApplications />} />
-            <Route path="/candidate/saved-jobs" element={<CandidateSavedJobs />} />
-            <Route path="/candidate/tailored-resumes" element={<TailoredResumes />} />
-            <Route path="/candidate/messages" element={<CandidateMessages />} />
-            <Route path="/candidate/settings" element={<CandidateSettings />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+          {/* Employer Routes */}
+          <Route path="/employer" element={<ProtectedEmployerRoute />}>
+            <Route index element={<EmployerDashboard />} />
+            <Route path="jobs" element={<EmployerJobs />} />
+            <Route path="jobs/new" element={<PostJob />} />
+            <Route path="jobs/:id/edit" element={<EditJob />} />
+            <Route path="candidates" element={<Candidates />} />
+            <Route path="messages" element={<EmployerMessages />} />
+            <Route path="company" element={<Company />} />
+            <Route path="settings" element={<EmployerSettings />} />
+            <Route path="subscription" element={<EmployerSubscription />} />
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
+};
+
+function AuthComponent() {
+  const session = useSession()
+  const supabase = useSupabaseClient()
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <Auth
+          supabaseClient={supabase}
+          appearance={{ theme: ThemeSupa }}
+          session={session}
+          providers={['google', 'github']}
+          redirectTo={`${window.location.origin}/account`}
+        />
+      </div>
+    </div>
+  )
 }
 
 export default App;

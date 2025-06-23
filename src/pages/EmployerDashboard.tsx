@@ -423,11 +423,14 @@ const EmployerDashboard = () => {
               </Card>
 
               <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <Link to="/employer/messages">
+                <Link to="/employer/subscription">
                   <CardHeader>
-                    <CardTitle className="text-lg">Messages</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Crown className="h-5 w-5" />
+                      Subscription
+                    </CardTitle>
                     <CardDescription>
-                      Communicate with candidates
+                      Manage your job posting packages
                     </CardDescription>
                   </CardHeader>
                 </Link>

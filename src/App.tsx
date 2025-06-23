@@ -1,31 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Account from '@/pages/Account'
-import Home from '@/pages/Home';
-import Jobs from '@/pages/Jobs';
-import JobDetail from '@/pages/JobDetail';
-import PostJob from '@/pages/PostJob';
-import EditJob from '@/pages/EditJob';
 import EmployerDashboard from '@/pages/EmployerDashboard';
 import EmployerJobs from '@/pages/employer/Jobs';
-import Candidates from '@/pages/Candidates';
+import PostJob from '@/pages/employer/PostJob';
+import EditJob from '@/pages/employer/EditJob';
+import Candidates from '@/pages/employer/Candidates';
 import EmployerMessages from '@/pages/employer/Messages';
 import Company from '@/pages/employer/Company';
 import EmployerSettings from '@/pages/employer/Settings';
-import Pricing from '@/pages/Pricing';
-import About from '@/pages/About';
-import Contact from '@/pages/Contact';
-import Terms from '@/pages/Terms';
-import Privacy from '@/pages/Privacy';
-import CookiePolicy from '@/pages/CookiePolicy';
 import NotFound from '@/pages/NotFound';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { ProtectedEmployerRoute } from '@/components/ProtectedEmployerRoute';
+import { ProtectedEmployerRoute } from '@/components/employer/ProtectedEmployerRoute';
 import { AuthProvider } from '@/components/AuthProvider';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import EmployerSubscription from "@/pages/employer/Subscription";
 
 const App = () => {
@@ -33,33 +23,23 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/jobs/:id" element={<JobDetail />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/" element={<div>Home Page - Coming Soon</div>} />
           <Route path="/auth" element={<AuthComponent />} />
           <Route path="*" element={<NotFound />} />
 
           {/* Job Seeker Routes */}
-          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="/account" element={<Account />} />
 
           {/* Employer Routes */}
-          <Route path="/employer" element={<ProtectedEmployerRoute />}>
-            <Route index element={<EmployerDashboard />} />
-            <Route path="jobs" element={<EmployerJobs />} />
-            <Route path="jobs/new" element={<PostJob />} />
-            <Route path="jobs/:id/edit" element={<EditJob />} />
-            <Route path="candidates" element={<Candidates />} />
-            <Route path="messages" element={<EmployerMessages />} />
-            <Route path="company" element={<Company />} />
-            <Route path="settings" element={<EmployerSettings />} />
-            <Route path="subscription" element={<EmployerSubscription />} />
-          </Route>
+          <Route path="/employer" element={<ProtectedEmployerRoute><EmployerDashboard /></ProtectedEmployerRoute>} />
+          <Route path="/employer/jobs" element={<ProtectedEmployerRoute><EmployerJobs /></ProtectedEmployerRoute>} />
+          <Route path="/employer/jobs/new" element={<ProtectedEmployerRoute><PostJob /></ProtectedEmployerRoute>} />
+          <Route path="/employer/jobs/:id/edit" element={<ProtectedEmployerRoute><EditJob /></ProtectedEmployerRoute>} />
+          <Route path="/employer/candidates" element={<ProtectedEmployerRoute><Candidates /></ProtectedEmployerRoute>} />
+          <Route path="/employer/messages" element={<ProtectedEmployerRoute><EmployerMessages /></ProtectedEmployerRoute>} />
+          <Route path="/employer/company" element={<ProtectedEmployerRoute><Company /></ProtectedEmployerRoute>} />
+          <Route path="/employer/settings" element={<ProtectedEmployerRoute><EmployerSettings /></ProtectedEmployerRoute>} />
+          <Route path="/employer/subscription" element={<ProtectedEmployerRoute><EmployerSubscription /></ProtectedEmployerRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

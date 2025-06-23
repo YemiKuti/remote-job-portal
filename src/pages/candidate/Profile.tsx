@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Separator } from '@/components/ui/separator';
@@ -32,7 +31,7 @@ const CandidateProfile = () => {
   
   if (isLoading) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -41,7 +40,7 @@ const CandidateProfile = () => {
   }
   
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Profile</h2>

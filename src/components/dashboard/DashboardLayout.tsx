@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -21,15 +22,15 @@ import { useAuth } from '@/components/AuthProvider';
 import {
   Briefcase,
   Building,
-  Cog6Tooth,
+  Settings,
   Crown,
   Home,
   LayoutDashboard,
   LogOut,
   MessageSquare,
-  Settings,
   User,
   Users,
+  Menu,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -107,7 +108,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="md:hidden">
-            <Cog6Tooth className="h-6 w-6" />
+            <Menu className="h-6 w-6" />
             <span className="sr-only">Open menu</span>
           </Button>
         </SheetTrigger>

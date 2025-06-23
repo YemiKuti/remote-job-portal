@@ -22,14 +22,14 @@ const TailoredResumes = () => {
 
   if (!userId) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="text-center py-8">Loading...</div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <Tabs defaultValue="create" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="create" className="flex items-center gap-2">

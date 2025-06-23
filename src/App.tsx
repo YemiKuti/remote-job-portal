@@ -56,7 +56,6 @@ function AuthComponent() {
         <Auth
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
-          session={session}
           providers={['google', 'github']}
           redirectTo={`${window.location.origin}/account`}
         />

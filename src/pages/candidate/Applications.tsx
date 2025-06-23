@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,7 +141,7 @@ const CandidateApplications = () => {
   };
   
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">My Applications</h2>

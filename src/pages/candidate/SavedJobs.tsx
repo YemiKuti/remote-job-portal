@@ -14,7 +14,7 @@ const SavedJobs = () => {
 
   if (loading) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Saved Jobs</h2>
@@ -39,7 +39,7 @@ const SavedJobs = () => {
 
   if (savedJobs.length === 0) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Saved Jobs</h2>
@@ -66,7 +66,7 @@ const SavedJobs = () => {
   }
 
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Saved Jobs</h2>

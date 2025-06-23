@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -136,7 +135,7 @@ const CandidateMessages = () => {
   
   if (loading) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
         </div>
@@ -145,7 +144,7 @@ const CandidateMessages = () => {
   }
   
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <div className="h-[calc(100vh-160px)]">
         <div className="flex h-full">
           {/* Conversations List */}

@@ -219,7 +219,7 @@ const CandidateDashboard = () => {
   // Show loading spinner for auth or initial overall loading
   if (authLoading || (loading.overall && data.applications.length === 0)) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="flex flex-col items-center justify-center h-full space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <p className="text-muted-foreground">
@@ -245,7 +245,7 @@ const CandidateDashboard = () => {
   // Show error state with retry option
   if (authError || errors.general) {
     return (
-      <DashboardLayout userType="candidate">
+      <DashboardLayout userType="jobSeeker">
         <div className="flex flex-col items-center justify-center h-full space-y-4">
           <AlertCircle className="h-12 w-12 text-red-500" />
           <Alert className="max-w-md">
@@ -266,7 +266,7 @@ const CandidateDashboard = () => {
   }
 
   return (
-    <DashboardLayout userType="candidate">
+    <DashboardLayout userType="jobSeeker">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">

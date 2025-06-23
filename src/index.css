@@ -79,6 +79,19 @@
   .job-card {
     @apply border p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300;
   }
+
+  /* Dark mode specific overrides */
+  .dark body {
+    @apply bg-gray-900 text-white;
+  }
+
+  .dark .job-card {
+    @apply bg-gray-800 border-gray-700 text-white;
+  }
+
+  .dark .job-card:hover {
+    @apply bg-gray-700;
+  }
 }
 
 /* Add carousel autoplay functionality */

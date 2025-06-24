@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { toast } from "sonner";
 import { Loader2, AlertCircle, CheckCircle, Shield } from "lucide-react";
 import { passwordSchema, sanitizeInput } from "@/utils/security";
 import { SecureInput } from "@/components/security/SecureInput";
-import { logSecurityEvent } from "@/utils/securityLogger";
+import { logPasswordResetAttempt } from "@/utils/passwordResetLogger";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -66,7 +65,14 @@ export default function ResetPassword() {
 
             if (error) {
               console.error('🔐 Reset Password: Session setup error:', error);
-              await logPasswordResetAttempt(false, `Session setup failed: ${error.message}`);
+              await logPasswordResetAttempt({
+                success: false,
+                error_message: `Session setup failed: ${error.message}`,
+                user_agent: navigator.userAgent,
+                ip_address: 'client-side',
+                recovery_token_preview: accessToken.substring(0, 8) + '...',
+                attempted_at: new Date().toISOString()
+              });
               toast.error('Invalid or expired reset link. Please request a new one.');
               navigate('/auth');
               return;
@@ -105,7 +111,14 @@ export default function ResetPassword() {
               window.history.replaceState({}, document.title, window.location.pathname);
             } else {
               console.log('🔐 Reset Password: No valid session, redirecting to auth');
-              await logPasswordResetAttempt(false, 'Invalid session state');
+              await logPasswordResetAttempt({
+                success: false,
+                error_message: 'Invalid session state',
+                user_agent: navigator.userAgent,
+                ip_address: 'client-side',
+                recovery_token_preview: accessToken.substring(0, 8) + '...',
+                attempted_at: new Date().toISOString()
+              });
               toast.error('Invalid or expired reset link. Please request a new one.');
               navigate('/auth');
               return;
@@ -113,14 +126,26 @@ export default function ResetPassword() {
           }
         } else {
           console.log('🔐 Reset Password: No recovery tokens found, redirecting');
-          await logPasswordResetAttempt(false, 'No recovery tokens found');
+          await logPasswordResetAttempt({
+            success: false,
+            error_message: 'No recovery tokens found',
+            user_agent: navigator.userAgent,
+            ip_address: 'client-side',
+            attempted_at: new Date().toISOString()
+          });
           toast.error('Invalid reset link. Please request a new password reset.');
           navigate('/auth');
           return;
         }
       } catch (error) {
         console.error('🔐 Reset Password: Error during recovery setup:', error);
-        await logPasswordResetAttempt(false, `Recovery setup error: ${error}`);
+        await logPasswordResetAttempt({
+          success: false,
+          error_message: `Recovery setup error: ${error}`,
+          user_agent: navigator.userAgent,
+          ip_address: 'client-side',
+          attempted_at: new Date().toISOString()
+        });
         toast.error('An error occurred. Please try requesting a new reset link.');
         navigate('/auth');
       } finally {
@@ -130,42 +155,6 @@ export default function ResetPassword() {
 
     handlePasswordRecovery();
   }, [location, navigate]);
-
-  const logPasswordResetAttempt = async (success: boolean, errorMessage?: string) => {
-    try {
-      // Log security event
-      await logSecurityEvent({
-        event_type: success ? 'admin_action' : 'suspicious_activity',
-        user_id: sessionData.user_id,
-        details: {
-          action: 'password_reset_attempt',
-          success,
-          error_message: errorMessage,
-          email: sessionData.email,
-          recovery_token_preview: sessionData.recovery_token,
-          timestamp: new Date().toISOString(),
-          user_agent: navigator.userAgent,
-          referrer: document.referrer || 'direct'
-        },
-        severity: success ? 'medium' : 'high'
-      });
-
-      // Store in database for audit trail
-      const resetAttemptData: ResetAttemptData = {
-        success,
-        error_message: errorMessage,
-        user_agent: navigator.userAgent,
-        ip_address: 'client-side' // In production, this would come from server
-      };
-
-      // Note: In production, you'd want to create a password_reset_attempts table
-      // For now, we'll use the security logging system
-      console.log('🔐 Password reset attempt logged:', resetAttemptData);
-      
-    } catch (error) {
-      console.error('Failed to log password reset attempt:', error);
-    }
-  };
 
   const validateInputs = (): boolean => {
     const errors: {[key: string]: string} = {};
@@ -217,7 +206,16 @@ export default function ResetPassword() {
 
       if (error) {
         console.error('🔐 Reset Password: Password update error:', error);
-        await logPasswordResetAttempt(false, error.message);
+        await logPasswordResetAttempt({
+          user_id: sessionData.user_id,
+          email: sessionData.email,
+          success: false,
+          error_message: error.message,
+          user_agent: navigator.userAgent,
+          ip_address: 'client-side',
+          recovery_token_preview: sessionData.recovery_token,
+          attempted_at: new Date().toISOString()
+        });
         
         if (error.message?.includes('session_not_found') || error.message?.includes('invalid_token')) {
           toast.error('Your reset link has expired. Please request a new password reset.');
@@ -233,7 +231,15 @@ export default function ResetPassword() {
       }
 
       console.log('🔐 Reset Password: Password updated successfully');
-      await logPasswordResetAttempt(true);
+      await logPasswordResetAttempt({
+        user_id: sessionData.user_id,
+        email: sessionData.email,
+        success: true,
+        user_agent: navigator.userAgent,
+        ip_address: 'client-side',
+        recovery_token_preview: sessionData.recovery_token,
+        attempted_at: new Date().toISOString()
+      });
       
       toast.success('Password updated successfully! Redirecting to sign in...');
       
@@ -250,7 +256,16 @@ export default function ResetPassword() {
 
     } catch (error: any) {
       console.error('🔐 Reset Password: Password update failed:', error);
-      await logPasswordResetAttempt(false, error.message);
+      await logPasswordResetAttempt({
+        user_id: sessionData.user_id,
+        email: sessionData.email,
+        success: false,
+        error_message: error.message,
+        user_agent: navigator.userAgent,
+        ip_address: 'client-side',
+        recovery_token_preview: sessionData.recovery_token,
+        attempted_at: new Date().toISOString()
+      });
       
       if (error.message?.includes('session_not_found') || error.message?.includes('invalid_token')) {
         toast.error('Your reset link has expired. Please request a new password reset.');

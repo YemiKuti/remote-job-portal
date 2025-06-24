@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logSecurityEvent } from './securityLogger';
 
@@ -10,12 +9,12 @@ interface PasswordResetAttempt {
   ip_address?: string;
   user_agent: string;
   recovery_token_preview?: string;
-  timestamp: string;
+  attempted_at?: string;
 }
 
 export const logPasswordResetAttempt = async (attempt: PasswordResetAttempt) => {
   try {
-    // Log to security system
+    // Log to security system first
     await logSecurityEvent({
       event_type: attempt.success ? 'admin_action' : 'suspicious_activity',
       user_id: attempt.user_id,
@@ -26,9 +25,7 @@ export const logPasswordResetAttempt = async (attempt: PasswordResetAttempt) => 
       severity: attempt.success ? 'medium' : 'high'
     });
 
-    // In production, you might want to store password reset attempts in a dedicated table
-    // This would require creating a password_reset_attempts table
-    /*
+    // Store in password_reset_attempts table
     const { error } = await supabase
       .from('password_reset_attempts')
       .insert({
@@ -36,51 +33,109 @@ export const logPasswordResetAttempt = async (attempt: PasswordResetAttempt) => 
         email: attempt.email,
         success: attempt.success,
         error_message: attempt.error_message,
-        ip_address: attempt.ip_address,
+        ip_address: attempt.ip_address || 'client-side',
         user_agent: attempt.user_agent,
         recovery_token_preview: attempt.recovery_token_preview,
-        attempted_at: attempt.timestamp
+        attempted_at: attempt.attempted_at || new Date().toISOString()
       });
 
     if (error) {
       console.error('Failed to store password reset attempt:', error);
+      // Fall back to localStorage if database insert fails
+      fallbackToLocalStorage(attempt);
+    } else {
+      console.log('🔐 Password reset attempt logged successfully to database');
     }
-    */
-
-    console.log('🔐 Password reset attempt logged successfully');
     
   } catch (error) {
     console.error('Failed to log password reset attempt:', error);
+    // Fall back to localStorage on any error
+    fallbackToLocalStorage(attempt);
+  }
+};
+
+const fallbackToLocalStorage = (attempt: PasswordResetAttempt) => {
+  try {
+    const logEntry = {
+      ...attempt,
+      timestamp: attempt.attempted_at || new Date().toISOString()
+    };
+
+    const existingLogs = JSON.parse(localStorage.getItem('password_reset_attempts') || '[]');
+    existingLogs.push(logEntry);
+    
+    // Keep only the last 50 logs to prevent localStorage bloat
+    if (existingLogs.length > 50) {
+      existingLogs.splice(0, existingLogs.length - 50);
+    }
+    
+    localStorage.setItem('password_reset_attempts', JSON.stringify(existingLogs));
+    console.log('🔐 Password reset attempt logged to localStorage as fallback');
+  } catch (error) {
+    console.error('Failed to store password reset attempt in localStorage:', error);
   }
 };
 
 export const getPasswordResetAttempts = async (userId?: string) => {
   try {
-    // This would fetch from the password_reset_attempts table in production
-    // For now, return security logs related to password resets
-    const logs = JSON.parse(localStorage.getItem('security_logs') || '[]');
-    
-    return logs.filter((log: any) => 
-      log.details?.action === 'password_reset_attempt' &&
-      (!userId || log.user_id === userId)
-    );
+    let query = supabase
+      .from('password_reset_attempts')
+      .select('*')
+      .order('attempted_at', { ascending: false })
+      .limit(100);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Failed to fetch password reset attempts from database:', error);
+      // Fall back to localStorage
+      return getPasswordResetAttemptsFromLocalStorage(userId);
+    }
+
+    return data || [];
   } catch (error) {
     console.error('Failed to get password reset attempts:', error);
+    // Fall back to localStorage
+    return getPasswordResetAttemptsFromLocalStorage(userId);
+  }
+};
+
+const getPasswordResetAttemptsFromLocalStorage = (userId?: string) => {
+  try {
+    const logs = JSON.parse(localStorage.getItem('password_reset_attempts') || '[]');
+    
+    if (userId) {
+      return logs.filter((log: any) => log.user_id === userId);
+    }
+    
+    return logs;
+  } catch (error) {
+    console.error('Failed to get password reset attempts from localStorage:', error);
     return [];
   }
 };
 
 export const detectSuspiciousResetActivity = async (email: string) => {
   try {
-    const attempts = await getPasswordResetAttempts();
-    const recentAttempts = attempts.filter((attempt: any) => {
-      const attemptTime = new Date(attempt.timestamp).getTime();
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
-      return attemptTime > oneHourAgo && attempt.details?.email === email;
-    });
+    const oneHourAgo = new Date(Date.now() - (60 * 60 * 1000)).toISOString();
+    
+    const { data: recentAttempts, error } = await supabase
+      .from('password_reset_attempts')
+      .select('*')
+      .eq('email', email)
+      .gte('attempted_at', oneHourAgo);
+
+    if (error) {
+      console.error('Failed to check suspicious reset activity:', error);
+      return false;
+    }
 
     // Flag as suspicious if more than 5 attempts in the last hour
-    if (recentAttempts.length > 5) {
+    if (recentAttempts && recentAttempts.length > 5) {
       await logSecurityEvent({
         event_type: 'suspicious_activity',
         details: {

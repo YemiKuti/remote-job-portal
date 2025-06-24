@@ -744,6 +744,45 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_attempts: {
+        Row: {
+          attempted_at: string
+          created_at: string
+          email: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          recovery_token_preview: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          recovery_token_preview?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          recovery_token_preview?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       post_categories: {
         Row: {
           category_id: string

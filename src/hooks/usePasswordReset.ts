@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { logSecurityEvent } from '@/utils/securityLogger';
+import { logPasswordResetAttempt } from '@/utils/passwordResetLogger';
 import { sanitizeInput, passwordSchema } from '@/utils/security';
 import { toast } from 'sonner';
 
@@ -11,54 +11,25 @@ interface PasswordResetSession {
   recovery_token?: string;
 }
 
-interface PasswordResetAttempt {
-  success: boolean;
-  error_message?: string;
-  user_agent: string;
-  ip_address: string;
-  timestamp: string;
-}
-
 export const usePasswordReset = () => {
   const [isLoading, setIsLoading] = useState(false);
   
-  const logPasswordResetAttempt = async (
+  const logAttempt = async (
     success: boolean, 
     sessionData: PasswordResetSession,
     errorMessage?: string
   ) => {
     try {
-      // Log security event
-      await logSecurityEvent({
-        event_type: success ? 'admin_action' : 'suspicious_activity',
+      await logPasswordResetAttempt({
         user_id: sessionData.user_id,
-        details: {
-          action: 'password_reset_attempt',
-          success,
-          error_message: errorMessage,
-          email: sessionData.email,
-          recovery_token_preview: sessionData.recovery_token,
-          timestamp: new Date().toISOString(),
-          user_agent: navigator.userAgent,
-          referrer: document.referrer || 'direct'
-        },
-        severity: success ? 'medium' : 'high'
-      });
-
-      // Store attempt data for audit trail
-      const resetAttemptData: PasswordResetAttempt = {
+        email: sessionData.email,
         success,
         error_message: errorMessage,
         user_agent: navigator.userAgent,
         ip_address: 'client-side', // In production, this would come from server
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('🔐 Password reset attempt logged:', resetAttemptData);
-      
-      // In production, you might want to store this in a dedicated table
-      // await supabase.from('password_reset_attempts').insert(resetAttemptData);
-      
+        recovery_token_preview: sessionData.recovery_token?.substring(0, 8) + '...',
+        attempted_at: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Failed to log password reset attempt:', error);
     }
@@ -115,7 +86,7 @@ export const usePasswordReset = () => {
 
       if (error) {
         console.error('🔐 Password update error:', error);
-        await logPasswordResetAttempt(false, sessionData, error.message);
+        await logAttempt(false, sessionData, error.message);
         
         let errorMessage = 'Failed to update password. Please try again.';
         
@@ -129,7 +100,7 @@ export const usePasswordReset = () => {
       }
 
       console.log('🔐 Password updated successfully');
-      await logPasswordResetAttempt(true, sessionData);
+      await logAttempt(true, sessionData);
       
       toast.success('Password updated successfully!');
       
@@ -140,7 +111,7 @@ export const usePasswordReset = () => {
 
     } catch (error: any) {
       console.error('🔐 Password update failed:', error);
-      await logPasswordResetAttempt(false, sessionData, error.message);
+      await logAttempt(false, sessionData, error.message);
       
       let errorMessage = 'Failed to update password. Please try again or request a new reset link.';
       
@@ -157,7 +128,7 @@ export const usePasswordReset = () => {
   return {
     resetPassword,
     validatePassword,
-    logPasswordResetAttempt,
+    logPasswordResetAttempt: logAttempt,
     isLoading
   };
 };

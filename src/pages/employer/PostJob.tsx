@@ -49,9 +49,9 @@ const PostJob = () => {
     );
   }
 
-  // Only block posting if user has a paid package AND has exceeded their limit
-  // Free users (no subscription tier) should NEVER be blocked
-  const isBlocked = subscriptionTier && postLimit !== null && activePostsCount >= postLimit;
+  // Block free users (no subscription tier) from posting jobs
+  // Also block paid users who have exceeded their limits
+  const isBlocked = !subscriptionTier || (subscriptionTier && postLimit !== null && activePostsCount >= postLimit);
 
   if (isBlocked) {
     return (
@@ -59,15 +59,31 @@ const PostJob = () => {
         <div className="max-w-lg mx-auto mt-10">
           <Alert variant="destructive" className="mb-6">
             <AlertDescription>
-              You've used all job postings from your <b>{subscriptionTier}</b> package ({postLimit} jobs).
-              <div className="mt-2">
-                <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
-                  <a href="/employer/subscription" target="_self">
-                    <Crown className="mr-2 h-4 w-4" />
-                    Purchase More Jobs
-                  </a>
-                </Button>
-              </div>
+              {!subscriptionTier ? (
+                <>
+                  You need an active subscription to post jobs.
+                  <div className="mt-2">
+                    <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
+                      <a href="/employer/subscription" target="_self">
+                        <Crown className="mr-2 h-4 w-4" />
+                        Subscribe to Post Jobs
+                      </a>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  You've used all job postings from your <b>{subscriptionTier}</b> package ({postLimit} jobs).
+                  <div className="mt-2">
+                    <Button asChild className="bg-job-blue hover:bg-job-darkBlue w-full">
+                      <a href="/employer/subscription" target="_self">
+                        <Crown className="mr-2 h-4 w-4" />
+                        Purchase More Jobs
+                      </a>
+                    </Button>
+                  </div>
+                </>
+              )}
               <Button variant="outline" size="sm" className="mt-4" onClick={refresh}>
                 <RefreshCw className="h-4 w-4 mr-1 inline" />
                 Refresh Status
@@ -76,7 +92,7 @@ const PostJob = () => {
           </Alert>
           <div className="flex items-center justify-center gap-3 text-sm">
             <span>
-              Jobs used: <Badge variant="secondary">{activePostsCount} / {postLimit}</Badge>
+              Jobs used: <Badge variant="secondary">{activePostsCount} / {postLimit || 0}</Badge>
             </span>
             <span>
               Current Package: <Badge variant={hasActiveSubscription ? "default" : "outline"}>
@@ -89,7 +105,7 @@ const PostJob = () => {
     );
   }
 
-  // User has access (either free with unlimited posts or paid package with remaining credits)
+  // User has access (paid package with remaining credits)
   return (
     <DashboardLayout userType="employer">
       <div className="space-y-6 max-w-2xl mx-auto">
@@ -118,7 +134,7 @@ const PostJob = () => {
               <span>
                 <span className="font-medium">Job Posts:</span>{" "}
                 <Badge variant="outline">
-                  {activePostsCount} / Unlimited
+                  {activePostsCount} / {postLimit || 0}
                 </Badge>
               </span>
             )}
@@ -126,21 +142,10 @@ const PostJob = () => {
           <Button asChild size="sm" variant="outline">
             <a href="/employer/subscription" target="_self">
               <Crown className="mr-1 h-3 w-3" />
-              {hasActiveSubscription ? "Buy More Jobs" : "View Packages"}
+              Buy More Jobs
             </a>
           </Button>
         </div>
-        {!hasActiveSubscription && (
-          <Alert className="mb-6">
-            <Crown className="h-4 w-4" />
-            <AlertDescription>
-              You're using our free plan with unlimited job postings! 
-              <a href="/employer/subscription" className="ml-1 text-job-blue hover:underline">
-                Purchase job packages for enhanced features and priority placement.
-              </a>
-            </AlertDescription>
-          </Alert>
-        )}
         <JobForm />
       </div>
     </DashboardLayout>

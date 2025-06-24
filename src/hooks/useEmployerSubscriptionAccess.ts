@@ -48,6 +48,7 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
       if (error) throw error;
       setActivePostsCount(count || 0);
     } catch (e: any) {
+      console.error("Error fetching job count:", e);
       setError("Unable to load job posting data");
     } finally {
       setLoading(false);
@@ -60,15 +61,19 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
     // eslint-disable-next-line
   }, [user, subscribed, subscription_tier, subLoading]);
 
-  const refresh = () => {
-    checkSubscription();
-    fetchActivePostCount();
+  const refresh = async () => {
+    console.log("🔄 Refreshing subscription access...");
+    try {
+      await checkSubscription();
+      await fetchActivePostCount();
+    } catch (error) {
+      console.error("Error refreshing subscription access:", error);
+    }
   };
 
-  // For package-based system: 
-  // - Free users (no tier) CANNOT post jobs (blocked)
-  // - Paid users can post if they have available credits from their package
-  const canPost = !!user && !!tier && availableCredits !== null && activePostsCount < availableCredits;
+  // Block free users (no subscription) from posting jobs
+  // Allow paid users to post if they have available credits from their package
+  const canPost = !!user && !!subscribed && !!tier && availableCredits !== null && activePostsCount < availableCredits;
 
   return {
     loading: subLoading || loading,

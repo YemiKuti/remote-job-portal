@@ -65,10 +65,12 @@ export default function Auth({ initialRole = 'candidate' }: AuthProps) {
       return;
     }
     
-    // Handle password recovery
+    // Handle password recovery - preserve ALL URL parameters
     if (type === 'recovery' && accessToken) {
-      console.log('🔐 Auth component: Recovery flow detected, redirecting to reset-password');
-      navigate(`/reset-password${search}${window.location.hash}`, { replace: true });
+      console.log('🔐 Auth component: Recovery flow detected, redirecting to reset-password with full URL');
+      // Preserve the complete URL including hash and search params
+      const fullUrl = `${search}${window.location.hash}`;
+      navigate(`/reset-password${fullUrl}`, { replace: true });
       return;
     }
   }, [location, navigate]);

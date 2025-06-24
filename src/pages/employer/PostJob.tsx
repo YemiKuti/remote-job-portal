@@ -50,8 +50,8 @@ const PostJob = () => {
   }
 
   // Only block posting if user has a paid package AND has exceeded their limit
-  // Free users (no subscription tier) get unlimited posts
-  const isBlocked = subscriptionTier && postLimit && activePostsCount >= postLimit;
+  // Free users (no subscription tier) should NEVER be blocked
+  const isBlocked = subscriptionTier && postLimit !== null && activePostsCount >= postLimit;
 
   if (isBlocked) {
     return (
@@ -107,7 +107,7 @@ const PostJob = () => {
                 {subscriptionTier || "Free"}
               </Badge>
             </span>
-            {subscriptionTier && postLimit ? (
+            {subscriptionTier && postLimit !== null ? (
               <span>
                 <span className="font-medium">Jobs Remaining:</span>{" "}
                 <Badge variant={activePostsCount === postLimit ? "destructive" : "outline"}>

@@ -33,7 +33,7 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
 
   // Determine the current tier and available credits
   const tier = (subscription_tier as EmployerSubscriptionTier) || null;
-  const availableCredits = tier ? PACKAGE_CREDITS[tier] : 0;
+  const availableCredits = tier ? PACKAGE_CREDITS[tier] : null; // null means unlimited for free users
 
   const fetchActivePostCount = async () => {
     if (!user) return;
@@ -65,16 +65,17 @@ export const useEmployerSubscriptionAccess = (): SubscriptionAccessResult => {
     fetchActivePostCount();
   };
 
-  // For package-based system: user can post if they have available credits from their package
-  // Free users get unlimited posts
-  const canPost = !!user && (!tier || activePostsCount < availableCredits);
+  // For package-based system: 
+  // - Free users (no tier) get unlimited posts
+  // - Paid users can post if they have available credits from their package
+  const canPost = !!user && (!tier || (availableCredits !== null && activePostsCount < availableCredits));
 
   return {
     loading: subLoading || loading,
     error: subError || error,
     hasActiveSubscription: !!subscribed,
     subscriptionTier: tier,
-    postLimit: availableCredits || null,
+    postLimit: availableCredits,
     activePostsCount,
     canPost,
     refresh,

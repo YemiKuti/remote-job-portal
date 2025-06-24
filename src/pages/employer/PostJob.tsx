@@ -49,8 +49,11 @@ const PostJob = () => {
     );
   }
 
-  // Reached post limit for paid packages
-  if (!canPost && subscriptionTier) {
+  // Only block posting if user has a paid package AND has exceeded their limit
+  // Free users (no subscription tier) get unlimited posts
+  const isBlocked = subscriptionTier && postLimit && activePostsCount >= postLimit;
+
+  if (isBlocked) {
     return (
       <DashboardLayout userType="employer">
         <div className="max-w-lg mx-auto mt-10">
@@ -104,11 +107,11 @@ const PostJob = () => {
                 {subscriptionTier || "Free"}
               </Badge>
             </span>
-            {subscriptionTier ? (
+            {subscriptionTier && postLimit ? (
               <span>
                 <span className="font-medium">Jobs Remaining:</span>{" "}
                 <Badge variant={activePostsCount === postLimit ? "destructive" : "outline"}>
-                  {Math.max(0, (postLimit || 0) - activePostsCount)}
+                  {Math.max(0, postLimit - activePostsCount)}
                 </Badge>
               </span>
             ) : (

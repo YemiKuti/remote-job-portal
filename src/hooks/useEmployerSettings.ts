@@ -8,10 +8,10 @@ export const useEmployerSettings = () => {
   const { user, refreshSession } = useAuth();
   
   const [formData, setFormData] = useState({
-    fullName: user?.user_metadata?.full_name || '',
-    email: user?.email || '',
-    phone: user?.user_metadata?.phone || '',
-    jobTitle: user?.user_metadata?.title || '',
+    fullName: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -59,6 +59,12 @@ export const useEmployerSettings = () => {
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
+    
+    // Prevent email field from being updated since it's disabled
+    if (id === 'email') {
+      return;
+    }
+    
     setFormData(prev => ({ ...prev, [id]: value }));
   };
   

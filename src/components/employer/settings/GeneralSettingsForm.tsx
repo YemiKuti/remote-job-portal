@@ -58,7 +58,8 @@ export function GeneralSettingsForm({
               type="email" 
               value={formData.email}
               disabled 
-              placeholder="Your email" 
+              placeholder="Your email"
+              className="bg-gray-50"
             />
           </div>
           

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -88,7 +87,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, user
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
     { name: 'Companies', href: '/admin/companies', icon: Building },
-    { name: 'Job Scraper', href: '/job-scraper', icon: Server },
+    { name: 'Job Scraper', href: '/admin/job-scraper', icon: Server },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

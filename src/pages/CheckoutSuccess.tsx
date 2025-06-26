@@ -13,29 +13,48 @@ const CheckoutSuccess = () => {
   const navigate = useNavigate();
   const { checkSubscription, subscribed, subscription_tier, loading } = useSubscription();
   const [processingComplete, setProcessingComplete] = useState(false);
+  const [hasCheckedSubscription, setHasCheckedSubscription] = useState(false);
   
   // Extract session_id from query parameters
   const searchParams = new URLSearchParams(location.search);
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    // Check subscription status after checkout completes
+    // Only run the verification once
+    if (hasCheckedSubscription) return;
+
     const verifyCheckout = async () => {
-      // Wait a moment to allow Stripe webhook to process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Check subscription status
-      await checkSubscription();
-      setProcessingComplete(true);
+      try {
+        // Wait a moment to allow Stripe webhook to process
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Check subscription status only once
+        await checkSubscription();
+        setHasCheckedSubscription(true);
+        setProcessingComplete(true);
+      } catch (error) {
+        console.error('Error verifying checkout:', error);
+        setProcessingComplete(true);
+        setHasCheckedSubscription(true);
+      }
     };
     
-    if (sessionId) {
+    if (sessionId && !hasCheckedSubscription) {
       verifyCheckout();
-    } else {
+    } else if (!sessionId) {
       // No session ID means user was redirected here without going through checkout
       setProcessingComplete(true);
+      setHasCheckedSubscription(true);
     }
-  }, [sessionId, checkSubscription]);
+  }, [sessionId, checkSubscription, hasCheckedSubscription]);
+
+  const handleRefreshSubscription = async () => {
+    try {
+      await checkSubscription();
+    } catch (error) {
+      console.error('Error refreshing subscription:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,7 +62,7 @@ const CheckoutSuccess = () => {
       <main className="flex-grow bg-gray-50 py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6">
-            {!processingComplete || loading ? (
+            {!processingComplete || (loading && !hasCheckedSubscription) ? (
               <div className="text-center py-8">
                 <Loader2 className="h-12 w-12 mx-auto text-job-green animate-spin" />
                 <h2 className="text-2xl font-semibold mt-4 mb-2">Processing your subscription</h2>
@@ -76,8 +95,15 @@ const CheckoutSuccess = () => {
                   it might take a few minutes to reflect in our system.
                 </p>
                 <div className="space-y-3">
-                  <Button className="w-full" onClick={() => checkSubscription()}>
-                    Check Again
+                  <Button className="w-full" onClick={handleRefreshSubscription} disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      'Check Again'
+                    )}
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
                     Return to Homepage

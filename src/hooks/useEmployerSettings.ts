@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +27,11 @@ export const useEmployerSettings = () => {
       if (!user) return;
       
       try {
+        // Debug: Log user metadata to see what's stored
+        console.log('User metadata:', user.user_metadata);
+        console.log('User metadata title:', user.user_metadata?.title);
+        console.log('User email:', user.email);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -44,7 +48,7 @@ export const useEmployerSettings = () => {
             fullName: data.full_name || user?.user_metadata?.full_name || '',
             email: user?.email || '',
             phone: user?.user_metadata?.phone || '',
-            jobTitle: user?.user_metadata?.title || '',
+            jobTitle: user?.user_metadata?.title || '', // Keep as is for now to see what's here
           });
         }
       } catch (error) {

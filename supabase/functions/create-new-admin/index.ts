@@ -44,7 +44,51 @@ serve(async (req) => {
     
     if (existingUser) {
       console.log(`🗑️ Deleting existing user: ${existingUser.id}`);
-      await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+      
+      // First, delete all applications where this user is the employer
+      const { error: deleteAppsError } = await supabaseAdmin
+        .from('applications')
+        .delete()
+        .eq('employer_id', existingUser.id);
+      
+      if (deleteAppsError) {
+        console.error('❌ Failed to delete applications:', deleteAppsError);
+      } else {
+        console.log('✅ Deleted user applications');
+      }
+      
+      // Delete user roles
+      const { error: deleteRolesError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', existingUser.id);
+      
+      if (deleteRolesError) {
+        console.error('❌ Failed to delete user roles:', deleteRolesError);
+      } else {
+        console.log('✅ Deleted user roles');
+      }
+      
+      // Delete profile
+      const { error: deleteProfileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', existingUser.id);
+      
+      if (deleteProfileError) {
+        console.error('❌ Failed to delete profile:', deleteProfileError);
+      } else {
+        console.log('✅ Deleted user profile');
+      }
+      
+      // Now delete the auth user
+      const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+      if (deleteUserError) {
+        console.error('❌ Failed to delete auth user:', deleteUserError);
+        throw new Error(`Failed to delete existing user: ${deleteUserError.message}`);
+      } else {
+        console.log('✅ Deleted auth user');
+      }
     }
 
     // Create new admin user

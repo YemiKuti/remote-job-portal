@@ -1483,6 +1483,10 @@ export type Database = {
         Args: { conv_id: string }
         Returns: boolean
       }
+      reset_admin_password: {
+        Args: { new_password: string; target_email: string }
+        Returns: boolean
+      }
       send_message: {
         Args:
           | {

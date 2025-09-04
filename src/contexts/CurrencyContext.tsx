@@ -60,33 +60,67 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   // Auto-detect user's currency based on location
   const detectUserCurrency = async () => {
+    console.log('🌍 Starting currency detection...');
+    
     try {
-      // Try to detect via IP geolocation immediately
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      
-      const response = await fetch('https://ipapi.co/json/', { 
-        signal: controller.signal
+      // First try ipapi.co
+      const response = await fetch('https://ipapi.co/json/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
       });
       
-      clearTimeout(timeoutId);
+      console.log('🌍 ipapi.co response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log('🌍 Location data from ipapi.co:', data);
+        
         const countryCode = data.country_code;
-        const detectedCur = countryCurrencyMap[countryCode] || 'GBP';
-        
-        setDetectedCurrency(detectedCur);
-        setSelectedCurrencyState(detectedCur);
-        
-        console.log(`Currency auto-detected: ${countryCode} → ${detectedCur}`);
-      } else {
-        throw new Error('Failed to fetch location');
+        if (countryCode) {
+          const detectedCur = countryCurrencyMap[countryCode] || 'GBP';
+          
+          console.log(`🌍 Currency auto-detected: ${countryCode} → ${detectedCur}`);
+          
+          setDetectedCurrency(detectedCur);
+          setSelectedCurrencyState(detectedCur);
+          return;
+        }
       }
+      
+      throw new Error(`ipapi.co failed with status: ${response.status}`);
     } catch (error) {
-      console.log('Currency detection failed, using GBP default');
-      setDetectedCurrency('GBP');
-      setSelectedCurrencyState('GBP');
+      console.log('🌍 ipapi.co failed, trying fallback service...', error);
+      
+      try {
+        // Fallback to ipinfo.io
+        const fallbackResponse = await fetch('https://ipinfo.io/json');
+        console.log('🌍 ipinfo.io response status:', fallbackResponse.status);
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          console.log('🌍 Fallback location data from ipinfo.io:', fallbackData);
+          
+          const countryCode = fallbackData.country;
+          if (countryCode) {
+            const detectedCur = countryCurrencyMap[countryCode] || 'GBP';
+            
+            console.log(`🌍 Currency auto-detected via fallback: ${countryCode} → ${detectedCur}`);
+            
+            setDetectedCurrency(detectedCur);
+            setSelectedCurrencyState(detectedCur);
+            return;
+          }
+        }
+        
+        throw new Error(`Fallback service also failed with status: ${fallbackResponse.status}`);
+      } catch (fallbackError) {
+        console.error('🌍 All currency detection services failed:', fallbackError);
+        console.log('🌍 Using default currency: GBP');
+        setDetectedCurrency('GBP');
+        setSelectedCurrencyState('GBP');
+      }
     }
   };
 

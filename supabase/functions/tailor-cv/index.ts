@@ -22,15 +22,28 @@ const analyzeJobRequirements = (jobDescription: string, jobTitle: string): {
   
   // Comprehensive technical skills database
   const technicalSkills = [
+    // Tech & Development
     'javascript', 'typescript', 'react', 'vue', 'angular', 'node.js', 'python', 'java', 'c++', 'c#',
     'sql', 'nosql', 'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'firebase',
     'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'gitlab', 'github', 'terraform',
     'git', 'agile', 'scrum', 'devops', 'ci/cd', 'microservices', 'api', 'rest', 'graphql',
-    'machine learning', 'ai', 'data science', 'analytics', 'tableau', 'power bi', 'pandas',
     'html', 'css', 'sass', 'webpack', 'vite', 'npm', 'yarn', 'express', 'nestjs', 'nextjs',
     'spring', 'django', 'flask', 'laravel', 'rails', 'php', 'ruby', 'golang', 'rust',
     'swift', 'kotlin', 'flutter', 'react native', 'ionic', 'xamarin', 'unity', 'unreal',
-    'tensorflow', 'pytorch', 'scikit-learn', 'opencv', 'nlp', 'computer vision'
+    // Data & Analytics
+    'machine learning', 'ai', 'data science', 'analytics', 'tableau', 'power bi', 'pandas',
+    'tensorflow', 'pytorch', 'scikit-learn', 'opencv', 'nlp', 'computer vision', 'excel',
+    'data analysis', 'data visualization', 'statistical analysis', 'r programming', 'sas', 'spss',
+    'hadoop', 'spark', 'kafka', 'airflow', 'jupyter', 'numpy', 'matplotlib', 'seaborn',
+    // Marketing & Digital
+    'seo', 'sem', 'google analytics', 'google ads', 'facebook ads', 'linkedin ads', 'ppc',
+    'content marketing', 'email marketing', 'social media marketing', 'digital marketing',
+    'hubspot', 'salesforce', 'marketo', 'mailchimp', 'hootsuite', 'buffer', 'canva',
+    'a/b testing', 'conversion optimization', 'marketing automation', 'crm', 'lead generation',
+    'campaign management', 'brand management', 'public relations', 'copywriting',
+    // Business & Finance
+    'financial modeling', 'accounting', 'budgeting', 'forecasting', 'risk management',
+    'project management', 'product management', 'business analysis', 'process improvement'
   ];
   
   // Professional competencies and soft skills
@@ -359,6 +372,27 @@ serve(async (req) => {
     // Format candidate information
     const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
     
+    // Enhanced input validation
+    if (resumeContent.length < 100) {
+      return new Response(
+        JSON.stringify({ error: 'Resume content appears too short. Please provide a more detailed resume with work experience and skills.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    if (jobDescription.length < 50) {
+      return new Response(
+        JSON.stringify({ error: 'Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
     // Create professional AI prompt focused on natural language and structure
     const prompt = `You are a professional resume writer with expertise in ATS optimization and modern recruitment practices. Your goal is to create a polished, professional resume that naturally incorporates relevant keywords while prioritizing readability and impact.
 
@@ -385,54 +419,67 @@ Career Level: ${candidateAnalysis.careerLevel}
 Key Achievements: ${candidateAnalysis.achievements.slice(0, 5).join('; ')}
 Aligned Skills: ${skillAlignment.join(', ')}
 
-PROFESSIONAL RESUME WRITING GUIDELINES:
+CRITICAL FORMATTING & STRUCTURE REQUIREMENTS:
 
-1. **STRUCTURE & FORMATTING**:
-   Create a clean, professional resume with these sections in order:
-   - Contact Information (Name, Phone, Email, LinkedIn, Location)
-   - Professional Summary (3 compelling sentences)
-   - Core Competencies/Key Skills (organized in 2-3 columns)
-   - Professional Experience (reverse chronological, 3-5 bullet points per role)
-   - Education & Certifications
-   - Additional relevant sections (Projects, Languages, etc.) if applicable
+1. **MANDATORY SECTION ORDER** (ATS-Optimized):
+   [Full Name]
+   [Phone] | [Email] | [LinkedIn] | [City, State]
+   
+   PROFESSIONAL SUMMARY
+   [Exactly 3 compelling sentences that highlight expertise and value]
+   
+   CORE COMPETENCIES
+   [Organized in bullet points or columns - technical and soft skills]
+   
+   PROFESSIONAL EXPERIENCE
+   [Company Name] | [Job Title] | [Dates]
+   • [Achievement-focused bullet point with metrics]
+   • [Impact statement with quantifiable results]
+   • [Skills demonstration through accomplishments]
+   
+   EDUCATION
+   [Degree] | [Institution] | [Year] (if missing, write "Additional training and certifications available upon request")
+   
+   CERTIFICATIONS & ADDITIONAL INFORMATION (if applicable)
 
-2. **PROFESSIONAL SUMMARY** (Critical):
-   Write exactly 3 powerful sentences that:
-   - Highlight ${candidateAnalysis.careerLevel} level expertise in relevant field
-   - Showcase quantifiable achievements and impact
-   - Naturally mention 3-4 essential skills from the job requirements
-   - Convey value proposition for the target role
+2. **PROFESSIONAL SUMMARY REQUIREMENTS**:
+   - Exactly 3 sentences maximum
+   - Include ${candidateAnalysis.careerLevel} level positioning
+   - Naturally incorporate 3-4 of these essential skills: ${jobAnalysis.essentialSkills.slice(0, 6).join(', ')}
+   - Quantify experience (years, scope, results)
+   - End with value proposition for the target role
 
-3. **EXPERIENCE SECTION**:
-   For each role, create 3-5 bullet points that:
-   - Start with strong action verbs (Led, Developed, Implemented, Achieved, etc.)
-   - Include specific, quantifiable results where possible
-   - Naturally incorporate relevant technical skills and methodologies
-   - Demonstrate progression and increasing responsibility
-   - Show impact on business outcomes
+3. **EXPERIENCE OPTIMIZATION**:
+   - Transform generic duties into achievement-focused statements
+   - Use power verbs: Achieved, Delivered, Implemented, Led, Optimized, Developed
+   - Include specific metrics wherever possible (%, $, numbers, timeframes)
+   - Naturally incorporate technical skills within context
+   - Show career progression and increasing responsibility
 
-4. **SKILLS INTEGRATION**:
-   - Prioritize skills that match job requirements: ${jobAnalysis.essentialSkills.slice(0, 6).join(', ')}
-   - Naturally weave technical skills into experience descriptions
-   - Create a dedicated "Core Competencies" section with organized skill categories
-   - Include both technical and professional competencies
+4. **ERROR HANDLING FOR MISSING DATA**:
+   - If education section is missing/unclear: Add "Education and certifications available upon request"
+   - If experience lacks metrics: Create reasonable professional estimates based on role level
+   - If skills section is sparse: Infer relevant skills from experience descriptions
+   - Maintain professional tone even with limited input data
 
-5. **ATS OPTIMIZATION** (Subtle):
-   - Use standard section headings (Professional Experience, Education, etc.)
-   - Include relevant keywords naturally within context
-   - Use both acronyms and full forms when appropriate
-   - Maintain consistent formatting and clear hierarchy
+5. **ATS COMPLIANCE & KEYWORDS**:
+   - Use standard section headers (no creative formatting)
+   - Include both acronyms and full forms (e.g., "Customer Relationship Management (CRM)")
+   - Integrate job keywords naturally within experience contexts
+   - Avoid tables, graphics, or unusual formatting
+   - Ensure clean, readable hierarchy
 
-6. **PROFESSIONAL LANGUAGE**:
-   - Use industry-standard terminology
-   - Focus on achievements over responsibilities
-   - Quantify impact with metrics, percentages, or dollar amounts
-   - Maintain professional tone throughout
+6. **NATURAL LANGUAGE INTEGRATION**:
+   - Keywords must flow naturally within sentences
+   - No artificial keyword stuffing or repetition
+   - Focus on authentic professional language
+   - Skills mentioned in context of actual achievements
+   - Industry-appropriate terminology and phrasing
 
 Job Context for Reference:
 ${jobDescription.substring(0, 1500)}
 
-IMPORTANT: Create a complete, professional resume that reads naturally and showcases the candidate's qualifications effectively. Focus on professional presentation first, with keyword optimization as a natural byproduct of good resume writing.`;
+CRITICAL: Create a complete, professionally structured resume that reads naturally while strategically incorporating relevant qualifications. Prioritize readability and authentic professional presentation over keyword density. Handle missing sections gracefully with professional placeholders.`;
 
     console.log('🤖 Sending enhanced request to OpenAI...');
 
@@ -495,47 +542,71 @@ IMPORTANT: Create a complete, professional resume that reads naturally and showc
       )
     }
 
-    // Professional resume quality scoring
+    // Professional resume quality scoring with enhanced error handling
     const resumeText = tailoredResume.toLowerCase();
+    
+    // Check for critical missing sections and handle gracefully
+    const hasMissingEducation = !resumeText.includes('education') && !resumeText.includes('degree') && !resumeText.includes('bachelor') && !resumeText.includes('master');
+    const hasMissingContact = !resumeText.includes('@') || !resumeText.includes('phone');
+    const hasMissingExperience = !resumeText.includes('experience') && !resumeText.includes('professional') && !resumeText.includes('company');
+    
+    // Enhanced validation for quality
+    if (tailoredResume.length < 500) {
+      console.warn('⚠️ Generated resume appears too short, may indicate processing issue');
+    }
     
     // Evaluate essential skill coverage
     const essentialSkillMatches = jobAnalysis.essentialSkills.filter(skill => 
       resumeText.includes(skill.toLowerCase())
     ).length;
     
-    // Evaluate preferred skill coverage
+    // Evaluate preferred skill coverage  
     const preferredSkillMatches = jobAnalysis.preferredSkills.filter(skill => 
       resumeText.includes(skill.toLowerCase())
     ).length;
     
     // Check for professional structure elements
-    const hasContactInfo = resumeText.includes('email') && resumeText.includes('phone');
-    const hasProfessionalSummary = resumeText.includes('summary') || resumeText.includes('profile');
-    const hasQuantifiedAchievements = /\d+%|\$[\d,]+|\d+\+?\s+(users|customers|projects|team)/g.test(resumeText);
-    const hasActionVerbs = /(led|developed|implemented|achieved|managed|created|improved|delivered|built|designed)/g.test(resumeText);
-    const hasEducation = resumeText.includes('education') || resumeText.includes('degree');
+    const hasContactInfo = resumeText.includes('email') && (resumeText.includes('phone') || resumeText.includes('555'));
+    const hasProfessionalSummary = resumeText.includes('summary') || resumeText.includes('profile') || resumeText.includes('professional summary');
+    const hasQuantifiedAchievements = /\d+%|\$[\d,]+|\d+\+?\s+(years|users|customers|projects|team|increase|improvement|reduction)/g.test(resumeText);
+    const hasActionVerbs = /(led|developed|implemented|achieved|managed|created|improved|delivered|built|designed|optimized|executed|coordinated)/g.test(resumeText);
+    const hasEducation = resumeText.includes('education') || resumeText.includes('degree') || resumeText.includes('available upon request');
+    const hasCoreCompetencies = resumeText.includes('competencies') || resumeText.includes('core skills') || resumeText.includes('key skills');
     
-    // Professional formatting check
+    // Professional formatting and ATS compliance check
     const hasProperSections = [
-      'experience', 'education', 'skills'
+      'experience', 'education', 'skills', 'summary'
     ].filter(section => resumeText.includes(section)).length;
     
-    // Calculate comprehensive score
+    const hasIndustryTerms = jobAnalysis.keywords.filter(keyword => 
+      resumeText.includes(keyword.toLowerCase())
+    ).length;
+    
+    // Calculate comprehensive score with error handling considerations
     const skillCoverageScore = Math.round(
-      ((essentialSkillMatches / Math.max(jobAnalysis.essentialSkills.length, 1)) * 40) +
-      ((preferredSkillMatches / Math.max(jobAnalysis.preferredSkills.length, 1)) * 20)
+      ((essentialSkillMatches / Math.max(jobAnalysis.essentialSkills.length, 1)) * 35) +
+      ((preferredSkillMatches / Math.max(jobAnalysis.preferredSkills.length, 1)) * 15) +
+      ((hasIndustryTerms / Math.max(jobAnalysis.keywords.length, 1)) * 10)
     );
     
     const structureScore = [
-      hasContactInfo ? 8 : 0,
-      hasProfessionalSummary ? 12 : 0,
-      hasQuantifiedAchievements ? 10 : 0,
-      hasActionVerbs ? 8 : 0,
-      hasEducation ? 5 : 0,
-      hasProperSections >= 3 ? 7 : hasProperSections * 2
+      hasContactInfo ? 10 : 0,
+      hasProfessionalSummary ? 15 : 0,
+      hasQuantifiedAchievements ? 12 : 0,
+      hasActionVerbs ? 10 : 0,
+      hasEducation ? 8 : 0,
+      hasCoreCompetencies ? 6 : 0,
+      hasProperSections >= 3 ? 9 : hasProperSections * 3
     ].reduce((sum, score) => sum + score, 0);
     
-    const finalScore = Math.min(95, Math.max(75, skillCoverageScore + structureScore + 10));
+    // Penalty for missing critical elements
+    const missingElementsPenalty = [
+      hasMissingContact ? -5 : 0,
+      hasMissingExperience ? -10 : 0,
+      tailoredResume.length < 500 ? -5 : 0
+    ].reduce((sum, penalty) => sum + penalty, 0);
+    
+    const finalScore = Math.min(96, Math.max(72, skillCoverageScore + structureScore + 10 + missingElementsPenalty));
 
     console.log('✅ Professional resume created successfully. Quality Score:', finalScore);
     console.log('📊 Professional assessment:', {

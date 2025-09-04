@@ -8,12 +8,12 @@ import { JobsTable } from "@/components/admin/jobs/JobsTable";
 import { useJobsManagement } from "@/hooks/admin/useJobsManagement";
 
 const JobsAdmin = () => {
-  const { jobs, loading, searchTerm, setSearchTerm, handleJobAction } = useJobsManagement();
+  const { jobs, loading, searchTerm, setSearchTerm, handleJobAction, reloadJobs } = useJobsManagement();
 
   return (
     <DashboardLayout userType="admin">
       <div className="space-y-6">
-        <JobsHeader />
+        <JobsHeader onJobsUploaded={reloadJobs} />
         <JobsFilter searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         
         <Card>

@@ -3,11 +3,12 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Building, DollarSign, Users } from "lucide-react";
-import { formatSalary, getTimeAgo } from "@/data/jobs";
+import { formatSalaryWithConversion, getTimeAgo } from "@/data/jobs";
 import { Job } from "@/types";
 import { SponsoredBadge } from "@/components/ui/sponsored-badge";
 import { useNavigate } from "react-router-dom";
 import { RichTextRenderer } from "@/components/RichTextRenderer";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface JobCardProps {
   job: Job;
@@ -16,6 +17,7 @@ interface JobCardProps {
 
 const JobCard = ({ job, onClick }: JobCardProps) => {
   const navigate = useNavigate();
+  const { selectedCurrency, convertAmount } = useCurrency();
 
   const handleCardClick = () => {
     if (onClick) {
@@ -83,7 +85,14 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-600">
               <DollarSign className="w-4 h-4 mr-1" />
-              {formatSalary(job.salary.min, job.salary.max, job.salary.currency)}
+              {formatSalaryWithConversion(
+                job.salary.min, 
+                job.salary.max, 
+                job.salary.currency,
+                selectedCurrency,
+                convertAmount,
+                job.salary.currency !== selectedCurrency
+              )}
             </div>
             <div className="flex items-center text-gray-600">
               <Building className="w-4 h-4 mr-1" />

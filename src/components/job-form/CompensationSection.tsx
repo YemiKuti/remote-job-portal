@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { supportedCurrencies } from "@/contexts/CurrencyContext";
 
 interface CompensationSectionProps {
   form: UseFormReturn<JobFormValues>;
@@ -82,13 +83,16 @@ export const CompensationSection = ({ form }: CompensationSectionProps) => {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-                <SelectItem value="KES">KES</SelectItem>
-                <SelectItem value="NGN">NGN</SelectItem>
-                <SelectItem value="ZAR">ZAR</SelectItem>
-                <SelectItem value="GHS">GHS</SelectItem>
+                {supportedCurrencies.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    <div className="flex items-center gap-2">
+                      <span>{currency.flag}</span>
+                      <span>{currency.code}</span>
+                      <span className="text-muted-foreground">({currency.symbol})</span>
+                      <span className="text-xs text-muted-foreground">{currency.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />

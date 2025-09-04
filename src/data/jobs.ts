@@ -223,6 +223,30 @@ export function formatSalary(min: number, max: number, currencyCode: string): st
   return `${currency.symbol}${min.toLocaleString()} - ${currency.symbol}${max.toLocaleString()}`;
 }
 
+// Enhanced currency-aware salary formatting
+export function formatSalaryWithConversion(
+  min: number, 
+  max: number, 
+  originalCurrency: string,
+  targetCurrency: string,
+  convertAmount: (amount: number, from: string, to?: string) => number,
+  showOriginal: boolean = false
+): string {
+  const convertedMin = convertAmount(min, originalCurrency, targetCurrency);
+  const convertedMax = convertAmount(max, originalCurrency, targetCurrency);
+  
+  const targetCurrencyData = currencies[targetCurrency] || { symbol: targetCurrency, name: targetCurrency };
+  const convertedRange = `${targetCurrencyData.symbol}${convertedMin.toLocaleString()} - ${targetCurrencyData.symbol}${convertedMax.toLocaleString()}`;
+  
+  if (showOriginal && originalCurrency !== targetCurrency) {
+    const originalCurrencyData = currencies[originalCurrency] || { symbol: originalCurrency, name: originalCurrency };
+    const originalRange = `${originalCurrencyData.symbol}${min.toLocaleString()} - ${originalCurrencyData.symbol}${max.toLocaleString()}`;
+    return `${convertedRange} (~${originalRange} ${originalCurrency})`;
+  }
+  
+  return convertedRange;
+}
+
 export function getTimeAgo(dateString: string): string {
   const now = new Date();
   const postedDate = new Date(dateString);

@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
-import Account from '@/pages/Account'
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
+import Account from '@/pages/Account';
 import Index from '@/pages/Index'
 import Pricing from '@/pages/Pricing'
 import AuthPage from '@/pages/Auth'
@@ -44,12 +45,14 @@ import { AdminRoute } from '@/components/AdminRoute';
 import SettingsRedirect from '@/components/SettingsRedirect';
 import CheckoutSuccess from '@/pages/CheckoutSuccess';
 import ResetPassword from '@/pages/ResetPassword';
+import CurrencyTestPage from '@/pages/CurrencyTestPage';
 
 const App = () => {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <Router>
-        <AuthProvider>
+      <CurrencyProvider>
+        <Router>
+          <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
@@ -102,11 +105,15 @@ const App = () => {
             <Route path="/admin/settings" element={<AdminRoute><SettingsAdmin /></AdminRoute>} />
             <Route path="/admin/blog" element={<AdminRoute><BlogManagement /></AdminRoute>} />
             <Route path="/admin/job-scraper" element={<AdminRoute><JobScraper /></AdminRoute>} />
+            
+            {/* Currency Test Route - Remove in production */}
+            <Route path="/currency-test" element={<CurrencyTestPage />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </Router>
+          </AuthProvider>
+        </Router>
+      </CurrencyProvider>
     </ThemeProvider>
   );
 };

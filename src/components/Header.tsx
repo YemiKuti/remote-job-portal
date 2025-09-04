@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogIn, User, Building, ShieldCheck, UserPlus, Briefcase } from "lucide-react";
+import { CurrencySelector } from "@/components/CurrencySelector";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -73,6 +74,7 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex items-center space-x-4">
+          <CurrencySelector variant="compact" />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

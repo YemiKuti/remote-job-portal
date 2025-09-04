@@ -66,13 +66,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				job: {
-					green: '#007A55',
-					lightGreen: '#00A671',
-					darkGreen: '#00694A',
-					hover: '#E6F5F0',
-					blue: '#3F64DE',
-					lightBlue: '#5A7BE2',
-					darkBlue: '#2A4BC8'
+					green: 'hsl(160 100% 24%)',
+					lightGreen: 'hsl(160 100% 33%)',
+					darkGreen: 'hsl(160 100% 20%)',
+					hover: 'hsl(152 30% 92%)',
+					blue: 'hsl(227 72% 57%)',
+					lightBlue: 'hsl(230 71% 62%)',
+					darkBlue: 'hsl(229 71% 48%)'
 				}
 			},
 			borderRadius: {

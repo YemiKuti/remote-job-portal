@@ -46,6 +46,7 @@ import SettingsRedirect from '@/components/SettingsRedirect';
 import CheckoutSuccess from '@/pages/CheckoutSuccess';
 import ResetPassword from '@/pages/ResetPassword';
 import CurrencyTestPage from '@/pages/CurrencyTestPage';
+import FeaturesDemo from '@/pages/FeaturesDemo';
 
 const App = () => {
   return (
@@ -106,8 +107,9 @@ const App = () => {
             <Route path="/admin/blog" element={<AdminRoute><BlogManagement /></AdminRoute>} />
             <Route path="/admin/job-scraper" element={<AdminRoute><JobScraper /></AdminRoute>} />
             
-            {/* Currency Test Route - Remove in production */}
+            {/* Demo Routes - Remove in production */}
             <Route path="/currency-test" element={<CurrencyTestPage />} />
+            <Route path="/features-demo" element={<FeaturesDemo />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

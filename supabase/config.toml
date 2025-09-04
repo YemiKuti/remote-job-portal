@@ -3,3 +3,6 @@ project_id = "mmbrvcndxhipaoxysvwr"
 
 [functions.is_admin]
 verify_jwt = true
+
+[functions.initialize-admin]
+verify_jwt = false

@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { parseCSVFile, validateJobData, type ParsedJobData } from '@/utils/csvJobParser';
-import { createAdminJob } from '@/utils/api/adminApi';
+import { parseCSVFile, validateJobData, detectDuplicates, createJobsBatch, type ParsedJobData, type ValidationResult } from '@/utils/csvJobParser';
 import { CSVSampleDownload } from './CSVSampleDownload';
 
 interface CSVUploadDialogProps {
@@ -20,10 +19,12 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedJobData[]>([]);
-  const [validationResults, setValidationResults] = useState<any[]>([]);
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
+  const [duplicates, setDuplicates] = useState<Map<string, number[]>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [step, setStep] = useState<'upload' | 'preview' | 'complete'>('upload');
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [step, setStep] = useState<'upload' | 'preview' | 'uploading' | 'complete'>('upload');
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,23 +49,49 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     try {
       const parsed = await parseCSVFile(file);
       
+      if (parsed.length === 0) {
+        toast({
+          title: 'No Data Found',
+          description: 'The CSV file contains no valid job data.',
+          variant: 'destructive'
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      if (parsed.length > 1000) {
+        toast({
+          title: 'File Too Large',
+          description: 'Maximum 1000 jobs per upload. Please split your file.',
+          variant: 'destructive'
+        });
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Detect duplicates within the file
+      const duplicateMap = detectDuplicates(parsed);
+      setDuplicates(duplicateMap);
+      
       // Validate each job
-      const results = parsed.map((job, index) => ({
-        index,
-        data: job,
-        validation: validateJobData(job)
-      }));
+      const results = parsed.map((job, index) => {
+        const duplicateKey = Array.from(duplicateMap.keys()).find(key => 
+          duplicateMap.get(key)?.includes(index)
+        );
+        return validateJobData(job, duplicateKey);
+      });
 
       setParsedData(parsed);
       setValidationResults(results);
       setStep('preview');
       
-      const validCount = results.filter(r => r.validation.isValid).length;
-      const invalidCount = results.length - validCount;
+      const validCount = results.filter(r => r.isValid && !r.isDuplicate).length;
+      const invalidCount = results.filter(r => !r.isValid).length;
+      const duplicateCount = results.filter(r => r.isDuplicate).length;
       
       toast({
         title: 'CSV Processed',
-        description: `Found ${validCount} valid jobs, ${invalidCount} invalid jobs.`
+        description: `Found ${validCount} valid jobs, ${invalidCount} invalid, ${duplicateCount} duplicates.`
       });
     } catch (error: any) {
       toast({
@@ -77,7 +104,10 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
   };
 
   const handleBulkUpload = async () => {
-    const validJobs = validationResults.filter(r => r.validation.isValid);
+    const validJobs = parsedData.filter((_, index) => {
+      const result = validationResults[index];
+      return result.isValid && !result.isDuplicate;
+    });
     
     if (validJobs.length === 0) {
       toast({
@@ -89,28 +119,25 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     }
 
     setIsUploading(true);
-    let successCount = 0;
-    let errorCount = 0;
+    setUploadProgress({ current: 0, total: validJobs.length });
+    setStep('uploading');
 
     try {
-      for (const jobResult of validJobs) {
-        try {
-          await createAdminJob(jobResult.data);
-          successCount++;
-        } catch (error) {
-          console.error('Failed to create job:', jobResult.data.title, error);
-          errorCount++;
-        }
+      const result = await createJobsBatch(validJobs, (completed, total) => {
+        setUploadProgress({ current: completed, total });
+      });
+
+      toast({
+        title: 'Upload Complete',
+        description: `Successfully created ${result.successful} jobs${result.failed > 0 ? `, ${result.failed} failed` : ''}.`
+      });
+
+      if (result.errors.length > 0) {
+        console.error('Upload errors:', result.errors);
       }
 
-      if (successCount > 0) {
-        toast({
-          title: 'Upload Complete',
-          description: `Successfully created ${successCount} jobs${errorCount > 0 ? `, ${errorCount} failed` : ''}.`
-        });
-        onJobsUploaded();
-        setStep('complete');
-      }
+      onJobsUploaded();
+      setStep('complete');
     } catch (error: any) {
       toast({
         title: 'Upload Failed',
@@ -125,6 +152,8 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     setFile(null);
     setParsedData([]);
     setValidationResults([]);
+    setDuplicates(new Map());
+    setUploadProgress({ current: 0, total: 0 });
     setStep('upload');
   };
 
@@ -227,11 +256,15 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
               <div className="flex gap-4">
                 <Badge variant="outline" className="flex items-center gap-1">
                   <CheckCircle className="h-3 w-3 text-green-600" />
-                  {validationResults.filter(r => r.validation.isValid).length} Valid
+                  {validationResults.filter(r => r.isValid && !r.isDuplicate).length} Valid
                 </Badge>
                 <Badge variant="destructive" className="flex items-center gap-1">
                   <XCircle className="h-3 w-3" />
-                  {validationResults.filter(r => !r.validation.isValid).length} Invalid
+                  {validationResults.filter(r => !r.isValid).length} Invalid
+                </Badge>
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {validationResults.filter(r => r.isDuplicate).length} Duplicates
                 </Badge>
               </div>
             </div>
@@ -250,24 +283,36 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
                 </TableHeader>
                 <TableBody>
                   {validationResults.map((result, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} className={result.isDuplicate ? 'bg-yellow-50' : ''}>
                       <TableCell>
-                        {result.validation.isValid ? (
+                        {result.isDuplicate ? (
+                          <AlertCircle className="h-4 w-4 text-yellow-600" />
+                        ) : result.isValid ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {result.data.title || 'Missing'}
+                        {parsedData[index]?.title || 'Missing'}
                       </TableCell>
-                      <TableCell>{result.data.company || 'Missing'}</TableCell>
-                      <TableCell>{result.data.location || 'Missing'}</TableCell>
-                      <TableCell>{result.data.employment_type || 'Missing'}</TableCell>
+                      <TableCell>{parsedData[index]?.company || 'Missing'}</TableCell>
+                      <TableCell>{parsedData[index]?.location || 'Missing'}</TableCell>
+                      <TableCell>{parsedData[index]?.employment_type || 'Missing'}</TableCell>
                       <TableCell>
-                        {!result.validation.isValid && (
+                        {result.isDuplicate && (
+                          <div className="text-xs text-yellow-600">
+                            Duplicate entry
+                          </div>
+                        )}
+                        {!result.isValid && (
                           <div className="text-xs text-red-600">
-                            {result.validation.errors?.join(', ')}
+                            {result.errors?.join(', ')}
+                          </div>
+                        )}
+                        {result.warnings && result.warnings.length > 0 && (
+                          <div className="text-xs text-orange-600">
+                            {result.warnings.join(', ')}
                           </div>
                         )}
                       </TableCell>
@@ -280,18 +325,18 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Only valid jobs will be uploaded. Invalid jobs will be skipped.
+                Only valid, non-duplicate jobs will be uploaded. Invalid jobs and duplicates will be skipped.
               </AlertDescription>
             </Alert>
 
             <div className="flex gap-2">
               <Button 
                 onClick={handleBulkUpload}
-                disabled={isUploading || validationResults.filter(r => r.validation.isValid).length === 0}
+                disabled={isUploading || validationResults.filter(r => r.isValid && !r.isDuplicate).length === 0}
                 className="flex items-center gap-2"
               >
                 {isUploading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                Upload {validationResults.filter(r => r.validation.isValid).length} Jobs
+                Upload {validationResults.filter(r => r.isValid && !r.isDuplicate).length} Jobs
               </Button>
               <Button variant="outline" onClick={() => setStep('upload')}>
                 Back
@@ -299,6 +344,24 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
               <Button variant="outline" onClick={closeDialog}>
                 Cancel
               </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'uploading' && (
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto"></div>
+            <div>
+              <h3 className="text-lg font-semibold">Uploading Jobs...</h3>
+              <p className="text-muted-foreground">
+                Processing {uploadProgress.current} of {uploadProgress.total} jobs
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                ></div>
+              </div>
             </div>
           </div>
         )}

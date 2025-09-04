@@ -26,11 +26,11 @@ export interface PublicProfileData {
 
 export const fetchPublicProfileById = async (userId: string): Promise<PublicProfileData | null> => {
   console.log(`🔄 Fetching public profile for user ID: ${userId}`);
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, full_name, avatar_url, title, bio, skills, experience, location, website')
-    .eq('id', userId)
-    .single();
+  
+  // Use the new secure function that only returns safe public fields
+  const { data, error } = await supabase.rpc('get_public_profile_info', { 
+    profile_user_id: userId 
+  });
 
   if (error) {
     console.error('❌ Error fetching public profile:', error);
@@ -41,12 +41,15 @@ export const fetchPublicProfileById = async (userId: string): Promise<PublicProf
     }
     throw error;
   }
-  if (!data) {
+  
+  if (!data || data.length === 0) {
     console.warn(`No profile data returned for user ID: ${userId}`);
     return null;
   }
-  console.log('✅ Fetched public profile data:', data);
-  return data as PublicProfileData;
+  
+  const profile = data[0];
+  console.log('✅ Fetched public profile data (safe fields only):', profile);
+  return profile as PublicProfileData;
 };
 
 export const fetchCandidateResumes = async (userId: string): Promise<Resume[]> => {

@@ -22,13 +22,13 @@ export const AIAnalysisStep = ({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-blue-500" />
-            AI Keyword Analysis & Resume Tailoring
-          </CardTitle>
-          <CardDescription>
-            Our advanced AI will extract key job requirements and strategically integrate them into your resume
-          </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-6 w-6 text-blue-500" />
+                Professional Resume Enhancement
+              </CardTitle>
+              <CardDescription>
+                Create a polished, ATS-friendly resume with natural keyword integration
+              </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Summary of inputs */}
@@ -59,61 +59,60 @@ export const AIAnalysisStep = ({
             </div>
           </div>
 
-          {/* Enhanced AI capabilities */}
-          <div className="space-y-4">
-            <h4 className="font-medium flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-500" />
-              Advanced AI Processing:
-            </h4>
-            <div className="grid gap-3">
-              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <Sparkles className="h-5 w-5 text-blue-500 mt-0.5" />
-                <div>
-                  <div className="font-medium text-blue-900">Intelligent Keyword Extraction</div>
-                  <div className="text-sm text-blue-700">
-                    Automatically identifies technical skills, soft skills, and industry terms from the job description
+            <div className="space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Professional Resume Enhancement:
+              </h4>
+              <div className="grid gap-3">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <Sparkles className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-blue-900">Intelligent Content Analysis</div>
+                    <div className="text-sm text-blue-700">
+                      Analyzes your experience and achievements to create compelling, professional content
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <Target className="h-5 w-5 text-green-500 mt-0.5" />
-                <div>
-                  <div className="font-medium text-green-900">Strategic Keyword Integration</div>
-                  <div className="text-sm text-green-700">
-                    Naturally weaves job-specific keywords throughout your resume while maintaining authenticity
+                
+                <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <Target className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-green-900">Natural Keyword Integration</div>
+                    <div className="text-sm text-green-700">
+                      Seamlessly incorporates job requirements into your experience without artificial stuffing
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <Award className="h-5 w-5 text-purple-500 mt-0.5" />
-                <div>
-                  <div className="font-medium text-purple-900">ATS Optimization</div>
-                  <div className="text-sm text-purple-700">
-                    Ensures your resume passes Applicant Tracking Systems with optimal keyword density and placement
+                
+                <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <Award className="h-5 w-5 text-purple-500 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-purple-900">Professional Structure & Formatting</div>
+                    <div className="text-sm text-purple-700">
+                      Creates clean, ATS-friendly layout with proper sections and professional language
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <CheckCircle className="h-5 w-5 text-orange-500 mt-0.5" />
-                <div>
-                  <div className="font-medium text-orange-900">3-Sentence Career Profile</div>
-                  <div className="text-sm text-orange-700">
-                    Creates a compelling summary highlighting your value proposition with job-specific terminology
+                <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <CheckCircle className="h-5 w-5 text-orange-500 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-orange-900">Achievement-Focused Writing</div>
+                    <div className="text-sm text-orange-700">
+                      Transforms job duties into impact-driven bullet points with quantifiable results
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Job requirements preview with keyword focus */}
+          {/* Professional requirements preview */}
           {selectedJob.requirements && selectedJob.requirements.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-medium flex items-center gap-2">
                 <Target className="h-4 w-4" />
-                Key Job Requirements to Target:
+                Key Job Requirements to Address:
               </h4>
               <div className="bg-gray-50 p-4 rounded-lg border">
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -129,19 +128,19 @@ export const AIAnalysisStep = ({
                   )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  <strong>AI Focus:</strong> Extract and integrate relevant keywords from these requirements 
-                  throughout your resume to maximize ATS compatibility.
+                  <strong>Professional Approach:</strong> Our AI will analyze these requirements and naturally 
+                  incorporate relevant qualifications into your professional experience and summary.
                 </div>
               </div>
             </div>
           )}
 
-          {/* Tech stack keyword highlighting */}
+          {/* Tech stack professional integration */}
           {selectedJob.techStack && selectedJob.techStack.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-medium flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Technical Keywords to Integrate:
+                Technical Skills to Highlight:
               </h4>
               <div className="flex flex-wrap gap-2">
                 {selectedJob.techStack.slice(0, 10).map((tech: string, index: number) => (
@@ -168,18 +167,18 @@ export const AIAnalysisStep = ({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Extracting Keywords & Tailoring Resume...
+                  Creating Professional, ATS-Optimized Resume...
                 </>
               ) : (
                 <>
                   <Brain className="h-4 w-4 mr-2" />
-                  Start AI Keyword Analysis & Tailoring
+                  Start Professional Resume Enhancement
                 </>
               )}
             </Button>
             {loading && (
               <p className="text-sm text-gray-600 text-center mt-2">
-                AI is analyzing job requirements and integrating relevant keywords into your resume...
+                AI is analyzing your experience and creating a professional, targeted resume...
               </p>
             )}
           </div>

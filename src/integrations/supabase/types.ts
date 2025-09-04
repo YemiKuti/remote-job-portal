@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       applications: {
@@ -1168,70 +1173,70 @@ export type Database = {
     Functions: {
       admin_approve_job: {
         Args: {
-          job_id: string
           approval_reason?: string
+          job_id: string
           review_notes?: string
         }
         Returns: boolean
       }
       admin_batch_approve_jobs: {
-        Args: { job_ids: string[]; approval_reason?: string }
+        Args: { approval_reason?: string; job_ids: string[] }
         Returns: {
+          error_message: string
           job_id: string
           success: boolean
-          error_message: string
         }[]
       }
       admin_create_company: {
         Args: {
-          company_name: string
           company_description?: string
-          company_industry?: string
-          company_website?: string
-          company_logo_url?: string
-          company_location?: string
-          company_size?: string
-          company_founded_year?: number
           company_email?: string
-          company_phone?: string
+          company_founded_year?: number
+          company_industry?: string
           company_linkedin_url?: string
+          company_location?: string
+          company_logo_url?: string
+          company_name: string
+          company_phone?: string
+          company_size?: string
           company_twitter_url?: string
+          company_website?: string
         }
         Returns: string
       }
       admin_create_job: {
         Args: {
-          job_title: string
-          job_company: string
-          job_location: string
-          job_description: string
-          job_requirements: string[]
-          job_employment_type: string
-          job_experience_level: string
-          job_salary_min?: number
-          job_salary_max?: number
-          job_salary_currency?: string
-          job_tech_stack?: string[]
-          job_visa_sponsorship?: boolean
-          job_remote?: boolean
-          job_company_size?: string
           job_application_deadline?: string
-          job_logo?: string
-          job_status?: string
           job_application_type?: string
           job_application_value?: string
+          job_company: string
+          job_company_size?: string
+          job_description: string
           job_employer_id?: string
+          job_employment_type: string
+          job_experience_level: string
+          job_location: string
+          job_logo?: string
+          job_remote?: boolean
+          job_requirements: string[]
+          job_salary_currency?: string
+          job_salary_max?: number
+          job_salary_min?: number
           job_sponsored?: boolean
+          job_status?: string
+          job_tech_stack?: string[]
+          job_title: string
+          job_visa_sponsorship?: boolean
         }
         Returns: string
       }
       admin_create_user: {
         Args: {
           user_email: string
-          user_password: string
           user_full_name?: string
-          user_username?: string
+          user_password: string
           user_role?: string
+          user_username?: string
         }
         Returns: string
       }
@@ -1246,44 +1251,44 @@ export type Database = {
       admin_get_job: {
         Args: { job_id: string }
         Returns: {
-          id: string
-          title: string
-          company: string
-          location: string
-          description: string
-          requirements: string[]
-          salary_min: number
-          salary_max: number
-          salary_currency: string
-          employment_type: string
-          experience_level: string
-          tech_stack: string[]
-          visa_sponsorship: boolean
-          remote: boolean
-          company_size: string
           application_deadline: string
-          logo: string
-          status: string
           application_type: string
           application_value: string
-          employer_id: string
-          sponsored: boolean
+          company: string
+          company_size: string
           created_at: string
+          description: string
+          employer_id: string
+          employment_type: string
+          experience_level: string
+          id: string
+          location: string
+          logo: string
+          remote: boolean
+          requirements: string[]
+          salary_currency: string
+          salary_max: number
+          salary_min: number
+          sponsored: boolean
+          status: string
+          tech_stack: string[]
+          title: string
           updated_at: string
+          visa_sponsorship: boolean
         }[]
       }
       admin_get_job_approval_history: {
         Args: { job_id: string }
         Returns: {
-          id: string
           action: string
-          performed_by: string
-          performed_at: string
-          reason: string
-          previous_status: string
+          id: string
           new_status: string
           notes: string
+          performed_at: string
+          performed_by: string
           performer_name: string
+          previous_status: string
+          reason: string
         }[]
       }
       admin_reject_job: {
@@ -1296,46 +1301,46 @@ export type Database = {
       }
       admin_update_company: {
         Args: {
-          company_id: string
-          company_name: string
           company_description?: string
-          company_industry?: string
-          company_website?: string
-          company_logo_url?: string
-          company_location?: string
-          company_size?: string
-          company_founded_year?: number
           company_email?: string
-          company_phone?: string
+          company_founded_year?: number
+          company_id: string
+          company_industry?: string
           company_linkedin_url?: string
-          company_twitter_url?: string
+          company_location?: string
+          company_logo_url?: string
+          company_name: string
+          company_phone?: string
+          company_size?: string
           company_status?: string
+          company_twitter_url?: string
+          company_website?: string
         }
         Returns: boolean
       }
       admin_update_job: {
         Args: {
-          job_id: string
-          job_title: string
-          job_company: string
-          job_location: string
-          job_description: string
-          job_requirements: string[]
-          job_employment_type: string
-          job_experience_level: string
-          job_salary_min?: number
-          job_salary_max?: number
-          job_salary_currency?: string
-          job_tech_stack?: string[]
-          job_visa_sponsorship?: boolean
-          job_remote?: boolean
-          job_company_size?: string
           job_application_deadline?: string
-          job_logo?: string
-          job_status?: string
           job_application_type?: string
           job_application_value?: string
+          job_company: string
+          job_company_size?: string
+          job_description: string
+          job_employment_type: string
+          job_experience_level: string
+          job_id: string
+          job_location: string
+          job_logo?: string
+          job_remote?: boolean
+          job_requirements: string[]
+          job_salary_currency?: string
+          job_salary_max?: number
+          job_salary_min?: number
           job_sponsored?: boolean
+          job_status?: string
+          job_tech_stack?: string[]
+          job_title: string
+          job_visa_sponsorship?: boolean
         }
         Returns: boolean
       }
@@ -1344,7 +1349,7 @@ export type Database = {
         Returns: boolean
       }
       admin_update_user_role: {
-        Args: { target_user_id: string; new_role: string }
+        Args: { new_role: string; target_user_id: string }
         Returns: boolean
       }
       expire_old_jobs: {
@@ -1354,8 +1359,8 @@ export type Database = {
       find_or_create_conversation: {
         Args: {
           user1_id: string
-          user2_id: string
           user1_role?: string
+          user2_id: string
           user2_role?: string
         }
         Returns: string
@@ -1367,85 +1372,98 @@ export type Database = {
       get_admin_companies: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          name: string
-          description: string
-          industry: string
-          website: string
-          logo_url: string
-          location: string
           company_size: string
-          founded_year: number
-          email: string
-          phone: string
-          linkedin_url: string
-          twitter_url: string
-          status: string
           created_at: string
-          updated_at: string
           created_by: string
+          description: string
+          email: string
+          founded_year: number
+          id: string
+          industry: string
+          linkedin_url: string
+          location: string
+          logo_url: string
+          name: string
+          phone: string
+          status: string
+          twitter_url: string
+          updated_at: string
+          website: string
         }[]
       }
       get_admin_jobs: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          title: string
-          company: string
-          location: string
-          created_at: string
-          status: string
           applications: number
+          company: string
+          created_at: string
           description: string
-          requirements: string[]
-          salary_min: number
-          salary_max: number
+          employer_id: string
           employment_type: string
           experience_level: string
-          tech_stack: string[]
-          employer_id: string
+          id: string
           is_featured: boolean
+          location: string
+          requirements: string[]
+          salary_max: number
+          salary_min: number
+          status: string
+          tech_stack: string[]
+          title: string
           views: number
         }[]
       }
       get_admin_users: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          username: string
-          full_name: string
           avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
           role: string
           status: string
-          created_at: string
-          last_sign_in_at: string
+          username: string
         }[]
       }
       get_current_user_auth_status: {
         Args: Record<PropertyKey, never>
         Returns: {
-          user_id: string
-          is_authenticated: boolean
-          is_admin: boolean
           email: string
+          is_admin: boolean
+          is_authenticated: boolean
+          user_id: string
         }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_public_profile_info: {
+        Args: { profile_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          experience: number
+          full_name: string
+          id: string
+          skills: string
+          title: string
+          username: string
+        }[]
+      }
       get_user_details: {
         Args: { user_id: string }
         Returns: {
-          id: string
           email: string
+          id: string
         }[]
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -1468,17 +1486,17 @@ export type Database = {
       send_message: {
         Args:
           | {
+              attachment_name?: string
+              attachment_size?: number
+              attachment_url?: string
               conversation_id: string
-              recipient_id: string
               message_content: string
+              recipient_id: string
             }
           | {
               conversation_id: string
-              recipient_id: string
               message_content: string
-              attachment_url?: string
-              attachment_name?: string
-              attachment_size?: number
+              recipient_id: string
             }
         Returns: string
       }
@@ -1492,21 +1510,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1524,14 +1546,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1547,14 +1571,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1570,14 +1596,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1585,14 +1613,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

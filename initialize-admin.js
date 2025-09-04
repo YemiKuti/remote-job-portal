@@ -2,6 +2,8 @@
 // Run this in the browser console on your site
 
 const initializeAdmin = async () => {
+  console.log('🚀 Initializing admin user for yemikuti@gmail.com...');
+  
   try {
     const response = await fetch('https://mmbrvcndxhipaoxysvwr.supabase.co/functions/v1/initialize-admin', {
       method: 'POST',

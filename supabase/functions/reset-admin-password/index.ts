@@ -43,29 +43,23 @@ serve(async (req) => {
       throw new Error('Password must be at least 8 characters long');
     }
 
-    // First, verify the user exists and is an admin
-    const { data: adminUser } = await supabaseAdmin
-      .from('user_roles')
-      .select(`
-        user_id,
-        role,
-        profiles!inner(full_name)
-      `)
-      .eq('role', 'admin')
-      .single();
+    // Find the user by email directly from auth.users
+    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+    const targetUser = userList.users.find(u => u.email === email);
 
-    if (!adminUser) {
-      throw new Error('Admin user not found');
+    if (!targetUser) {
+      throw new Error('User not found');
     }
 
-    console.log(`👤 Found admin user: ${adminUser.user_id}`);
+    console.log(`👤 Found user: ${targetUser.id}`);
 
     // Reset the password using admin API
     const { data: updateResult, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      adminUser.user_id,
+      targetUser.id,
       { 
         password: newPassword,
-        email_confirm: true // Ensure email is confirmed
+        email_confirm: true, // Ensure email is confirmed
+        banned_until: null // Remove any potential ban
       }
     );
 
@@ -80,7 +74,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'Admin password reset successfully',
-        user_id: adminUser.user_id
+        user_id: targetUser.id
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

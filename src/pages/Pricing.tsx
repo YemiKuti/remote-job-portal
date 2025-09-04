@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { useSupabaseClient } from "@/hooks/useSupabase";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { CurrencyDisplay } from "@/components/CurrencyDisplay";
+import { useCurrency, supportedCurrencies } from "@/contexts/CurrencyContext";
 
 // Common features shared across all plans
 const COMMON_FEATURES = [
@@ -53,6 +55,13 @@ const Pricing = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const supabase = useSupabaseClient();
   const navigate = useNavigate();
+  const { convertAmount, selectedCurrency } = useCurrency();
+  
+  // Create currency symbol mapping
+  const getCurrencySymbol = (currencyCode: string) => {
+    const currency = supportedCurrencies.find(c => c.code === currencyCode);
+    return currency?.symbol || currencyCode;
+  };
   
   // Check if user is authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -120,9 +129,12 @@ const Pricing = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
               Choose Your Plan
             </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
+            <p className="text-xl text-white/90 max-w-2xl mx-auto mb-4">
               Get access to more jobs and advanced features with our subscription plans
             </p>
+            <div className="flex justify-center">
+              <CurrencyDisplay variant="compact" />
+            </div>
           </div>
         </div>
         
@@ -202,13 +214,17 @@ const Pricing = () => {
             <div className="grid md:grid-cols-3 gap-8 justify-center">
               {/* Single Job Package */}
               <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
-                <div className="p-6 border-b">
-                  <h3 className="text-2xl font-bold">Single Job</h3>
-                  <div className="mt-4">
-                    <div className="text-3xl font-bold">£20<span className="text-sm text-gray-500 font-normal">/job</span></div>
+                  <div className="p-6 border-b">
+                    <h3 className="text-2xl font-bold">Single Job</h3>
+                    <div className="mt-4">
+                      <div className="text-3xl font-bold">
+                        {getCurrencySymbol(selectedCurrency)}
+                        {Math.round(convertAmount(20, 'GBP', selectedCurrency))}
+                        <span className="text-sm text-gray-500 font-normal">/job</span>
+                      </div>
+                    </div>
+                    <p className="text-gray-500 mt-2">Perfect for occasional hiring</p>
                   </div>
-                  <p className="text-gray-500 mt-2">Perfect for occasional hiring</p>
-                </div>
                 
                 <div className="p-6">
                   <ul className="space-y-4">
@@ -222,7 +238,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(20, "GBP", "Single")}
+                    onClick={() => handleSubscribe(Math.round(convertAmount(20, 'GBP', selectedCurrency)), selectedCurrency, "Single")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}
@@ -233,14 +249,22 @@ const Pricing = () => {
               {/* 5 Jobs Package */}
               <div className="border-2 border-job-green rounded-lg overflow-hidden shadow-lg bg-white relative">
                 <div className="absolute -top-3 right-6 bg-job-green text-white text-xs font-bold px-3 py-1 rounded">POPULAR</div>
-                <div className="p-6 border-b">
-                  <h3 className="text-2xl font-bold">5 Jobs Package</h3>
-                  <div className="mt-4">
-                    <div className="text-3xl font-bold">£70<span className="text-sm text-gray-500 font-normal">/package</span></div>
-                    <div className="text-sm text-green-600 mt-1">£14 per job (Save £30)</div>
+                  <div className="p-6 border-b">
+                    <h3 className="text-2xl font-bold">5 Jobs Package</h3>
+                    <div className="mt-4">
+                      <div className="text-3xl font-bold">
+                        {getCurrencySymbol(selectedCurrency)}
+                        {Math.round(convertAmount(70, 'GBP', selectedCurrency))}
+                        <span className="text-sm text-gray-500 font-normal">/package</span>
+                      </div>
+                      <div className="text-sm text-green-600 mt-1">
+                        {getCurrencySymbol(selectedCurrency)}
+                        {Math.round(convertAmount(14, 'GBP', selectedCurrency))} per job (Save {getCurrencySymbol(selectedCurrency)}
+                        {Math.round(convertAmount(30, 'GBP', selectedCurrency))})
+                      </div>
+                    </div>
+                    <p className="text-gray-500 mt-2">Best for growing companies</p>
                   </div>
-                  <p className="text-gray-500 mt-2">Best for growing companies</p>
-                </div>
                 
                 <div className="p-6">
                   <ul className="space-y-4">
@@ -254,7 +278,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(70, "GBP", "Package5")}
+                    onClick={() => handleSubscribe(Math.round(convertAmount(70, 'GBP', selectedCurrency)), selectedCurrency, "Package5")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}
@@ -267,8 +291,16 @@ const Pricing = () => {
                 <div className="p-6 border-b">
                   <h3 className="text-2xl font-bold">10 Jobs Package</h3>
                   <div className="mt-4">
-                    <div className="text-3xl font-bold">£150<span className="text-sm text-gray-500 font-normal">/package</span></div>
-                    <div className="text-sm text-green-600 mt-1">£15 per job (Save £50)</div>
+                    <div className="text-3xl font-bold">
+                      {getCurrencySymbol(selectedCurrency)}
+                      {Math.round(convertAmount(150, 'GBP', selectedCurrency))}
+                      <span className="text-sm text-gray-500 font-normal">/package</span>
+                    </div>
+                    <div className="text-sm text-green-600 mt-1">
+                      {getCurrencySymbol(selectedCurrency)}
+                      {Math.round(convertAmount(15, 'GBP', selectedCurrency))} per job (Save {getCurrencySymbol(selectedCurrency)}
+                      {Math.round(convertAmount(50, 'GBP', selectedCurrency))})
+                    </div>
                   </div>
                   <p className="text-gray-500 mt-2">For active recruiters</p>
                 </div>
@@ -285,7 +317,7 @@ const Pricing = () => {
                   
                   <button 
                     className="w-full mt-8 bg-job-green text-white py-3 rounded-md font-medium hover:bg-job-darkGreen transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => handleSubscribe(150, "GBP", "Package10")}
+                    onClick={() => handleSubscribe(Math.round(convertAmount(150, 'GBP', selectedCurrency)), selectedCurrency, "Package10")}
                     disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Get Started"}

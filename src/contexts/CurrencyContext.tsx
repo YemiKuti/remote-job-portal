@@ -38,12 +38,21 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 // Country to currency mapping for auto-detection
 const countryCurrencyMap: { [key: string]: string } = {
-  'US': 'USD', 'GB': 'GBP', 'UK': 'GBP', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
-  'NG': 'NGN', 'KE': 'KES', 'ZA': 'ZAR', 'GH': 'GHS', 'CA': 'CAD'
+  // Primary regions as specified
+  'US': 'USD', 
+  'GB': 'GBP', 'UK': 'GBP',
+  'NG': 'NGN',
+  // EU countries → EUR
+  'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR', 'NL': 'EUR', 'BE': 'EUR', 
+  'AT': 'EUR', 'PT': 'EUR', 'IE': 'EUR', 'FI': 'EUR', 'LU': 'EUR', 'EE': 'EUR',
+  'LV': 'EUR', 'LT': 'EUR', 'SI': 'EUR', 'SK': 'EUR', 'CY': 'EUR', 'MT': 'EUR',
+  'HR': 'EUR', 'GR': 'EUR',
+  // Other African countries
+  'KE': 'KES', 'ZA': 'ZAR', 'GH': 'GHS', 'CA': 'CAD'
 };
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [selectedCurrency, setSelectedCurrencyState] = useState<string>('USD');
+  const [selectedCurrency, setSelectedCurrencyState] = useState<string>('GBP');
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,16 +61,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   // Auto-detect user's currency based on location
   const detectUserCurrency = async () => {
     try {
-      // First try to get from localStorage
-      const savedCurrency = localStorage.getItem('preferred_currency');
-      if (savedCurrency && supportedCurrencies.find(c => c.code === savedCurrency)) {
-        setSelectedCurrencyState(savedCurrency);
-        return;
-      }
-
-      // Try to detect via IP geolocation
+      // Try to detect via IP geolocation immediately
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       
       const response = await fetch('https://ipapi.co/json/', { 
         signal: controller.signal
@@ -72,18 +74,19 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         const countryCode = data.country_code;
-        const detectedCur = countryCurrencyMap[countryCode] || 'USD';
+        const detectedCur = countryCurrencyMap[countryCode] || 'GBP';
         
         setDetectedCurrency(detectedCur);
+        setSelectedCurrencyState(detectedCur);
         
-        // Only auto-set if user hasn't manually selected before
-        if (!localStorage.getItem('user_selected_currency')) {
-          setSelectedCurrencyState(detectedCur);
-        }
+        console.log(`Currency auto-detected: ${countryCode} → ${detectedCur}`);
+      } else {
+        throw new Error('Failed to fetch location');
       }
     } catch (error) {
-      console.log('Currency detection failed, using USD default');
-      setDetectedCurrency('USD');
+      console.log('Currency detection failed, using GBP default');
+      setDetectedCurrency('GBP');
+      setSelectedCurrencyState('GBP');
     }
   };
 
@@ -138,8 +141,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const setSelectedCurrency = (currency: string) => {
     setSelectedCurrencyState(currency);
-    localStorage.setItem('preferred_currency', currency);
-    localStorage.setItem('user_selected_currency', 'true');
+    // Remove localStorage manipulation - we want automatic detection only
   };
 
   const convertAmount = (amount: number, fromCurrency: string, toCurrency?: string): number => {

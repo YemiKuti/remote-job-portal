@@ -1,9 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { currencies } from "@/data/jobs";
+import { useCurrency, supportedCurrencies } from "@/contexts/CurrencyContext";
 
 interface PricingCardProps {
   title: string;
@@ -14,17 +13,6 @@ interface PricingCardProps {
   onSubscribe: (price: number, currency: string) => void;
 }
 
-const exchangeRates: { [key: string]: number } = {
-  USD: 1,
-  EUR: 0.85,
-  GBP: 0.75,
-  JPY: 110.34,
-  CAD: 1.25,
-  AUD: 1.35,
-  INR: 74.5,
-  NGN: 410.5,
-};
-
 const PricingCard = ({ 
   title, 
   price, 
@@ -33,15 +21,20 @@ const PricingCard = ({
   features,
   onSubscribe 
 }: PricingCardProps) => {
-  const [currency, setCurrency] = useState(defaultCurrency);
+  const { selectedCurrency, convertAmount } = useCurrency();
   const [localPrice, setLocalPrice] = useState(price);
   
+  // Create currency symbol mapping
+  const getCurrencySymbol = (currencyCode: string) => {
+    const currency = supportedCurrencies.find(c => c.code === currencyCode);
+    return currency?.symbol || currencyCode;
+  };
+  
   useEffect(() => {
-    // Convert price based on selected currency
-    const basePrice = price / exchangeRates[defaultCurrency];
-    const convertedPrice = basePrice * exchangeRates[currency];
-    setLocalPrice(Math.round(convertedPrice));
-  }, [currency, price, defaultCurrency]);
+    // Convert price using the currency context
+    const convertedPrice = convertAmount(price, defaultCurrency, selectedCurrency);
+    setLocalPrice(convertedPrice);
+  }, [selectedCurrency, price, defaultCurrency, convertAmount]);
 
   // Determine the billing period text based on the plan title
   const getBillingPeriod = () => {
@@ -61,26 +54,12 @@ const PricingCard = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <div className="text-3xl font-bold flex items-center">
-              {currencies[currency]?.symbol || currency}
-              {localPrice}
-            </div>
-            <div className="text-sm text-gray-500">{getBillingPeriod()}</div>
+        <div className="text-center mb-6">
+          <div className="text-3xl font-bold flex items-center justify-center">
+            {getCurrencySymbol(selectedCurrency)}
+            {localPrice}
           </div>
-          <Select value={currency} onValueChange={setCurrency}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Currency" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(currencies).map(([code, { name }]) => (
-                <SelectItem key={code} value={code}>
-                  {code} - {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="text-sm text-gray-500">{getBillingPeriod()}</div>
         </div>
         <ul className="space-y-3">
           {features.map((feature, index) => (
@@ -96,7 +75,7 @@ const PricingCard = ({
       <CardFooter>
         <Button 
           className="w-full bg-job-green hover:bg-job-darkGreen" 
-          onClick={() => onSubscribe(localPrice, currency)}
+          onClick={() => onSubscribe(localPrice, selectedCurrency)}
         >
           Subscribe Now
         </Button>

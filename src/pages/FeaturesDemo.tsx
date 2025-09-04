@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CurrencySelector } from '@/components/CurrencySelector';
+import { CurrencyDisplay } from '@/components/CurrencyDisplay';
 import { CurrencyDemo } from '@/components/demo/CurrencyDemo';
 import { DemoCSVSamples } from '@/components/demo/DemoCSVSamples';
 import { 
@@ -129,7 +129,7 @@ export default function FeaturesDemo() {
               </div>
             </div>
             <div className="pt-2">
-              <CurrencySelector showRefresh={true} />
+              <CurrencyDisplay variant="default" showDetected={true} />
             </div>
           </CardContent>
         </Card>

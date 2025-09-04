@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CurrencySelector } from '@/components/CurrencySelector';
+import { CurrencyDisplay } from '@/components/CurrencyDisplay';
 import { CurrencyDemo } from '@/components/demo/CurrencyDemo';
 
 export default function CurrencyTestPage() {
@@ -13,8 +13,8 @@ export default function CurrencyTestPage() {
         <CardContent>
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Currency Selection</h3>
-              <CurrencySelector showRefresh={true} />
+              <h3 className="text-lg font-semibold mb-4">Auto-Detected Currency</h3>
+              <CurrencyDisplay variant="default" showDetected={true} />
             </div>
             
             <div>

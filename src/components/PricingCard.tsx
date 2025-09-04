@@ -10,7 +10,8 @@ interface PricingCardProps {
   currency: string;
   description: string;
   features: string[];
-  onSubscribe: (price: number, currency: string) => void;
+  plan: string;
+  onSubscribe: (price: number, currency: string, plan: string) => void;
 }
 
 const PricingCard = ({ 
@@ -19,6 +20,7 @@ const PricingCard = ({
   currency: defaultCurrency, 
   description, 
   features,
+  plan,
   onSubscribe 
 }: PricingCardProps) => {
   const { selectedCurrency, convertAmount } = useCurrency();
@@ -75,7 +77,7 @@ const PricingCard = ({
       <CardFooter>
         <Button 
           className="w-full bg-job-green hover:bg-job-darkGreen" 
-          onClick={() => onSubscribe(localPrice, selectedCurrency)}
+          onClick={() => onSubscribe(localPrice, selectedCurrency, plan)}
         >
           Subscribe Now
         </Button>

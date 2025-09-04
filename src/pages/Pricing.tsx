@@ -189,7 +189,8 @@ const Pricing = () => {
                 currency="GBP"
                 description="Perfect for job seekers"
                 features={COMMON_FEATURES}
-                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Monthly")}
+                plan="Monthly"
+                onSubscribe={handleSubscribe}
               />
               
               <PricingCard
@@ -198,7 +199,8 @@ const Pricing = () => {
                 currency="GBP"
                 description="Save with our 3-month plan"
                 features={COMMON_FEATURES}
-                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Quarterly")}
+                plan="Quarterly"
+                onSubscribe={handleSubscribe}
               />
               
               <PricingCard
@@ -207,7 +209,8 @@ const Pricing = () => {
                 currency="GBP"
                 description="Best value for long-term job seekers"
                 features={COMMON_FEATURES}
-                onSubscribe={(price, currency) => handleSubscribe(price, currency, "Annual")}
+                plan="Annual"
+                onSubscribe={handleSubscribe}
               />
             </div>
           ) : (

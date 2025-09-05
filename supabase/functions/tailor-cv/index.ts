@@ -319,79 +319,101 @@ const formatCandidateInfo = (candidateData: any, resumeContent: string): string 
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  
+  console.log(`🔄 [${requestId}] Starting CV tailoring request`);
+
   try {
-    const { resumeContent, jobDescription, jobTitle, companyName, candidateData } = await req.json()
+    // Add timeout for the entire request
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 90000); // 90 seconds
+    });
 
-    console.log('🔄 Processing CV tailoring request for:', jobTitle, 'at', companyName);
+    const processRequest = async () => {
+      let requestBody;
+      try {
+        requestBody = await req.json();
+      } catch (error) {
+        console.error(`❌ [${requestId}] Invalid JSON in request body:`, error);
+        throw new Error('Invalid JSON in request body');
+      }
 
-    if (!resumeContent || !jobDescription) {
-      return new Response(
-        JSON.stringify({ error: 'Resume content and job description are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+      const { resumeContent, jobDescription, jobTitle, companyName, candidateData } = requestBody;
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not configured');
-      return new Response(
-        JSON.stringify({ error: 'AI service not configured. Please contact support.' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+      console.log(`🔄 [${requestId}] Processing request for: ${jobTitle} at ${companyName}`);
+      console.log(`📊 [${requestId}] Input sizes - Resume: ${resumeContent?.length || 0} chars, Job Desc: ${jobDescription?.length || 0} chars`);
 
-    // Analyze job requirements comprehensively
-    const jobAnalysis = analyzeJobRequirements(jobDescription, jobTitle || '');
-    console.log('🎯 Job analysis:', jobAnalysis);
-    
-    // Analyze candidate's resume
-    const candidateAnalysis = analyzeResumeContent(resumeContent, candidateData);
-    console.log('📊 Candidate analysis:', candidateAnalysis);
-    
-    // Identify skill alignment and gaps
-    const skillAlignment = candidateAnalysis.currentSkills.filter(skill => 
-      jobAnalysis.essentialSkills.includes(skill) || jobAnalysis.preferredSkills.includes(skill)
-    );
-    const criticalGaps = jobAnalysis.essentialSkills.filter(skill => 
-      !candidateAnalysis.currentSkills.includes(skill)
-    ).slice(0, 5);
-    
-    console.log('✅ Skill alignment:', skillAlignment);
-    console.log('⚠️ Critical gaps:', criticalGaps);
-    
-    // Format candidate information
-    const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
-    
-    // Enhanced input validation
-    if (resumeContent.length < 100) {
-      return new Response(
-        JSON.stringify({ error: 'Resume content appears too short. Please provide a more detailed resume with work experience and skills.' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+      // Enhanced input validation
+      if (!resumeContent || !jobDescription) {
+        throw new Error('Resume content and job description are required');
+      }
 
-    if (jobDescription.length < 50) {
-      return new Response(
-        JSON.stringify({ error: 'Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+      // Size validation to prevent memory issues
+      if (resumeContent.length > 50000) {
+        throw new Error('Resume content is too large. Please provide a resume under 50,000 characters.');
+      }
+
+      if (jobDescription.length > 20000) {
+        throw new Error('Job description is too large. Please provide a job description under 20,000 characters.');
+      }
+
+      // Content validation
+      if (resumeContent.length < 100) {
+        throw new Error('Resume content appears too short. Please provide a more detailed resume with work experience and skills.');
+      }
+
+      if (jobDescription.length < 50) {
+        throw new Error('Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.');
+      }
+
+      // Check for binary or invalid content
+      if (!/^[\x00-\x7F]*$/.test(resumeContent.substring(0, 1000))) {
+        console.log(`⚠️ [${requestId}] Resume contains non-ASCII characters, proceeding with caution`);
+      }
+
+      const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+      if (!openAIApiKey) {
+        console.error(`❌ [${requestId}] OpenAI API key not configured`);
+        throw new Error('AI service not configured. Please contact support.');
+      }
+
+      // Analyze job requirements comprehensively
+      console.log(`🎯 [${requestId}] Analyzing job requirements...`);
+      const jobAnalysis = analyzeJobRequirements(jobDescription, jobTitle || '');
+      console.log(`🎯 [${requestId}] Job analysis completed:`, {
+        essentialSkills: jobAnalysis.essentialSkills.length,
+        preferredSkills: jobAnalysis.preferredSkills.length,
+        experienceLevel: jobAnalysis.experienceLevel
+      });
+      
+      // Analyze candidate's resume
+      console.log(`📊 [${requestId}] Analyzing candidate resume...`);
+      const candidateAnalysis = analyzeResumeContent(resumeContent, candidateData);
+      console.log(`📊 [${requestId}] Candidate analysis completed:`, {
+        currentSkills: candidateAnalysis.currentSkills.length,
+        achievements: candidateAnalysis.achievements.length,
+        careerLevel: candidateAnalysis.careerLevel
+      });
+      
+      // Identify skill alignment and gaps
+      const skillAlignment = candidateAnalysis.currentSkills.filter(skill => 
+        jobAnalysis.essentialSkills.includes(skill) || jobAnalysis.preferredSkills.includes(skill)
+      );
+      const criticalGaps = jobAnalysis.essentialSkills.filter(skill => 
+        !candidateAnalysis.currentSkills.includes(skill)
+      ).slice(0, 5);
+      
+      console.log(`✅ [${requestId}] Skill alignment: ${skillAlignment.length} skills matched`);
+      console.log(`⚠️ [${requestId}] Critical gaps: ${criticalGaps.length} essential skills missing`);
+      
+      // Format candidate information
+      const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
     
     // Create professional AI prompt focused on natural language and structure
     const prompt = `You are a professional resume writer with expertise in ATS optimization and modern recruitment practices. Your goal is to create a polished, professional resume that naturally incorporates relevant keywords while prioritizing readability and impact.
@@ -481,66 +503,79 @@ ${jobDescription.substring(0, 1500)}
 
 CRITICAL: Create a complete, professionally structured resume that reads naturally while strategically incorporating relevant qualifications. Prioritize readability and authentic professional presentation over keyword density. Handle missing sections gracefully with professional placeholders.`;
 
-    console.log('🤖 Sending enhanced request to OpenAI...');
+      console.log(`🤖 [${requestId}] Sending request to OpenAI API...`);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional resume writer with 15+ years of experience helping candidates land their dream jobs. You specialize in creating polished, ATS-friendly resumes that naturally incorporate relevant keywords while maintaining excellent readability and professional presentation. You focus on achievements, impact, and clear value proposition rather than keyword stuffing.'
+      // Create OpenAI request with timeout
+      const openAITimeout = 60000; // 60 seconds for OpenAI
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), openAITimeout);
+
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 3500,
-        temperature: 0.3
-      }),
-    })
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: 'gpt-5-mini-2025-08-07', // Use newer, more efficient model
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a professional resume writer with 15+ years of experience helping candidates land their dream jobs. You specialize in creating polished, ATS-friendly resumes that naturally incorporate relevant keywords while maintaining excellent readability and professional presentation. You focus on achievements, impact, and clear value proposition rather than keyword stuffing.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            max_completion_tokens: 3500, // Use max_completion_tokens for newer models
+            // Note: temperature not supported for GPT-5 models
+          }),
+        })
 
-    if (!response.ok) {
-      const error = await response.json()
-      console.error('❌ OpenAI API error:', error)
-      
-      if (error.error?.code === 'rate_limit_exceeded') {
-        return new Response(
-          JSON.stringify({ error: 'AI service is currently busy. Please try again in a few moments.' }),
-          { 
-            status: 429, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        clearTimeout(timeoutId);
+
+        console.log(`📤 [${requestId}] OpenAI API response status: ${response.status}`);
+
+        if (!response.ok) {
+          let errorDetails;
+          try {
+            errorDetails = await response.json();
+          } catch {
+            errorDetails = { error: { message: `HTTP ${response.status}` } };
           }
-        )
+          
+          console.error(`❌ [${requestId}] OpenAI API error (${response.status}):`, errorDetails);
+          
+          if (response.status === 429 || errorDetails.error?.code === 'rate_limit_exceeded') {
+            throw new Error('AI service is currently busy. Please try again in a few moments.');
+          } else if (response.status >= 500) {
+            throw new Error('AI service is temporarily unavailable. Please try again later.');
+          } else {
+            throw new Error(`AI service error: ${errorDetails.error?.message || 'Unknown error'}`);
+          }
+        }
+
+        const aiResponse = await response.json();
+        const tailoredResume = aiResponse.choices[0]?.message?.content;
+
+        if (!tailoredResume) {
+          console.error(`❌ [${requestId}] No content in AI response:`, aiResponse);
+          throw new Error('AI service returned empty response');
+        }
+
+        console.log(`✅ [${requestId}] AI response received, length: ${tailoredResume.length} chars`);
+
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.error(`❌ [${requestId}] OpenAI request timed out after ${openAITimeout}ms`);
+          throw new Error('AI service request timed out. Please try again with a shorter resume or job description.');
+        }
+        throw fetchError;
       }
-      
-      return new Response(
-        JSON.stringify({ error: 'Failed to process resume with AI' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    const aiResponse = await response.json()
-    const tailoredResume = aiResponse.choices[0]?.message?.content
-
-    if (!tailoredResume) {
-      return new Response(
-        JSON.stringify({ error: 'No response from AI' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
 
     // Professional resume quality scoring with enhanced error handling
     const resumeText = tailoredResume.toLowerCase();
@@ -608,12 +643,13 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
     
     const finalScore = Math.min(96, Math.max(72, skillCoverageScore + structureScore + 10 + missingElementsPenalty));
 
-    console.log('✅ Professional resume created successfully. Quality Score:', finalScore);
-    console.log('📊 Professional assessment:', {
-      essentialSkills: `${essentialSkillMatches}/${jobAnalysis.essentialSkills.length}`,
-      preferredSkills: `${preferredSkillMatches}/${jobAnalysis.preferredSkills.length}`,
-      structureElements: structureScore
-    });
+      console.log(`✅ [${requestId}] Resume created successfully. Quality Score: ${finalScore}%`);
+      console.log(`📊 [${requestId}] Assessment:`, {
+        essentialSkills: `${essentialSkillMatches}/${jobAnalysis.essentialSkills.length}`,
+        preferredSkills: `${preferredSkillMatches}/${jobAnalysis.preferredSkills.length}`,
+        structureScore: structureScore,
+        processingTime: `${Date.now() - startTime}ms`
+      });
 
     // Generate quality recommendations
     const recommendations: string[] = [
@@ -640,10 +676,13 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
     
     recommendations.push(`✅ Tailored for ${jobAnalysis.experienceLevel} ${jobTitle} role`);
 
-    return new Response(
-      JSON.stringify({
-        tailoredResume,
-        score: finalScore,
+      const duration = Date.now() - startTime;
+      console.log(`🎉 [${requestId}] Request completed successfully in ${duration}ms`);
+
+      return new Response(
+        JSON.stringify({
+          tailoredResume,
+          score: finalScore,
         analysis: {
           skillAlignment: {
             essentialSkillsMatched: essentialSkillMatches,
@@ -682,23 +721,52 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
             !hasActionVerbs ? 'Use stronger action verbs to demonstrate impact' : null
           ].filter(Boolean) : []
         }
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    };
+
+    // Race between processing and timeout
+    return await Promise.race([processRequest(), timeoutPromise]);
 
   } catch (error) {
-    console.error('❌ Error in tailor-cv function:', error)
+    const duration = Date.now() - startTime;
+    console.error(`❌ [${requestId}] Error after ${duration}ms:`, error.message);
+    
+    // Determine appropriate status code and user-friendly message
+    let statusCode = 500;
+    let userMessage = 'An unexpected error occurred while processing your request.';
+    
+    if (error.message.includes('timeout')) {
+      statusCode = 408;
+      userMessage = 'Request timed out. Please try again with a shorter resume or job description.';
+    } else if (error.message.includes('too large') || error.message.includes('too short')) {
+      statusCode = 400;
+      userMessage = error.message;
+    } else if (error.message.includes('required') || error.message.includes('Invalid JSON')) {
+      statusCode = 400;
+      userMessage = error.message;
+    } else if (error.message.includes('AI service')) {
+      statusCode = 502;
+      userMessage = error.message;
+    } else if (error.message.includes('rate_limit') || error.message.includes('busy')) {
+      statusCode = 429;
+      userMessage = error.message;
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message 
+        error: userMessage,
+        requestId: requestId,
+        // Only include technical details in development
+        ...(Deno.env.get('ENVIRONMENT') !== 'production' && { details: error.message })
       }),
       { 
-        status: 500, 
+        status: statusCode, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
-    )
+    );
   }
 })

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring E2E Test Runner</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 5px;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #007bff; }
+        
+        #console {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 20px 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-pending { background: #ffc107; }
+        .status-running { background: #007bff; animation: pulse 1.5s infinite; }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .test-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+        .test-card h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .results-table th,
+        .results-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 CV Tailoring Tool - E2E Test Runner</h1>
+            <p>Comprehensive testing suite for the AI-powered CV tailoring functionality</p>
+        </div>
+        
+        <div class="content">
+            <!-- Setup Section -->
+            <div class="test-section">
+                <h3>📋 Test Setup & Authentication</h3>
+                <p>Before running tests, ensure you're signed in and have proper permissions.</p>
+                
+                <div class="test-grid">
+                    <div class="test-card">
+                        <h4>🔐 Authentication Status</h4>
+                        <div id="auth-status">
+                            <span class="status-indicator status-pending"></span>
+                            <span>Checking authentication...</span>
+                        </div>
+                        <button class="button" onclick="checkAuth()">Check Auth Status</button>
+                    </div>
+                    
+                    <div class="test-card">
+                        <h4>👤 Test Profile Setup</h4>
+                        <div id="profile-status">
+                            <span class="status-indicator status-pending"></span>
+                            <span>Profile not created</span>
+                        </div>
+                        <button class="button" onclick="setupProfile()">Setup Test Profile</button>
+                        <button class="button" onclick="cleanupProfile()">Cleanup Test Data</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Test Execution Section -->
+            <div class="test-section">
+                <h3>🚀 Test Execution</h3>
+                <p>Run the complete end-to-end test suite for CV tailoring functionality.</p>
+                
+                <div class="test-grid">
+                    <div class="test-card">
+                        <h4>✅ Valid Input Tests</h4>
+                        <ul>
+                            <li>Marketing CV → Marketing Job</li>
+                            <li>Data Science CV → Analytics Job</li>
+                            <li>Generic CV → Generic Job</li>
+                        </ul>
+                        <button class="button" onclick="runValidTests()">Run Valid Tests</button>
+                    </div>
+                    
+                    <div class="test-card">
+                        <h4>🚨 Error Handling Tests</h4>
+                        <ul>
+                            <li>Malformed/Binary Content</li>
+                            <li>Empty Input Validation</li>
+                            <li>Size Limit Testing</li>
+                        </ul>
+                        <button class="button" onclick="runErrorTests()">Run Error Tests</button>
+                    </div>
+                    
+                    <div class="test-card">
+                        <h4>🎯 Complete Test Suite</h4>
+                        <p>Run all tests and generate comprehensive report</p>
+                        <button class="button" id="run-all-btn" onclick="runAllTests()">Run All E2E Tests</button>
+                        <button class="button" onclick="generateReport()">Generate Report</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="test-section">
+                <h3>📊 Test Results</h3>
+                <div id="test-summary" style="margin: 20px 0;">
+                    <p class="info">Test results will appear here after execution</p>
+                </div>
+                
+                <table class="results-table" id="results-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Test Name</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                            <th>Score</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body"></tbody>
+                </table>
+            </div>
+            
+            <!-- Console Output -->
+            <div class="test-section">
+                <h3>💻 Console Output</h3>
+                <div id="console"></div>
+                <button class="button" onclick="clearConsole()">Clear Console</button>
+                <button class="button" onclick="downloadLogs()">Download Logs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Supabase (assuming it's available globally) -->
+    <script>
+        // Global variables
+        let testResults = [];
+        let testData = null;
+        
+        // Console logging
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function logToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const consoleEl = document.getElementById('console');
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffd93d' : '#00ff00';
+            consoleEl.innerHTML += `<span style="color: ${color};">[${timestamp}] ${message}</span>\n`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Also log to browser console
+            if (type === 'error') {
+                originalError(message);
+            } else {
+                originalLog(message);
+            }
+        }
+        
+        console.log = (message) => logToConsole(message, 'log');
+        console.error = (message) => logToConsole(message, 'error');
+        console.warn = (message) => logToConsole(message, 'warn');
+        
+        // Authentication check
+        async function checkAuth() {
+            const statusEl = document.querySelector('#auth-status');
+            statusEl.innerHTML = '<span class="status-indicator status-running"></span><span>Checking...</span>';
+            
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const { data: { user }, error } = await supabase.auth.getUser();
+                
+                if (error) throw error;
+                
+                if (user) {
+                    statusEl.innerHTML = `<span class="status-indicator status-success"></span><span class="success">Authenticated as ${user.email}</span>`;
+                    logToConsole(`✅ Authenticated as: ${user.email}`);
+                    return true;
+                } else {
+                    statusEl.innerHTML = '<span class="status-indicator status-error"></span><span class="error">Not authenticated</span>';
+                    logToConsole('❌ Not authenticated - please sign in to the application');
+                    return false;
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<span class="status-indicator status-error"></span><span class="error">Auth error: ${error.message}</span>`;
+                logToConsole(`❌ Auth error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Setup test profile
+        async function setupProfile() {
+            const statusEl = document.querySelector('#profile-status');
+            statusEl.innerHTML = '<span class="status-indicator status-running"></span><span>Setting up profile...</span>';
+            
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) {
+                statusEl.innerHTML = '<span class="status-indicator status-error"></span><span class="error">Authentication required</span>';
+                return;
+            }
+            
+            try {
+                // Use the setup function from the loaded script
+                if (typeof setupTestCandidateProfile !== 'undefined') {
+                    testData = await setupTestCandidateProfile();
+                    if (testData) {
+                        statusEl.innerHTML = `<span class="status-indicator status-success"></span><span class="success">Profile created: ${testData.candidateData.personalInfo.name}</span>`;
+                        logToConsole('✅ Test profile setup complete');
+                    } else {
+                        throw new Error('Profile setup failed');
+                    }
+                } else {
+                    throw new Error('Profile setup function not available');
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<span class="status-indicator status-error"></span><span class="error">Setup failed: ${error.message}</span>`;
+                logToConsole(`❌ Profile setup failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Cleanup test data
+        async function cleanupProfile() {
+            if (!testData) {
+                logToConsole('⚠️ No test data to cleanup');
+                return;
+            }
+            
+            try {
+                if (typeof cleanupTestData !== 'undefined') {
+                    await cleanupTestData(testData);
+                    testData = null;
+                    document.querySelector('#profile-status').innerHTML = 
+                        '<span class="status-indicator status-pending"></span><span>Profile cleaned up</span>';
+                    logToConsole('✅ Test data cleaned up');
+                }
+            } catch (error) {
+                logToConsole(`❌ Cleanup failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Run valid tests
+        async function runValidTests() {
+            logToConsole('🧪 Running valid input tests...');
+            // Implementation would call the actual test functions
+            logToConsole('⚠️ Test implementation not loaded - please load the E2E test scripts first');
+        }
+        
+        // Run error tests  
+        async function runErrorTests() {
+            logToConsole('🚨 Running error handling tests...');
+            logToConsole('⚠️ Test implementation not loaded - please load the E2E test scripts first');
+        }
+        
+        // Run all tests
+        async function runAllTests() {
+            const button = document.getElementById('run-all-btn');
+            button.disabled = true;
+            button.textContent = 'Running Tests...';
+            
+            try {
+                logToConsole('🚀 Starting comprehensive E2E test suite...');
+                
+                // Check prerequisites
+                const isAuthenticated = await checkAuth();
+                if (!isAuthenticated) {
+                    throw new Error('Authentication required');
+                }
+                
+                if (typeof runE2ETests !== 'undefined') {
+                    testResults = await runE2ETests();
+                    updateResultsTable();
+                    logToConsole('🎉 All tests completed!');
+                } else {
+                    throw new Error('E2E test functions not available - please load the test scripts');
+                }
+                
+            } catch (error) {
+                logToConsole(`❌ Test execution failed: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Run All E2E Tests';
+            }
+        }
+        
+        // Update results table
+        function updateResultsTable() {
+            const table = document.getElementById('results-table');
+            const tbody = document.getElementById('results-body');
+            const summary = document.getElementById('test-summary');
+            
+            if (!testResults || testResults.length === 0) {
+                summary.innerHTML = '<p class="warning">No test results available</p>';
+                return;
+            }
+            
+            // Clear existing results
+            tbody.innerHTML = '';
+            
+            // Add results to table
+            testResults.forEach(result => {
+                const row = tbody.insertRow();
+                const statusClass = result.success ? 'success' : 'error';
+                const statusIcon = result.success ? '✅' : '❌';
+                
+                row.innerHTML = `
+                    <td>${result.testName}</td>
+                    <td><span class="${statusClass}">${statusIcon} ${result.status}</span></td>
+                    <td>${result.duration || 'N/A'}</td>
+                    <td>${result.score ? result.score + '%' : 'N/A'}</td>
+                    <td>${result.error || 'Success'}</td>
+                `;
+            });
+            
+            // Show table and update summary
+            table.style.display = 'table';
+            
+            const total = testResults.length;
+            const passed = testResults.filter(r => r.success).length;
+            const failed = total - passed;
+            
+            summary.innerHTML = `
+                <div class="test-grid">
+                    <div class="test-card">
+                        <h4>📈 Test Summary</h4>
+                        <p><strong>Total:</strong> ${total}</p>
+                        <p><strong>Passed:</strong> <span class="success">${passed}</span></p>
+                        <p><strong>Failed:</strong> <span class="error">${failed}</span></p>
+                        <p><strong>Success Rate:</strong> ${Math.round((passed/total)*100)}%</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Generate test report
+        function generateReport() {
+            if (!testResults || testResults.length === 0) {
+                logToConsole('⚠️ No test results to generate report from');
+                return;
+            }
+            
+            if (typeof generateTestReport !== 'undefined') {
+                const report = generateTestReport(testResults);
+                const blob = new Blob([report], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cv-tailoring-test-report-${new Date().toISOString().split('T')[0]}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                logToConsole('📄 Test report downloaded successfully');
+            } else {
+                logToConsole('⚠️ Report generator not available');
+            }
+        }
+        
+        // Clear console
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+        }
+        
+        // Download logs
+        function downloadLogs() {
+            const logs = document.getElementById('console').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cv-tailoring-test-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            logToConsole('💾 Logs downloaded successfully');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            logToConsole('🚀 CV Tailoring E2E Test Runner initialized');
+            logToConsole('📋 To get started:');
+            logToConsole('   1. Check authentication status');
+            logToConsole('   2. Setup test candidate profile');  
+            logToConsole('   3. Load the E2E test scripts in console');
+            logToConsole('   4. Run the comprehensive test suite');
+            
+            // Auto-check auth on load
+            setTimeout(checkAuth, 1000);
+        });
+        
+        // Load external scripts message
+        logToConsole('⚠️ Remember to load the following scripts in browser console:');
+        logToConsole('   • cv-tailoring-e2e-test.js');
+        logToConsole('   • test-candidate-profile-setup.js');
+        logToConsole('   • Or copy/paste the script contents');
+    </script>
+</body>
+</html>

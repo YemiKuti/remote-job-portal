@@ -386,6 +386,63 @@ export type Database = {
           },
         ]
       }
+      cv_tailoring_retry_queue: {
+        Row: {
+          candidate_data: Json | null
+          company_name: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          job_description: string
+          job_title: string | null
+          last_retry_at: string | null
+          max_retries: number | null
+          original_error: string | null
+          request_id: string
+          result_data: Json | null
+          resume_content: string
+          retry_count: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          candidate_data?: Json | null
+          company_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_description: string
+          job_title?: string | null
+          last_retry_at?: string | null
+          max_retries?: number | null
+          original_error?: string | null
+          request_id: string
+          result_data?: Json | null
+          resume_content: string
+          retry_count?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          candidate_data?: Json | null
+          company_name?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          job_description?: string
+          job_title?: string | null
+          last_retry_at?: string | null
+          max_retries?: number | null
+          original_error?: string | null
+          request_id?: string
+          result_data?: Json | null
+          resume_content?: string
+          retry_count?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cv_tailoring_sessions: {
         Row: {
           completed_at: string | null
@@ -1482,6 +1539,19 @@ export type Database = {
       mark_messages_seen: {
         Args: { conv_id: string }
         Returns: boolean
+      }
+      queue_cv_tailoring_retry: {
+        Args: {
+          p_candidate_data?: Json
+          p_company_name?: string
+          p_error_message?: string
+          p_job_description: string
+          p_job_title?: string
+          p_request_id: string
+          p_resume_content: string
+          p_user_id: string
+        }
+        Returns: string
       }
       reset_admin_password: {
         Args: { new_password: string; target_email: string }

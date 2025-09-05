@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { parseCSVFile, validateJobData, detectDuplicates, createJobsBatch, type ParsedJobData, type ValidationResult } from '@/utils/csvJobParser';
+import { validateJobData, detectDuplicates, createJobsBatch, type ParsedJobData, type ValidationResult } from '@/utils/csvJobParser';
+import { parseFile, generateHeaderMapping, convertToJobData, type ParsedFileData, type HeaderMapping } from '@/utils/enhancedFileParser';
 import { CSVSampleDownload } from './CSVSampleDownload';
+import { HeaderMappingStep } from './HeaderMappingStep';
+import { UploadPreviewTable } from './UploadPreviewTable';
 
 interface CSVUploadDialogProps {
   onJobsUploaded: () => void;
@@ -18,22 +20,25 @@ interface CSVUploadDialogProps {
 export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedJobData[]>([]);
+  const [fileData, setFileData] = useState<ParsedFileData | null>(null);
+  const [headerMapping, setHeaderMapping] = useState<HeaderMapping>({});
+  const [parsedJobs, setParsedJobs] = useState<ParsedJobData[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [duplicates, setDuplicates] = useState<Map<string, number[]>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [step, setStep] = useState<'upload' | 'preview' | 'uploading' | 'complete'>('upload');
+  const [step, setStep] = useState<'upload' | 'mapping' | 'preview' | 'uploading' | 'complete'>('upload');
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      if (!selectedFile.name.toLowerCase().endsWith('.csv')) {
+      const extension = selectedFile.name.toLowerCase().split('.').pop();
+      if (!['csv', 'xlsx'].includes(extension || '')) {
         toast({
           title: 'Invalid File',
-          description: 'Please select a CSV file.',
+          description: 'Please select a CSV or XLSX file.',
           variant: 'destructive'
         });
         return;
@@ -47,64 +52,89 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
 
     setIsProcessing(true);
     try {
-      const parsed = await parseCSVFile(file);
+      const result = await parseFile(file);
       
-      if (parsed.length === 0) {
+      if (!result.success || !result.data) {
         toast({
-          title: 'No Data Found',
-          description: 'The CSV file contains no valid job data.',
+          title: 'Parse Error',
+          description: result.error || 'Failed to parse file.',
           variant: 'destructive'
         });
         setIsProcessing(false);
         return;
       }
 
-      if (parsed.length > 1000) {
-        toast({
-          title: 'File Too Large',
-          description: 'Maximum 1000 jobs per upload. Please split your file.',
-          variant: 'destructive'
-        });
-        setIsProcessing(false);
-        return;
-      }
+      const data = result.data;
+      setFileData(data);
       
-      // Detect duplicates within the file
-      const duplicateMap = detectDuplicates(parsed);
-      setDuplicates(duplicateMap);
-      
-      // Validate each job
-      const results = parsed.map((job, index) => {
-        const duplicateKey = Array.from(duplicateMap.keys()).find(key => 
-          duplicateMap.get(key)?.includes(index)
-        );
-        return validateJobData(job, duplicateKey);
-      });
-
-      setParsedData(parsed);
-      setValidationResults(results);
-      setStep('preview');
-      
-      const validCount = results.filter(r => r.isValid && !r.isDuplicate).length;
-      const invalidCount = results.filter(r => !r.isValid).length;
-      const duplicateCount = results.filter(r => r.isDuplicate).length;
+      // Generate intelligent header mapping
+      const mapping = generateHeaderMapping(data.headers);
+      setHeaderMapping(mapping);
       
       toast({
-        title: 'CSV Processed',
-        description: `Found ${validCount} valid jobs, ${invalidCount} invalid, ${duplicateCount} duplicates.`
+        title: 'File Parsed Successfully',
+        description: `Found ${data.totalRows} rows with ${data.headers.length} columns in ${data.fileType.toUpperCase()} file.`
       });
+      
+      setStep('mapping');
     } catch (error: any) {
       toast({
         title: 'Parse Error',
-        description: error.message || 'Failed to parse CSV file.',
+        description: error.message || 'Failed to parse file.',
         variant: 'destructive'
       });
     }
     setIsProcessing(false);
   };
 
+  const handleMappingComplete = () => {
+    if (!fileData) return;
+
+    // Check if all required fields are mapped
+    const requiredFields = ['title', 'company', 'location', 'description'];
+    const mappedFields = new Set(Object.values(headerMapping));
+    const missingFields = requiredFields.filter(field => !mappedFields.has(field));
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: 'Missing Required Fields',
+        description: `Please map the following required fields: ${missingFields.join(', ')}`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Convert data using header mapping
+    const jobs = convertToJobData(fileData.rows, headerMapping);
+    setParsedJobs(jobs);
+    
+    // Detect duplicates
+    const duplicateMap = detectDuplicates(jobs);
+    setDuplicates(duplicateMap);
+    
+    // Validate each job
+    const results = jobs.map((job, index) => {
+      const duplicateKey = Array.from(duplicateMap.keys()).find(key => 
+        duplicateMap.get(key)?.includes(index)
+      );
+      return validateJobData(job, duplicateKey);
+    });
+    
+    setValidationResults(results);
+    setStep('preview');
+    
+    const validCount = results.filter(r => r.isValid && !r.isDuplicate).length;
+    const invalidCount = results.filter(r => !r.isValid).length;
+    const duplicateCount = results.filter(r => r.isDuplicate).length;
+    
+    toast({
+      title: 'Data Processed',
+      description: `Found ${validCount} valid jobs, ${invalidCount} invalid, ${duplicateCount} duplicates.`
+    });
+  };
+
   const handleBulkUpload = async () => {
-    const validJobs = parsedData.filter((_, index) => {
+    const validJobs = parsedJobs.filter((_, index) => {
       const result = validationResults[index];
       return result.isValid && !result.isDuplicate;
     });
@@ -150,7 +180,9 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
 
   const resetDialog = () => {
     setFile(null);
-    setParsedData([]);
+    setFileData(null);
+    setHeaderMapping({});
+    setParsedJobs([]);
     setValidationResults([]);
     setDuplicates(new Map());
     setUploadProgress({ current: 0, total: 0 });
@@ -174,7 +206,7 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
         <DialogHeader>
           <DialogTitle>Bulk Job Upload</DialogTitle>
           <DialogDescription className="flex items-center justify-between">
-            <span>Upload multiple jobs via CSV file. Ensure your CSV includes: Job Title, Company, Location, Description, Employment Type, Experience Level.</span>
+            <span>Upload multiple jobs via CSV or XLSX file. We'll help you map the columns and validate the data.</span>
             <CSVSampleDownload />
           </DialogDescription>
         </DialogHeader>
@@ -185,33 +217,36 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  CSV Format Requirements
+                  Supported File Formats
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <h4 className="font-medium mb-2">Required Columns:</h4>
+                    <h4 className="font-medium mb-2">📁 CSV Files (.csv)</h4>
                     <ul className="space-y-1">
-                      <li>• Job Title / Title / Position</li>
-                      <li>• Company / Company Name</li>
-                      <li>• Location</li>
-                      <li>• Description / Job Description</li>
-                      <li>• Employment Type / Type</li>
-                      <li>• Experience Level / Level</li>
+                      <li>• UTF-8 encoding recommended</li>
+                      <li>• Comma or semicolon delimited</li>
+                      <li>• Header row required</li>
+                      <li>• Up to 1000 rows</li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-2">Optional Columns:</h4>
+                    <h4 className="font-medium mb-2">📊 Excel Files (.xlsx)</h4>
                     <ul className="space-y-1">
-                      <li>• Salary Min / Min Salary</li>
-                      <li>• Salary Max / Max Salary</li>
-                      <li>• Requirements</li>
-                      <li>• Tech Stack</li>
-                      <li>• Remote (true/false)</li>
-                      <li>• Application Email / Contact</li>
+                      <li>• Modern Excel format only</li>
+                      <li>• First sheet will be used</li>
+                      <li>• Header row required</li>
+                      <li>• Up to 1000 rows</li>
                     </ul>
                   </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-medium text-blue-700 mb-2">💡 Smart Column Detection</h4>
+                  <p className="text-sm text-blue-600">
+                    We'll automatically detect and map your columns to job fields. 
+                    Common variations like "Job Title", "Position", "Role" are all recognized.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -219,7 +254,7 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
             <div className="space-y-4">
               <Input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx"
                 onChange={handleFileSelect}
                 className="cursor-pointer"
               />
@@ -229,6 +264,9 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
                   <FileText className="h-4 w-4" />
                   <AlertDescription>
                     Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    <Badge variant="secondary" className="ml-2">
+                      {file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'CSV'}
+                    </Badge>
                   </AlertDescription>
                 </Alert>
               )}
@@ -240,7 +278,7 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
                   className="flex items-center gap-2"
                 >
                   {isProcessing && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                  Process CSV
+                  Parse File
                 </Button>
                 <Button variant="outline" onClick={closeDialog}>
                   Cancel
@@ -250,84 +288,41 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
           </div>
         )}
 
+        {step === 'mapping' && fileData && (
+          <div className="space-y-6">
+            <HeaderMappingStep 
+              headers={fileData.headers}
+              headerMapping={headerMapping}
+              onMappingChange={setHeaderMapping}
+            />
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleMappingComplete}
+                className="flex items-center gap-2"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Continue to Preview
+              </Button>
+              <Button variant="outline" onClick={() => setStep('upload')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <Button variant="outline" onClick={closeDialog}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
         {step === 'preview' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-4">
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-600" />
-                  {validationResults.filter(r => r.isValid && !r.isDuplicate).length} Valid
-                </Badge>
-                <Badge variant="destructive" className="flex items-center gap-1">
-                  <XCircle className="h-3 w-3" />
-                  {validationResults.filter(r => !r.isValid).length} Invalid
-                </Badge>
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {validationResults.filter(r => r.isDuplicate).length} Duplicates
-                </Badge>
-              </div>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto border rounded">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">Status</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Issues</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {validationResults.map((result, index) => (
-                    <TableRow key={index} className={result.isDuplicate ? 'bg-yellow-50' : ''}>
-                      <TableCell>
-                        {result.isDuplicate ? (
-                          <AlertCircle className="h-4 w-4 text-yellow-600" />
-                        ) : result.isValid ? (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-600" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {parsedData[index]?.title || 'Missing'}
-                      </TableCell>
-                      <TableCell>{parsedData[index]?.company || 'Missing'}</TableCell>
-                      <TableCell>{parsedData[index]?.location || 'Missing'}</TableCell>
-                      <TableCell>{parsedData[index]?.employment_type || 'Missing'}</TableCell>
-                      <TableCell>
-                        {result.isDuplicate && (
-                          <div className="text-xs text-yellow-600">
-                            Duplicate entry
-                          </div>
-                        )}
-                        {!result.isValid && (
-                          <div className="text-xs text-red-600">
-                            {result.errors?.join(', ')}
-                          </div>
-                        )}
-                        {result.warnings && result.warnings.length > 0 && (
-                          <div className="text-xs text-orange-600">
-                            {result.warnings.join(', ')}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Only valid, non-duplicate jobs will be uploaded. Invalid jobs and duplicates will be skipped.
-              </AlertDescription>
-            </Alert>
+            <UploadPreviewTable 
+              jobs={parsedJobs}
+              validationResults={validationResults}
+              duplicates={duplicates}
+              maxPreviewRows={10}
+            />
 
             <div className="flex gap-2">
               <Button 
@@ -338,8 +333,9 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
                 {isUploading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
                 Upload {validationResults.filter(r => r.isValid && !r.isDuplicate).length} Jobs
               </Button>
-              <Button variant="outline" onClick={() => setStep('upload')}>
-                Back
+              <Button variant="outline" onClick={() => setStep('mapping')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Mapping
               </Button>
               <Button variant="outline" onClick={closeDialog}>
                 Cancel

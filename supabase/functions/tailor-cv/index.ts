@@ -594,6 +594,8 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), openAITimeout);
 
+      let tailoredResume: string;
+      
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -617,7 +619,7 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
             max_completion_tokens: 3500, // Use max_completion_tokens for newer models
             // Note: temperature not supported for GPT-5 models
           }),
-        })
+        });
 
         clearTimeout(timeoutId);
 
@@ -643,11 +645,11 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
         }
 
         const aiResponse = await response.json();
-        const tailoredResume = aiResponse.choices[0]?.message?.content;
+        tailoredResume = aiResponse.choices[0]?.message?.content;
 
         if (!tailoredResume) {
           console.error(`❌ [${requestId}] No content in AI response:`, aiResponse);
-          throw new Error('AI service returned empty response');
+          throw new Error('AI service returned empty response. Please try again.');
         }
 
         console.log(`✅ [${requestId}] AI response received, length: ${tailoredResume.length} chars`);
@@ -661,8 +663,13 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
         throw fetchError;
       }
 
-    // Professional resume quality scoring with enhanced error handling
-    const resumeText = tailoredResume.toLowerCase();
+      // Validate generated resume
+      if (!tailoredResume || tailoredResume.trim().length === 0) {
+        throw new Error('AI service generated empty resume. Please try again.');
+      }
+
+      // Professional resume quality scoring with enhanced error handling
+      const resumeText = tailoredResume.toLowerCase();
     
     // Check for critical missing sections and handle gracefully
     const hasMissingEducation = !resumeText.includes('education') && !resumeText.includes('degree') && !resumeText.includes('bachelor') && !resumeText.includes('master');

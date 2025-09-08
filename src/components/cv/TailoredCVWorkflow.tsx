@@ -170,20 +170,45 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       console.log('📝 AI response received:', { data, error: functionError });
 
+      // Check for function call errors first
       if (functionError) {
         console.error('❌ AI analysis function error:', functionError);
-        throw new Error(functionError.message || 'AI analysis failed');
+        let errorMessage = 'AI analysis failed';
+        
+        if (functionError.message) {
+          if (functionError.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again with a shorter resume or job description.';
+          } else if (functionError.message.includes('network') || functionError.message.includes('fetch')) {
+            errorMessage = 'Network error. Please check your connection and try again.';
+          } else {
+            errorMessage = functionError.message;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Validate response structure
+      if (!data) {
+        console.error('❌ No data received from AI service');
+        throw new Error('No response received from AI service. Please try again.');
       }
 
       // Check if the response indicates an error (when edge function returns 200 with error)
-      if (data && data.success === false) {
+      if (data.success === false) {
         console.error('❌ AI analysis returned error:', data.error);
-        throw new Error(data.error || 'AI analysis failed');
+        const errorMessage = data.error || 'AI analysis failed';
+        throw new Error(errorMessage);
       }
 
-      if (!data || !data.tailoredResume) {
-        console.error('❌ No tailored resume in response:', data);
-        throw new Error('No tailored resume generated. Please try again.');
+      // Validate tailored resume content
+      if (!data.tailoredResume || typeof data.tailoredResume !== 'string' || data.tailoredResume.trim().length === 0) {
+        console.error('❌ Invalid tailored resume in response:', { 
+          hasTailoredResume: !!data.tailoredResume,
+          type: typeof data.tailoredResume,
+          length: data.tailoredResume?.length || 0
+        });
+        throw new Error('No valid tailored resume generated. Please try again.');
       }
 
       setTailoringResult(data);

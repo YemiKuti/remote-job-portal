@@ -341,35 +341,102 @@ serve(async (req) => {
         requestBody = await req.json();
       } catch (error) {
         console.error(`❌ [${requestId}] Invalid JSON in request body:`, error);
-        throw new Error('Invalid JSON in request body');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid request format. Please ensure your data is properly formatted.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const { resumeContent, jobDescription, jobTitle, companyName, candidateData } = requestBody;
 
-      console.log(`🔄 [${requestId}] Processing request for: ${jobTitle} at ${companyName}`);
+      console.log(`🔄 [${requestId}] Processing request for: ${jobTitle || 'Unknown Job'} at ${companyName || 'Unknown Company'}`);
       console.log(`📊 [${requestId}] Input sizes - Resume: ${resumeContent?.length || 0} chars, Job Desc: ${jobDescription?.length || 0} chars`);
 
-      // Enhanced input validation
-      if (!resumeContent || !jobDescription) {
-        throw new Error('Resume content and job description are required');
+      // Enhanced input validation with user-friendly messages
+      if (!resumeContent || resumeContent.trim() === '') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Please upload a valid resume. Resume content is required for CV tailoring.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      if (!jobDescription || jobDescription.trim() === '') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Please provide a job description. Job requirements are needed to tailor your CV.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       // Size validation to prevent memory issues
       if (resumeContent.length > 50000) {
-        throw new Error('Resume content is too large. Please provide a resume under 50,000 characters.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Resume content is too large. Please provide a resume under 50,000 characters.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       if (jobDescription.length > 20000) {
-        throw new Error('Job description is too large. Please provide a job description under 20,000 characters.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Job description is too large. Please provide a job description under 20,000 characters.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       // Content validation
       if (resumeContent.length < 100) {
-        throw new Error('Resume content appears too short. Please provide a more detailed resume with work experience and skills.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Resume content appears too short. Please provide a more detailed resume with work experience and skills.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       if (jobDescription.length < 50) {
-        throw new Error('Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.',
+            requestId: requestId 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       // Check for binary or invalid content
@@ -380,7 +447,16 @@ serve(async (req) => {
       const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
       if (!openAIApiKey) {
         console.error(`❌ [${requestId}] OpenAI API key not configured`);
-        throw new Error('AI service not configured. Please contact support.');
+        return new Response(
+          JSON.stringify({ 
+            error: 'AI service not configured. Please contact support.',
+            requestId: requestId 
+          }),
+          { 
+            status: 503, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       // Analyze job requirements comprehensively
@@ -681,46 +757,49 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
 
       return new Response(
         JSON.stringify({
+          success: true,
           tailoredResume,
           score: finalScore,
-        analysis: {
-          skillAlignment: {
-            essentialSkillsMatched: essentialSkillMatches,
-            preferredSkillsMatched: preferredSkillMatches,
-            totalEssentialSkills: jobAnalysis.essentialSkills.length,
-            totalPreferredSkills: jobAnalysis.preferredSkills.length,
-            alignedSkills: skillAlignment
+          analysis: {
+            skillAlignment: {
+              essentialSkillsMatched: essentialSkillMatches,
+              preferredSkillsMatched: preferredSkillMatches,
+              totalEssentialSkills: jobAnalysis.essentialSkills.length,
+              totalPreferredSkills: jobAnalysis.preferredSkills.length,
+              alignedSkills: skillAlignment
+            },
+            professionalElements: {
+              hasContactInfo,
+              hasProfessionalSummary,
+              hasQuantifiedAchievements,
+              hasActionVerbs,
+              hasEducation,
+              properSections: hasProperSections
+            },
+            candidateProfile: {
+              careerLevel: candidateAnalysis.careerLevel,
+              currentSkills: candidateAnalysis.currentSkills.slice(0, 10),
+              achievements: candidateAnalysis.achievements.slice(0, 5)
+            },
+            jobAlignment: {
+              targetLevel: jobAnalysis.experienceLevel,
+              essentialSkills: jobAnalysis.essentialSkills,
+              preferredSkills: jobAnalysis.preferredSkills,
+              criticalGaps
+            }
           },
-          professionalElements: {
-            hasContactInfo,
-            hasProfessionalSummary,
-            hasQuantifiedAchievements,
-            hasActionVerbs,
-            hasEducation,
-            properSections: hasProperSections
+          suggestions: {
+            qualityScore: `${finalScore}% professional resume quality`,
+            recommendations,
+            improvementAreas: finalScore < 85 ? [
+              !hasProfessionalSummary ? 'Consider strengthening the professional summary' : null,
+              !hasQuantifiedAchievements ? 'Add more quantified achievements and metrics' : null,
+              essentialSkillMatches < jobAnalysis.essentialSkills.length * 0.7 ? 'Highlight more essential skills from the job requirements' : null,
+              !hasActionVerbs ? 'Use stronger action verbs to demonstrate impact' : null
+            ].filter(Boolean) : []
           },
-          candidateProfile: {
-            careerLevel: candidateAnalysis.careerLevel,
-            currentSkills: candidateAnalysis.currentSkills.slice(0, 10),
-            achievements: candidateAnalysis.achievements.slice(0, 5)
-          },
-          jobAlignment: {
-            targetLevel: jobAnalysis.experienceLevel,
-            essentialSkills: jobAnalysis.essentialSkills,
-            preferredSkills: jobAnalysis.preferredSkills,
-            criticalGaps
-          }
-        },
-        suggestions: {
-          qualityScore: `${finalScore}% professional resume quality`,
-          recommendations,
-          improvementAreas: finalScore < 85 ? [
-            !hasProfessionalSummary ? 'Consider strengthening the professional summary' : null,
-            !hasQuantifiedAchievements ? 'Add more quantified achievements and metrics' : null,
-            essentialSkillMatches < jobAnalysis.essentialSkills.length * 0.7 ? 'Highlight more essential skills from the job requirements' : null,
-            !hasActionVerbs ? 'Use stronger action verbs to demonstrate impact' : null
-          ].filter(Boolean) : []
-        }
+          requestId,
+          timestamp: new Date().toISOString()
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -733,38 +812,24 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ [${requestId}] Error after ${duration}ms:`, error.message);
+    console.error(`❌ [${requestId}] Error after ${duration}ms:`, error);
     
-    // Determine appropriate status code and user-friendly message
-    let statusCode = 500;
-    let userMessage = 'An unexpected error occurred while processing your request.';
-    
-    if (error.message.includes('timeout')) {
-      statusCode = 408;
-      userMessage = 'Request timed out. Please try again with a shorter resume or job description.';
-    } else if (error.message.includes('too large') || error.message.includes('too short')) {
-      statusCode = 400;
-      userMessage = error.message;
-    } else if (error.message.includes('required') || error.message.includes('Invalid JSON')) {
-      statusCode = 400;
-      userMessage = error.message;
-    } else if (error.message.includes('AI service')) {
-      statusCode = 502;
-      userMessage = error.message;
-    } else if (error.message.includes('rate_limit') || error.message.includes('busy')) {
-      statusCode = 429;
-      userMessage = error.message;
-    }
-    
+    // Always return a 200 response with error details in the body
+    // This prevents the "non-2xx status code" errors on the frontend
     return new Response(
       JSON.stringify({ 
-        error: userMessage,
+        success: false,
+        error: error.message || 'An unexpected error occurred while processing your CV.',
         requestId: requestId,
-        // Only include technical details in development
-        ...(Deno.env.get('ENVIRONMENT') !== 'production' && { details: error.message })
+        timestamp: new Date().toISOString(),
+        // Include helpful context for debugging
+        context: {
+          duration: duration,
+          errorType: error.name || 'Unknown',
+        }
       }),
       { 
-        status: statusCode, 
+        status: 200, // Always return 200 to prevent frontend errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );

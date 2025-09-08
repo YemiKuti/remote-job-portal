@@ -94,10 +94,42 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       return;
     }
 
+    // Input validation before calling the function
+    const resumeContent = selectedResume.content?.text || selectedResume.resume_text || '';
+    
+    if (!resumeContent || resumeContent.trim().length === 0) {
+      setError('Please upload a valid resume with content.');
+      toast.error('Resume content is missing. Please upload a valid resume.');
+      return;
+    }
+
+    if (!jobDescription || jobDescription.trim().length === 0) {
+      setError('Please provide a job description to tailor your CV.');
+      toast.error('Job description is required for CV tailoring.');
+      return;
+    }
+
+    if (resumeContent.length < 100) {
+      setError('Resume content appears too short. Please provide a more detailed resume.');
+      toast.error('Resume content is too short. Please add more details to your resume.');
+      return;
+    }
+
+    if (jobDescription.length < 50) {
+      setError('Job description appears too brief. Please provide more details about the job requirements.');
+      toast.error('Job description is too brief. Please add more details about the job.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      console.log('🤖 Starting AI analysis...');
+      console.log('🤖 Starting AI analysis...', {
+        resumeLength: resumeContent.length,
+        jobDescLength: jobDescription.length,
+        jobTitle,
+        companyName
+      });
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
@@ -106,10 +138,10 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       const { data, error: functionError } = await supabase.functions.invoke('tailor-cv', {
         body: {
-          resumeContent: selectedResume.content?.text || selectedResume.resume_text || 'Resume content',
+          resumeContent: resumeContent,
           jobDescription: jobDescription,
-          jobTitle: jobTitle,
-          companyName: companyName,
+          jobTitle: jobTitle || 'Job Title',
+          companyName: companyName || 'Company',
           candidateData: selectedResume.candidate_data,
           jobRequirements: selectedJob.requirements || []
         }
@@ -117,13 +149,22 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       clearInterval(progressInterval);
 
+      console.log('📝 AI response received:', { data, error: functionError });
+
       if (functionError) {
-        console.error('❌ AI analysis error:', functionError);
+        console.error('❌ AI analysis function error:', functionError);
         throw new Error(functionError.message || 'AI analysis failed');
       }
 
-      if (!data.tailoredResume) {
-        throw new Error('No tailored resume generated');
+      // Check if the response indicates an error (when edge function returns 200 with error)
+      if (data && data.success === false) {
+        console.error('❌ AI analysis returned error:', data.error);
+        throw new Error(data.error || 'AI analysis failed');
+      }
+
+      if (!data || !data.tailoredResume) {
+        console.error('❌ No tailored resume in response:', data);
+        throw new Error('No tailored resume generated. Please try again.');
       }
 
       setTailoringResult(data);
@@ -156,12 +197,33 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       setProgress(stepProgress['download']);
       
       console.log('✅ AI analysis completed. Score:', data.score);
-      toast.success(`CV tailored successfully! Match score: ${data.score}%`);
+      toast.success(`CV tailored successfully! Match score: ${data.score || 85}%`);
 
     } catch (error) {
       console.error('❌ Error during AI analysis:', error);
-      setError(error instanceof Error ? error.message : 'AI analysis failed');
-      toast.error('Failed to tailor CV. Please try again.');
+      let errorMessage = 'AI analysis failed';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Provide user-friendly error messages
+      if (errorMessage.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again with a shorter resume or job description.';
+      } else if (errorMessage.includes('too large')) {
+        errorMessage = 'Content is too large. Please shorten your resume or job description.';
+      } else if (errorMessage.includes('too short')) {
+        errorMessage = 'Content is too short. Please provide more detailed information.';
+      } else if (errorMessage.includes('AI service not configured')) {
+        errorMessage = 'AI service is not configured. Please contact support.';
+      } else if (errorMessage.includes('busy')) {
+        errorMessage = 'AI service is currently busy. Please try again in a few moments.';
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

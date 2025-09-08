@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring Tool - Validation Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .test-case {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #007acc;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { background: #005a9e; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .loading { opacity: 0.7; }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 CV Tailoring Tool - Validation Tests</h1>
+    <p>This interface tests the CV tailoring tool error handling and validation improvements.</p>
+
+    <div class="test-section">
+        <h3>📝 Test Configuration</h3>
+        <div>
+            <label for="apiUrl">Supabase Function URL:</label><br>
+            <input type="text" id="apiUrl" style="width: 100%; padding: 8px; margin: 5px 0;" 
+                   placeholder="https://your-project-id.supabase.co/functions/v1/tailor-cv">
+        </div>
+        <div>
+            <label for="apiKey">Supabase Anon Key:</label><br>
+            <input type="text" id="apiKey" style="width: 100%; padding: 8px; margin: 5px 0;" 
+                   placeholder="Your Supabase anon key">
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>✅ Test 1: Valid Input (Should Succeed)</h3>
+        <div class="test-case">
+            <p><strong>Description:</strong> Test with valid resume content and job description</p>
+            <button onclick="runValidTest()" id="validTestBtn">Run Valid Test</button>
+            <div id="validTestResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>❌ Test 2: Empty Resume Content (Should Return User-Friendly Error)</h3>
+        <div class="test-case">
+            <p><strong>Description:</strong> Test with empty resume content</p>
+            <button onclick="runEmptyResumeTest()" id="emptyResumeBtn">Run Empty Resume Test</button>
+            <div id="emptyResumeResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>❌ Test 3: Empty Job Description (Should Return User-Friendly Error)</h3>
+        <div class="test-case">
+            <p><strong>Description:</strong> Test with empty job description</p>
+            <button onclick="runEmptyJobTest()" id="emptyJobBtn">Run Empty Job Test</button>
+            <div id="emptyJobResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>❌ Test 4: Content Too Large (Should Return User-Friendly Error)</h3>
+        <div class="test-case">
+            <p><strong>Description:</strong> Test with oversized resume content</p>
+            <button onclick="runOversizeTest()" id="oversizeBtn">Run Oversize Test</button>
+            <div id="oversizeResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🧪 Custom Test</h3>
+        <div class="test-case">
+            <p><strong>Description:</strong> Test with your own content</p>
+            <div>
+                <label for="customResume">Resume Content:</label><br>
+                <textarea id="customResume" placeholder="Enter resume content here..."></textarea>
+            </div>
+            <div>
+                <label for="customJob">Job Description:</label><br>
+                <textarea id="customJob" placeholder="Enter job description here..."></textarea>
+            </div>
+            <button onclick="runCustomTest()" id="customBtn">Run Custom Test</button>
+            <div id="customResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const sampleResume = `John Doe
+Software Engineer
+Email: john.doe@email.com | Phone: (555) 123-4567 | LinkedIn: linkedin.com/in/johndoe
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 5+ years developing web applications using JavaScript, React, and Node.js. Led cross-functional teams of 8+ developers to deliver high-quality software solutions. Proven track record of improving system performance by 40% and reducing deployment time by 60%.
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp | 2020 - Present
+• Led development of customer-facing web application serving 100K+ daily active users
+• Implemented microservices architecture reducing system downtime by 50%
+• Mentored 5 junior developers and conducted technical interviews
+• Built RESTful APIs using Node.js and Express, improving response times by 35%
+
+Software Engineer | StartupXYZ | 2018 - 2020
+• Developed responsive web applications using React and TypeScript
+• Collaborated with design team to implement pixel-perfect UI components
+• Optimized database queries resulting in 25% faster page load times
+• Participated in agile development process and sprint planning
+
+TECHNICAL SKILLS
+• Frontend: React, TypeScript, JavaScript, HTML5, CSS3, Redux
+• Backend: Node.js, Express, Python, Java
+• Databases: PostgreSQL, MongoDB, Redis
+• Tools: Git, Docker, Kubernetes, AWS, Jest
+• Methodologies: Agile, Scrum, Test-Driven Development
+
+EDUCATION
+Bachelor of Science in Computer Science | University of Technology | 2018
+Relevant Coursework: Data Structures, Algorithms, Software Engineering, Database Systems`;
+
+        const sampleJobDescription = `Senior Full Stack Developer
+
+Company: InnovativeTech Solutions
+Location: San Francisco, CA (Remote Available)
+
+About the Role:
+We are seeking an experienced Senior Full Stack Developer to join our growing engineering team. You will be responsible for developing and maintaining our core platform that serves millions of users worldwide.
+
+Key Responsibilities:
+• Design and develop scalable web applications using React and Node.js
+• Build and maintain RESTful APIs and microservices
+• Collaborate with cross-functional teams including product, design, and DevOps
+• Mentor junior developers and conduct code reviews
+• Optimize application performance and ensure high availability
+• Implement automated testing and CI/CD pipelines
+
+Required Qualifications:
+• 5+ years of experience in full stack web development
+• Strong proficiency in JavaScript, React, and Node.js
+• Experience with PostgreSQL and NoSQL databases
+• Familiarity with cloud platforms (AWS, GCP, or Azure)
+• Experience with containerization using Docker
+• Strong understanding of software engineering best practices
+• Excellent problem-solving and communication skills
+
+Preferred Qualifications:
+• Experience with TypeScript and modern frontend frameworks
+• Knowledge of Kubernetes and microservices architecture
+• Experience with test-driven development and automated testing
+• Previous experience mentoring junior developers
+• Familiarity with agile development methodologies
+
+What We Offer:
+• Competitive salary ($120K - $180K)
+• Comprehensive health benefits
+• Stock options and equity participation
+• Flexible work arrangements
+• Professional development opportunities`;
+
+        async function callTailorCV(data) {
+            const url = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!url || !apiKey) {
+                throw new Error('Please configure API URL and API Key first');
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'apikey': apiKey
+                },
+                body: JSON.stringify(data)
+            });
+
+            return await response.json();
+        }
+
+        function setButtonLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            button.disabled = isLoading;
+            if (isLoading) {
+                button.textContent = button.textContent.replace('Run', 'Running...');
+                button.classList.add('loading');
+            } else {
+                button.textContent = button.textContent.replace('Running...', 'Run');
+                button.classList.remove('loading');
+            }
+        }
+
+        function displayResult(resultId, result, isSuccess = false) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const status = isSuccess ? '✅ SUCCESS' : '❌ ERROR';
+            
+            resultDiv.innerHTML = `
+                <strong>[${timestamp}] ${status}</strong><br>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            `;
+        }
+
+        async function runValidTest() {
+            setButtonLoading('validTestBtn', true);
+            try {
+                const result = await callTailorCV({
+                    resumeContent: sampleResume,
+                    jobDescription: sampleJobDescription,
+                    jobTitle: "Senior Full Stack Developer",
+                    companyName: "InnovativeTech Solutions",
+                    candidateData: {}
+                });
+
+                const isSuccess = result.success !== false && result.tailoredResume;
+                displayResult('validTestResult', result, isSuccess);
+            } catch (error) {
+                displayResult('validTestResult', { error: error.message }, false);
+            } finally {
+                setButtonLoading('validTestBtn', false);
+            }
+        }
+
+        async function runEmptyResumeTest() {
+            setButtonLoading('emptyResumeBtn', true);
+            try {
+                const result = await callTailorCV({
+                    resumeContent: "",
+                    jobDescription: sampleJobDescription,
+                    jobTitle: "Senior Full Stack Developer",
+                    companyName: "InnovativeTech Solutions",
+                    candidateData: {}
+                });
+
+                const isSuccess = result.success === false && result.error && result.error.includes('resume');
+                displayResult('emptyResumeResult', result, isSuccess);
+            } catch (error) {
+                displayResult('emptyResumeResult', { error: error.message }, false);
+            } finally {
+                setButtonLoading('emptyResumeBtn', false);
+            }
+        }
+
+        async function runEmptyJobTest() {
+            setButtonLoading('emptyJobBtn', true);
+            try {
+                const result = await callTailorCV({
+                    resumeContent: sampleResume,
+                    jobDescription: "",
+                    jobTitle: "Senior Full Stack Developer",
+                    companyName: "InnovativeTech Solutions",
+                    candidateData: {}
+                });
+
+                const isSuccess = result.success === false && result.error && result.error.includes('job description');
+                displayResult('emptyJobResult', result, isSuccess);
+            } catch (error) {
+                displayResult('emptyJobResult', { error: error.message }, false);
+            } finally {
+                setButtonLoading('emptyJobBtn', false);
+            }
+        }
+
+        async function runOversizeTest() {
+            setButtonLoading('oversizeBtn', true);
+            try {
+                const oversizeContent = "x".repeat(60000); // 60k characters
+                const result = await callTailorCV({
+                    resumeContent: oversizeContent,
+                    jobDescription: sampleJobDescription,
+                    jobTitle: "Senior Full Stack Developer",
+                    companyName: "InnovativeTech Solutions",
+                    candidateData: {}
+                });
+
+                const isSuccess = result.success === false && result.error && result.error.includes('too large');
+                displayResult('oversizeResult', result, isSuccess);
+            } catch (error) {
+                displayResult('oversizeResult', { error: error.message }, false);
+            } finally {
+                setButtonLoading('oversizeBtn', false);
+            }
+        }
+
+        async function runCustomTest() {
+            setButtonLoading('customBtn', true);
+            try {
+                const resumeContent = document.getElementById('customResume').value;
+                const jobDescription = document.getElementById('customJob').value;
+                
+                const result = await callTailorCV({
+                    resumeContent,
+                    jobDescription,
+                    jobTitle: "Custom Job Title",
+                    companyName: "Custom Company",
+                    candidateData: {}
+                });
+
+                const isSuccess = result.success !== false && result.tailoredResume;
+                displayResult('customResult', result, isSuccess);
+            } catch (error) {
+                displayResult('customResult', { error: error.message }, false);
+            } finally {
+                setButtonLoading('customBtn', false);
+            }
+        }
+
+        // Pre-populate sample data in custom fields
+        window.onload = function() {
+            document.getElementById('customResume').value = sampleResume.substring(0, 500) + "...";
+            document.getElementById('customJob').value = sampleJobDescription.substring(0, 300) + "...";
+        }
+    </script>
+</body>
+</html>

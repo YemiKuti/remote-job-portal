@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full System Test Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .test-section {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        
+        .test-section.active {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+        
+        .test-section.success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .test-section.error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background-color: #218838;
+        }
+        
+        .test-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        
+        .test-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .test-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .test-data {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        
+        .instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .checklist {
+            background-color: #e7f3ff;
+            border: 1px solid #b6e7ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .checklist ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .checklist li {
+            margin: 8px 0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .status-pending { background-color: #ffc107; }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        
+        .screenshot-area {
+            border: 2px dashed #ccc;
+            padding: 30px;
+            text-align: center;
+            margin: 15px 0;
+            background-color: #fafafa;
+        }
+        
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        h3 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Full System Test - Job Portal Features</h1>
+    <p style="text-align: center; font-size: 18px; color: #666;">
+        Comprehensive end-to-end testing for CV Tailoring and Job Upload automation
+    </p>
+
+    <!-- Test 1: CV Tailoring -->
+    <div class="test-section" id="test1">
+        <h2>🎯 Test 1: CV Tailoring Tool</h2>
+        
+        <div class="instructions">
+            <h4>📋 Test Instructions:</h4>
+            <ol>
+                <li>Navigate to the CV Tailoring feature in your app</li>
+                <li>Copy the dummy CV content below and paste/upload it</li>
+                <li>Copy the dummy job description and enter it</li>
+                <li>Run the CV tailoring process</li>
+                <li>Verify the output includes integrated keywords</li>
+                <li>Test error handling with empty inputs</li>
+            </ol>
+        </div>
+        
+        <h3>📄 Dummy CV Content:</h3>
+        <div class="test-data" id="dummyCV">John Doe
+Email: john.doe@email.com | Phone: +1-555-555-1234
+
+Professional Summary:
+Experienced software engineer with 5 years in web development.
+
+Work Experience:
+Software Engineer – ABC Tech (2019–2023)
+- Developed web applications in React and Node.js.
+- Improved API performance by 30%.
+
+Education:
+BSc Computer Science, XYZ University</div>
+        
+        <h3>📋 Dummy Job Description:</h3>
+        <div class="test-data" id="dummyJD">We are seeking a React/Node.js Developer with experience in scalable APIs, cloud deployments, and database management. Preferred skills include AWS and PostgreSQL.</div>
+        
+        <button class="test-btn" onclick="copyToClipboard('dummyCV')">📋 Copy CV</button>
+        <button class="test-btn" onclick="copyToClipboard('dummyJD')">📋 Copy Job Description</button>
+        
+        <div class="checklist">
+            <h4>✅ Expected Results Checklist:</h4>
+            <ul>
+                <li><input type="checkbox" id="cv1"> CV output integrates keywords: React, Node.js, APIs, AWS, PostgreSQL</li>
+                <li><input type="checkbox" id="cv2"> Professional formatting and structure maintained</li>
+                <li><input type="checkbox" id="cv3"> Empty CV input shows clear error message (not crash)</li>
+                <li><input type="checkbox" id="cv4"> Empty job description shows clear error message</li>
+                <li><input type="checkbox" id="cv5"> Process completes within reasonable time (< 30 seconds)</li>
+            </ul>
+        </div>
+        
+        <div class="screenshot-area">
+            <h4>📸 Screenshot Checkpoint 1</h4>
+            <p>Take screenshot showing: CV input → tailoring process → successful output with keywords</p>
+            <input type="checkbox" id="screenshot1"> Screenshot 1 captured
+        </div>
+    </div>
+
+    <!-- Test 2: Job Upload (CSV) -->
+    <div class="test-section" id="test2">
+        <h2>📊 Test 2: Job Upload Automation (CSV)</h2>
+        
+        <div class="instructions">
+            <h4>📋 Test Instructions:</h4>
+            <ol>
+                <li>Download the test CSV file below</li>
+                <li>Navigate to job upload/admin area in your app</li>
+                <li>Upload the CSV file</li>
+                <li>Verify header mapping and data preview</li>
+                <li>Complete the upload process</li>
+                <li>Check that jobs appear correctly on the frontend</li>
+            </ol>
+        </div>
+        
+        <h3>📄 Test CSV Content:</h3>
+        <div class="test-data">Job Title,Company,Description,Location,Salary Min,Salary Max,Employment Type,Experience Level,Remote
+Frontend Developer,TechStart Inc,Develop web apps in React and Next.js with modern UI/UX,London,45000,65000,full-time,mid,false
+Backend Developer,CloudSys Ltd,Build APIs using Node.js and PostgreSQL for scalable systems,Remote,50000,75000,full-time,senior,true
+Full Stack Engineer,DevCorp,End-to-end development with React frontend and Node.js backend,Manchester,55000,80000,full-time,mid,false</div>
+        
+        <button class="download-btn" onclick="downloadCSV()">📄 Download jobs_test.csv</button>
+        
+        <div class="checklist">
+            <h4>✅ CSV Upload Checklist:</h4>
+            <ul>
+                <li><input type="checkbox" id="csv1"> CSV file uploads successfully</li>
+                <li><input type="checkbox" id="csv2"> Header mapping detects columns correctly</li>
+                <li><input type="checkbox" id="csv3"> Data preview shows 3 jobs with correct information</li>
+                <li><input type="checkbox" id="csv4"> Upload completes without errors</li>
+                <li><input type="checkbox" id="csv5"> Jobs appear on frontend with correct details</li>
+                <li><input type="checkbox" id="csv6"> Salary, location, and remote flags display correctly</li>
+            </ul>
+        </div>
+        
+        <div class="screenshot-area">
+            <h4>📸 Screenshot Checkpoint 2</h4>
+            <p>Take screenshot showing: CSV upload success confirmation and job preview</p>
+            <input type="checkbox" id="screenshot2"> Screenshot 2 captured
+        </div>
+    </div>
+
+    <!-- Test 3: Job Upload (XLSX) -->
+    <div class="test-section" id="test3">
+        <h2>📊 Test 3: Job Upload Automation (XLSX)</h2>
+        
+        <div class="instructions">
+            <h4>📋 Test Instructions:</h4>
+            <ol>
+                <li>Download the test XLSX file below (same content as CSV)</li>
+                <li>Upload the XLSX file to the same job upload feature</li>
+                <li>Verify it processes Excel format correctly</li>
+                <li>Complete upload and verify jobs appear on frontend</li>
+                <li>Test error handling with invalid file type</li>
+            </ol>
+        </div>
+        
+        <button class="download-btn" onclick="downloadXLSX()">📊 Download jobs_test.xlsx</button>
+        <button class="download-btn" onclick="downloadInvalidFile()">❌ Download invalid_test.txt (for error testing)</button>
+        
+        <div class="checklist">
+            <h4>✅ XLSX Upload Checklist:</h4>
+            <ul>
+                <li><input type="checkbox" id="xlsx1"> XLSX file uploads and processes correctly</li>
+                <li><input type="checkbox" id="xlsx2"> Same jobs created as CSV (no duplicates if testing on same system)</li>
+                <li><input type="checkbox" id="xlsx3"> Excel-specific formatting handled properly</li>
+                <li><input type="checkbox" id="xlsx4"> Invalid file type (.txt) shows clear error message</li>
+                <li><input type="checkbox" id="xlsx5"> Jobs display correctly on frontend after XLSX upload</li>
+            </ul>
+        </div>
+        
+        <div class="screenshot-area">
+            <h4>📸 Screenshot Checkpoint 3</h4>
+            <p>Take screenshot showing: XLSX upload success and live jobs on frontend</p>
+            <input type="checkbox" id="screenshot3"> Screenshot 3 captured
+        </div>
+    </div>
+
+    <!-- Test Summary -->
+    <div class="test-section" id="summary">
+        <h2>📋 Test Summary & Final Report</h2>
+        
+        <div class="checklist">
+            <h4>🎯 Overall System Test Results:</h4>
+            <div id="testResults">
+                <p><span class="status-indicator status-pending"></span><strong>CV Tailoring:</strong> <span id="cvStatus">Pending</span></p>
+                <p><span class="status-indicator status-pending"></span><strong>CSV Upload:</strong> <span id="csvStatus">Pending</span></p>
+                <p><span class="status-indicator status-pending"></span><strong>XLSX Upload:</strong> <span id="xlsxStatus">Pending</span></p>
+                <p><span class="status-indicator status-pending"></span><strong>Error Handling:</strong> <span id="errorStatus">Pending</span></p>
+                <p><span class="status-indicator status-pending"></span><strong>Screenshots:</strong> <span id="screenshotStatus">Pending</span></p>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h4>📤 Final Steps for Yemi:</h4>
+            <ol>
+                <li>Ensure all checkboxes above are completed ✅</li>
+                <li>Verify you have all 3 screenshots ready 📸</li>
+                <li>Confirm jobs are visible and functional on the live frontend 🌐</li>
+                <li>Document any issues or unexpected behaviors 📝</li>
+                <li>Send screenshots and test results as proof of working system 📧</li>
+            </ol>
+        </div>
+        
+        <button class="test-btn" onclick="generateReport()" style="background-color: #28a745;">
+            📊 Generate Test Report
+        </button>
+        
+        <div id="finalReport" style="display: none; margin-top: 20px;">
+            <h4>📈 Test Completion Report:</h4>
+            <div id="reportContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test data
+        const csvData = `Job Title,Company,Description,Location,Salary Min,Salary Max,Employment Type,Experience Level,Remote
+Frontend Developer,TechStart Inc,Develop web apps in React and Next.js with modern UI/UX,London,45000,65000,full-time,mid,false
+Backend Developer,CloudSys Ltd,Build APIs using Node.js and PostgreSQL for scalable systems,Remote,50000,75000,full-time,senior,true
+Full Stack Engineer,DevCorp,End-to-end development with React frontend and Node.js backend,Manchester,55000,80000,full-time,mid,false`;
+
+        const invalidFileContent = `This is not a valid CSV or XLSX file.
+It should trigger an error message when uploaded.
+Use this to test error handling.`;
+
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Visual feedback
+                const originalBg = element.style.backgroundColor;
+                element.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    element.style.backgroundColor = originalBg;
+                }, 1000);
+                
+                // Show temporary notification
+                const notification = document.createElement('div');
+                notification.textContent = 'Copied to clipboard!';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    z-index: 1000;
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 2000);
+            });
+        }
+
+        // Download functions
+        function downloadCSV() {
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'jobs_test.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadXLSX() {
+            // For demo, we'll create a CSV but name it .xlsx
+            // In real scenario, you'd create actual Excel format
+            const blob = new Blob([csvData], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'jobs_test.xlsx';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadInvalidFile() {
+            const blob = new Blob([invalidFileContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'invalid_test.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Status tracking
+        function updateStatus() {
+            // CV Tailoring Status
+            const cvChecks = ['cv1', 'cv2', 'cv3', 'cv4', 'cv5'];
+            const cvCompleted = cvChecks.filter(id => document.getElementById(id).checked).length;
+            const cvStatus = document.getElementById('cvStatus');
+            const cvIndicator = document.querySelector('#testResults p:nth-child(1) .status-indicator');
+            
+            if (cvCompleted === cvChecks.length) {
+                cvStatus.textContent = 'Completed ✅';
+                cvIndicator.className = 'status-indicator status-success';
+            } else if (cvCompleted > 0) {
+                cvStatus.textContent = `In Progress (${cvCompleted}/${cvChecks.length})`;
+                cvIndicator.className = 'status-indicator status-pending';
+            }
+
+            // CSV Status
+            const csvChecks = ['csv1', 'csv2', 'csv3', 'csv4', 'csv5', 'csv6'];
+            const csvCompleted = csvChecks.filter(id => document.getElementById(id).checked).length;
+            const csvStatus = document.getElementById('csvStatus');
+            const csvIndicator = document.querySelector('#testResults p:nth-child(2) .status-indicator');
+            
+            if (csvCompleted === csvChecks.length) {
+                csvStatus.textContent = 'Completed ✅';
+                csvIndicator.className = 'status-indicator status-success';
+            } else if (csvCompleted > 0) {
+                csvStatus.textContent = `In Progress (${csvCompleted}/${csvChecks.length})`;
+                csvIndicator.className = 'status-indicator status-pending';
+            }
+
+            // XLSX Status
+            const xlsxChecks = ['xlsx1', 'xlsx2', 'xlsx3', 'xlsx4', 'xlsx5'];
+            const xlsxCompleted = xlsxChecks.filter(id => document.getElementById(id).checked).length;
+            const xlsxStatus = document.getElementById('xlsxStatus');
+            const xlsxIndicator = document.querySelector('#testResults p:nth-child(3) .status-indicator');
+            
+            if (xlsxCompleted === xlsxChecks.length) {
+                xlsxStatus.textContent = 'Completed ✅';
+                xlsxIndicator.className = 'status-indicator status-success';
+            } else if (xlsxCompleted > 0) {
+                xlsxStatus.textContent = `In Progress (${xlsxCompleted}/${xlsxChecks.length})`;
+                xlsxIndicator.className = 'status-indicator status-pending';
+            }
+
+            // Screenshot Status
+            const screenshotChecks = ['screenshot1', 'screenshot2', 'screenshot3'];
+            const screenshotCompleted = screenshotChecks.filter(id => document.getElementById(id).checked).length;
+            const screenshotStatus = document.getElementById('screenshotStatus');
+            const screenshotIndicator = document.querySelector('#testResults p:nth-child(5) .status-indicator');
+            
+            if (screenshotCompleted === screenshotChecks.length) {
+                screenshotStatus.textContent = 'All Screenshots Captured ✅';
+                screenshotIndicator.className = 'status-indicator status-success';
+            } else {
+                screenshotStatus.textContent = `${screenshotCompleted}/3 Screenshots`;
+                screenshotIndicator.className = 'status-indicator status-pending';
+            }
+        }
+
+        // Add event listeners to all checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateStatus);
+            });
+        });
+
+        // Generate final report
+        function generateReport() {
+            const report = document.getElementById('finalReport');
+            const reportContent = document.getElementById('reportContent');
+            
+            // Count completed items
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            const completedCheckboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
+            const completionRate = Math.round((completedCheckboxes.length / allCheckboxes.length) * 100);
+            
+            const reportHtml = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                    <h5>📊 Test Completion Summary</h5>
+                    <p><strong>Overall Completion:</strong> ${completionRate}% (${completedCheckboxes.length}/${allCheckboxes.length} items)</p>
+                    <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+                    
+                    <h5>🎯 Feature Test Results:</h5>
+                    <ul>
+                        <li><strong>CV Tailoring Tool:</strong> ${document.querySelectorAll('[id^="cv"]:checked').length}/5 tests passed</li>
+                        <li><strong>CSV Upload:</strong> ${document.querySelectorAll('[id^="csv"]:checked').length}/6 tests passed</li>
+                        <li><strong>XLSX Upload:</strong> ${document.querySelectorAll('[id^="xlsx"]:checked').length}/5 tests passed</li>
+                        <li><strong>Screenshots:</strong> ${document.querySelectorAll('[id^="screenshot"]:checked').length}/3 captured</li>
+                    </ul>
+                    
+                    <p><strong>Status:</strong> ${completionRate === 100 ? '✅ All tests completed successfully!' : '⚠️ Some tests still pending'}</p>
+                    ${completionRate === 100 ? '<p style="color: #28a745; font-weight: bold;">🎉 System ready for production! Send screenshots to Yemi.</p>' : '<p style="color: #ffc107;">⏳ Complete remaining tests before final approval.</p>'}
+                </div>
+            `;
+            
+            reportContent.innerHTML = reportHtml;
+            report.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

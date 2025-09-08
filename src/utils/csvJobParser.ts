@@ -55,31 +55,73 @@ const truncateDescription = (description: string, maxLength: number = 2000): str
     : truncated + '...';
 };
 
-// Generate duplicate key for comparison
+// Generate duplicate key for comparison - more intelligent matching
 const generateDuplicateKey = (job: ParsedJobData): string => {
-  return `${job.title.toLowerCase().trim()}|${job.company.toLowerCase().trim()}|${job.location.toLowerCase().trim()}`;
+  // Normalize text for better duplicate detection
+  const normalize = (text: string): string => {
+    return text.toLowerCase()
+      .trim()
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, ' '); // Normalize whitespace
+  };
+  
+  const title = normalize(job.title || '');
+  const company = normalize(job.company || '');
+  const location = normalize(job.location || '');
+  
+  return `${title}|${company}|${location}`;
 };
 
-// Check for duplicates within the current batch
+// Enhanced duplicate detection with similarity checking
 export const detectDuplicates = (jobs: ParsedJobData[]): Map<string, number[]> => {
   const duplicateMap = new Map<string, number[]>();
   const keyMap = new Map<string, number>();
+  const similarityThreshold = 0.9; // 90% similarity
   
   jobs.forEach((job, index) => {
     const key = generateDuplicateKey(job);
     
+    // First check for exact matches
     if (keyMap.has(key)) {
       const firstIndex = keyMap.get(key)!;
       if (!duplicateMap.has(key)) {
         duplicateMap.set(key, [firstIndex]);
       }
       duplicateMap.get(key)!.push(index);
-    } else {
+      return;
+    }
+    
+    // Check for similar matches (for typos, etc.)
+    let foundSimilar = false;
+    for (const [existingKey, existingIndex] of keyMap.entries()) {
+      if (calculateSimilarity(key, existingKey) > similarityThreshold) {
+        if (!duplicateMap.has(existingKey)) {
+          duplicateMap.set(existingKey, [existingIndex]);
+        }
+        duplicateMap.get(existingKey)!.push(index);
+        foundSimilar = true;
+        break;
+      }
+    }
+    
+    if (!foundSimilar) {
       keyMap.set(key, index);
     }
   });
   
+  console.log(`🔍 Duplicate detection: found ${duplicateMap.size} duplicate groups out of ${jobs.length} jobs`);
   return duplicateMap;
+};
+
+// Simple string similarity calculation (Jaccard similarity)
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const set1 = new Set(str1.split(''));
+  const set2 = new Set(str2.split(''));
+  
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+  
+  return intersection.size / union.size;
 };
 
 // Parse boolean values
@@ -233,80 +275,128 @@ export const parseCSVFile = (file: File): Promise<ParsedJobData[]> => {
   });
 };
 
+// Enhanced job validation with more flexible rules
 export const validateJobData = (job: ParsedJobData, duplicateKey?: string): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   
-  // Required fields validation with more lenient checks
+  // Required fields validation - be more flexible with defaults
   if (!job.title || job.title.trim() === '' || job.title === 'Not specified') {
-    errors.push('Job title is required');
+    errors.push('Job title is required and cannot be empty');
+  } else if (job.title.length < 2) {
+    warnings.push('Job title is very short and may need more detail');
   }
   
   if (!job.company || job.company.trim() === '' || job.company === 'Not specified') {
-    errors.push('Company name is required');
+    errors.push('Company name is required and cannot be empty');
+  } else if (job.company.length < 2) {
+    warnings.push('Company name is very short and may need more detail');
   }
   
+  // Location handling - more flexible
   if (!job.location || job.location.trim() === '') {
-    warnings.push('Location not specified - using "Remote" as default');
+    job.location = 'Remote'; // Auto-fix with default
+    warnings.push('Location was missing - set to "Remote" as default');
   }
   
+  // Description handling
   if (!job.description || job.description.trim() === '' || job.description === 'Job description not provided') {
-    warnings.push('Job description is missing or minimal');
-  } else if (job.description.length > 2000) {
-    warnings.push('Description was truncated to fit length limits');
+    warnings.push('Job description is missing - this may affect job visibility');
+  } else {
+    // Check description quality
+    if (job.description.length < 50) {
+      warnings.push('Job description is quite short - consider adding more details');
+    } else if (job.description.length > 2000) {
+      warnings.push('Job description was truncated to fit length limits');
+    }
+    
+    // Check for placeholder text
+    const placeholderTexts = ['lorem ipsum', 'placeholder', 'job description here', 'to be determined'];
+    if (placeholderTexts.some(placeholder => job.description.toLowerCase().includes(placeholder))) {
+      warnings.push('Job description appears to contain placeholder text');
+    }
   }
   
-  // Employment type validation - more flexible
+  // Employment type validation - auto-correct common variations
   const validEmploymentTypes = ['full-time', 'part-time', 'contract', 'temporary', 'internship'];
   if (job.employment_type && !validEmploymentTypes.includes(job.employment_type.toLowerCase())) {
-    // Auto-correct common variations instead of erroring
+    const originalType = job.employment_type;
     job.employment_type = 'full-time'; // Default fallback
-    warnings.push(`Employment type was normalized to: ${job.employment_type}`);
+    warnings.push(`Employment type "${originalType}" was normalized to "${job.employment_type}"`);
   }
   
-  // Experience level validation - more flexible
+  // Experience level validation - auto-correct common variations
   const validExperienceLevels = ['entry', 'mid', 'senior', 'principal'];
   if (job.experience_level && !validExperienceLevels.includes(job.experience_level.toLowerCase())) {
-    // Auto-correct common variations instead of erroring
+    const originalLevel = job.experience_level;
     job.experience_level = 'mid'; // Default fallback
-    warnings.push(`Experience level was normalized to: ${job.experience_level}`);
+    warnings.push(`Experience level "${originalLevel}" was normalized to "${job.experience_level}"`);
   }
   
-  // Validate salary range
-  if (job.salary_min && job.salary_max && job.salary_min > job.salary_max) {
-    warnings.push('Minimum salary is greater than maximum salary - please verify');
-    // Swap them if they're clearly reversed
-    if (job.salary_min > job.salary_max * 2) {
-      [job.salary_min, job.salary_max] = [job.salary_max, job.salary_min];
-      warnings.push('Salary range was automatically corrected');
-    }
-  }
-  
-  // Validate application value (email or URL) - more lenient
-  if (job.application_value) {
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(job.application_value);
-    const isUrl = /^https?:\/\/.+/.test(job.application_value);
-    if (!isEmail && !isUrl) {
-      // Try to fix common issues
-      if (job.application_value.includes('@') && !job.application_value.includes('.')) {
-        warnings.push('Application email may be missing domain extension');
-      } else if (job.application_value.includes('www.') && !job.application_value.startsWith('http')) {
-        job.application_value = 'https://' + job.application_value;
-        warnings.push('Application URL was corrected to include protocol');
+  // Salary validation with auto-correction
+  if (job.salary_min && job.salary_max) {
+    if (job.salary_min > job.salary_max) {
+      // Check if they're clearly swapped
+      if (job.salary_min > job.salary_max * 2) {
+        [job.salary_min, job.salary_max] = [job.salary_max, job.salary_min];
+        warnings.push('Salary range was swapped - minimum was greater than maximum');
       } else {
-        warnings.push('Application value should be a valid email or URL');
-        // Don't error out, just warn
+        warnings.push('Minimum salary is greater than maximum - please verify the salary range');
       }
     }
+    
+    // Check for unrealistic salaries
+    if (job.salary_min < 1000) {
+      warnings.push('Minimum salary seems very low - please verify the amount');
+    }
+    if (job.salary_max > 1000000) {
+      warnings.push('Maximum salary seems very high - please verify the amount');
+    }
   }
   
-  // Additional data quality checks
-  if (job.title && job.title.length < 3) {
-    warnings.push('Job title is very short');
+  // Application value validation - more lenient with auto-correction
+  if (job.application_value) {
+    const trimmedValue = job.application_value.trim();
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // URL validation  
+    const urlRegex = /^https?:\/\/.+/;
+    
+    if (emailRegex.test(trimmedValue)) {
+      // Valid email
+      job.application_value = trimmedValue;
+    } else if (urlRegex.test(trimmedValue)) {
+      // Valid URL
+      job.application_value = trimmedValue;
+    } else if (trimmedValue.includes('@')) {
+      // Might be an email missing domain
+      if (!trimmedValue.includes('.')) {
+        warnings.push('Application email may be missing domain extension (e.g., .com)');
+      } else {
+        warnings.push('Application email format may be invalid');
+      }
+    } else if (trimmedValue.includes('www.') || trimmedValue.includes('.com') || trimmedValue.includes('.org')) {
+      // Might be a URL missing protocol
+      if (!trimmedValue.startsWith('http')) {
+        job.application_value = 'https://' + trimmedValue;
+        warnings.push('Application URL was corrected to include https:// protocol');
+      }
+    } else {
+      warnings.push('Application value should be a valid email address or URL');
+    }
   }
   
-  if (job.company && job.company.length < 2) {
-    warnings.push('Company name is very short');
+  // Tech stack validation
+  if (job.tech_stack && job.tech_stack.length > 20) {
+    job.tech_stack = job.tech_stack.slice(0, 20);
+    warnings.push('Tech stack was trimmed to 20 items for better readability');
+  }
+  
+  // Requirements validation
+  if (job.requirements && job.requirements.length > 15) {
+    job.requirements = job.requirements.slice(0, 15);
+    warnings.push('Requirements list was trimmed to 15 items for better readability');
   }
   
   return {

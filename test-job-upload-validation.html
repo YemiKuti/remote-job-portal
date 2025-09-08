@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Upload Validation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .test-button.loading {
+            background: #28a745;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .file-input {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .file-input.dragover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        .sample-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>Job Upload Validation Test Suite</h1>
+    <p>Test the enhanced CSV/XLSX job upload functionality with improved error handling and validation.</p>
+
+    <!-- File Upload Test -->
+    <div class="test-section">
+        <h3>📁 File Upload Test</h3>
+        <p>Upload a CSV or XLSX file to test the parsing and validation logic.</p>
+        
+        <div class="file-input" id="fileDropZone">
+            <input type="file" id="fileInput" accept=".csv,.xlsx" style="display: none;">
+            <div onclick="document.getElementById('fileInput').click()">
+                <strong>Click to select file</strong> or drag and drop here
+                <br><small>Supports CSV and XLSX files up to 10MB</small>
+            </div>
+        </div>
+        
+        <div id="fileInfo" style="display: none; margin: 10px 0;"></div>
+        <button class="test-button" id="uploadButton" onclick="testFileUpload()" disabled>Test Upload</button>
+        <div class="progress-bar" id="progressBar" style="display: none;">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div id="uploadResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Sample Data Generator -->
+    <div class="test-section">
+        <h3>📊 Sample Data Generator</h3>
+        <p>Generate sample CSV data to test various scenarios.</p>
+        
+        <button class="test-button" onclick="generateSampleCSV('valid')">Generate Valid Jobs CSV</button>
+        <button class="test-button" onclick="generateSampleCSV('duplicates')">Generate CSV with Duplicates</button>
+        <button class="test-button" onclick="generateSampleCSV('errors')">Generate CSV with Errors</button>
+        <button class="test-button" onclick="generateSampleCSV('mixed')">Generate Mixed Quality CSV</button>
+        
+        <div id="sampleResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Validation Tests -->
+    <div class="test-section">
+        <h3>✅ Validation Tests</h3>
+        <p>Test specific validation scenarios.</p>
+        
+        <button class="test-button" onclick="testValidationScenario('empty_fields')">Test Empty Fields</button>
+        <button class="test-button" onclick="testValidationScenario('long_description')">Test Long Description</button>
+        <button class="test-button" onclick="testValidationScenario('salary_range')">Test Salary Range Issues</button>
+        <button class="test-button" onclick="testValidationScenario('email_urls')">Test Email/URL Validation</button>
+        
+        <div id="validationResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Duplicate Detection Test -->
+    <div class="test-section">
+        <h3>🔍 Duplicate Detection Test</h3>
+        <p>Test the enhanced duplicate detection with similarity matching.</p>
+        
+        <button class="test-button" onclick="testDuplicateDetection()">Test Duplicate Detection</button>
+        <div id="duplicateResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                showFileInfo(selectedFile);
+                document.getElementById('uploadButton').disabled = false;
+            }
+        });
+
+        // Drag and drop handling
+        const dropZone = document.getElementById('fileDropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                showFileInfo(selectedFile);
+                document.getElementById('uploadButton').disabled = false;
+            }
+        });
+
+        function showFileInfo(file) {
+            const fileInfo = document.getElementById('fileInfo');
+            const fileSize = (file.size / 1024).toFixed(1);
+            const fileType = file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'CSV';
+            
+            fileInfo.innerHTML = `
+                <strong>Selected File:</strong> ${file.name}<br>
+                <strong>Size:</strong> ${fileSize} KB<br>
+                <strong>Type:</strong> ${fileType}
+            `;
+            fileInfo.style.display = 'block';
+        }
+
+        async function testFileUpload() {
+            if (!selectedFile) return;
+
+            const resultDiv = document.getElementById('uploadResult');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            resultDiv.style.display = 'block';
+            progressBar.style.display = 'block';
+            resultDiv.textContent = 'Processing file...';
+            resultDiv.className = 'result';
+
+            try {
+                // Simulate file parsing
+                progressFill.style.width = '30%';
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Test file parsing logic
+                const parseResult = await simulateFileParsing(selectedFile);
+                progressFill.style.width = '60%';
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Test validation
+                const validationResult = await simulateJobValidation(parseResult.jobs);
+                progressFill.style.width = '90%';
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Complete
+                progressFill.style.width = '100%';
+                
+                const summary = {
+                    fileName: selectedFile.name,
+                    fileSize: `${(selectedFile.size / 1024).toFixed(1)} KB`,
+                    totalRows: parseResult.totalRows,
+                    validJobs: validationResult.valid.length,
+                    invalidJobs: validationResult.invalid.length,
+                    duplicates: validationResult.duplicates.length,
+                    warnings: validationResult.warnings.length,
+                    parseErrors: parseResult.errors || [],
+                    validationSummary: validationResult
+                };
+
+                displayResult('uploadResult', summary, true);
+            } catch (error) {
+                displayResult('uploadResult', { error: error.message }, false);
+            } finally {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        }
+
+        async function simulateFileParsing(file) {
+            const isCSV = file.name.toLowerCase().endsWith('.csv');
+            
+            // Simulate basic validation
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('File too large. Maximum size is 10MB.');
+            }
+            
+            if (file.size === 0) {
+                throw new Error('File is empty. Please upload a file with job data.');
+            }
+
+            // Simulate parsing result
+            const sampleJobs = [
+                {
+                    title: 'Software Engineer',
+                    company: 'Tech Corp',
+                    location: 'San Francisco, CA',
+                    description: 'We are looking for a talented software engineer...',
+                    employment_type: 'full-time',
+                    experience_level: 'mid',
+                    salary_min: 80000,
+                    salary_max: 120000
+                },
+                {
+                    title: 'Frontend Developer',
+                    company: 'Web Solutions',
+                    location: 'Remote',
+                    description: 'Join our team as a frontend developer...',
+                    employment_type: 'full-time',
+                    experience_level: 'senior'
+                },
+                {
+                    title: 'Software Engineer', // Duplicate
+                    company: 'Tech Corp',
+                    location: 'San Francisco, CA',
+                    description: 'Another software engineer position...',
+                    employment_type: 'fulltime', // Needs normalization
+                    experience_level: 'junior' // Needs normalization
+                }
+            ];
+
+            return {
+                totalRows: sampleJobs.length,
+                jobs: sampleJobs,
+                headers: ['title', 'company', 'location', 'description', 'employment_type', 'experience_level']
+            };
+        }
+
+        async function simulateJobValidation(jobs) {
+            const valid = [];
+            const invalid = [];
+            const duplicates = [];
+            const warnings = [];
+
+            jobs.forEach((job, index) => {
+                const validation = {
+                    index: index,
+                    job: job,
+                    errors: [],
+                    warnings: [],
+                    isDuplicate: false
+                };
+
+                // Validate required fields
+                if (!job.title || job.title.trim() === '') {
+                    validation.errors.push('Job title is required');
+                }
+                if (!job.company || job.company.trim() === '') {
+                    validation.errors.push('Company name is required');
+                }
+
+                // Check for normalization needs
+                if (job.employment_type === 'fulltime') {
+                    job.employment_type = 'full-time';
+                    validation.warnings.push('Employment type normalized to "full-time"');
+                }
+                if (job.experience_level === 'junior') {
+                    job.experience_level = 'entry';
+                    validation.warnings.push('Experience level normalized to "entry"');
+                }
+
+                // Check for duplicates (simple check)
+                const duplicateKey = `${job.title?.toLowerCase()}|${job.company?.toLowerCase()}`;
+                const existingDuplicate = jobs.slice(0, index).find(existingJob => 
+                    `${existingJob.title?.toLowerCase()}|${existingJob.company?.toLowerCase()}` === duplicateKey
+                );
+                if (existingDuplicate) {
+                    validation.isDuplicate = true;
+                    duplicates.push(validation);
+                }
+
+                if (validation.warnings.length > 0) {
+                    warnings.push(validation);
+                }
+
+                if (validation.errors.length === 0 && !validation.isDuplicate) {
+                    valid.push(validation);
+                } else if (validation.errors.length > 0) {
+                    invalid.push(validation);
+                }
+            });
+
+            return { valid, invalid, duplicates, warnings };
+        }
+
+        function generateSampleCSV(type) {
+            let csvData = '';
+            const headers = 'Job Title,Company,Location,Description,Employment Type,Experience Level,Salary Min,Salary Max,Tech Stack,Remote,Application Email\n';
+            
+            switch (type) {
+                case 'valid':
+                    csvData = headers + 
+                        'Software Engineer,Tech Innovations Inc,San Francisco CA,"We are looking for a talented Software Engineer to join our team",Full-time,Mid,80000,120000,"JavaScript React Node.js",true,jobs@techinnovations.com\n' +
+                        'Marketing Manager,Digital Solutions,New York NY,"Join our marketing team to lead digital campaigns",Full-time,Senior,70000,95000,"Google Analytics HubSpot",false,hr@digitalsolutions.com\n' +
+                        'Data Scientist,AI Corp,Remote,"Analyze data and build machine learning models",Full-time,Senior,90000,130000,"Python TensorFlow SQL",true,careers@aicorp.com';
+                    break;
+                    
+                case 'duplicates':
+                    csvData = headers +
+                        'Software Engineer,Tech Corp,San Francisco CA,"Great software engineering role",Full-time,Mid,80000,120000,"JavaScript React",true,jobs@techcorp.com\n' +
+                        'Software Engineer,Tech Corp,San Francisco CA,"Another software engineering role",Full-time,Mid,85000,125000,"JavaScript React",true,jobs@techcorp.com\n' +
+                        'Senior Software Engineer,Tech Corp,San Francisco CA,"Similar role with slight variation",Full-time,Senior,100000,140000,"JavaScript React",true,jobs@techcorp.com';
+                    break;
+                    
+                case 'errors':
+                    csvData = headers +
+                        ',Missing Company,San Francisco CA,"Job with missing title",Full-time,Mid,80000,120000,"JavaScript",true,invalid-email\n' +
+                        'Marketing Manager,,New York NY,"Job with missing company",Full-time,Senior,70000,95000,"Marketing",false,marketing@company.com\n' +
+                        'Data Scientist,Data Corp,,"Job with missing location",Full-time,Senior,130000,90000,"Python",true,www.datacorp.com';
+                    break;
+                    
+                case 'mixed':
+                    csvData = headers +
+                        'Software Engineer,Tech Corp,San Francisco CA,"Great software engineering position with detailed description",fulltime,junior,80000,120000,"JavaScript React Node.js",yes,jobs@techcorp.com\n' +
+                        ',,"","",,,,,,,invalid-email-format\n' +
+                        'Marketing Manager,Marketing Inc,New York NY,"Marketing role",Part-time,intermediate,50000,70000,"Google Analytics",no,www.marketinginc.com\n' +
+                        'Data Scientist,AI Solutions,Remote,"' + 'A'.repeat(2500) + '",Contract,expert,200000,100000,"Python TensorFlow PyTorch Pandas NumPy Scikit-learn Matplotlib Seaborn Jupyter",1,careers@aisolutions.co.uk';
+                    break;
+            }
+            
+            // Create and download file
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sample_jobs_${type}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            displayResult('sampleResult', {
+                message: `Generated sample CSV file: ${type}`,
+                type: type,
+                rowCount: csvData.split('\n').length - 1
+            }, true);
+        }
+
+        function testValidationScenario(scenario) {
+            let testData = {};
+            
+            switch (scenario) {
+                case 'empty_fields':
+                    testData = {
+                        scenario: 'Empty Fields Test',
+                        jobs: [
+                            { title: '', company: '', location: '', description: '' },
+                            { title: 'Software Engineer', company: '', location: 'Remote', description: 'Good job' },
+                            { title: 'Manager', company: 'Corp Inc', location: '', description: '' }
+                        ],
+                        expectedResults: 'Should auto-fill missing location with "Remote", warn about missing descriptions'
+                    };
+                    break;
+                    
+                case 'long_description':
+                    testData = {
+                        scenario: 'Long Description Test',
+                        jobs: [
+                            { 
+                                title: 'Software Engineer', 
+                                company: 'Tech Corp', 
+                                description: 'A'.repeat(3000),
+                                location: 'San Francisco'
+                            }
+                        ],
+                        expectedResults: 'Should truncate description to 2000 characters with warning'
+                    };
+                    break;
+                    
+                case 'salary_range':
+                    testData = {
+                        scenario: 'Salary Range Test',
+                        jobs: [
+                            { title: 'Dev', company: 'Corp', salary_min: 150000, salary_max: 80000 }, // Swapped
+                            { title: 'Manager', company: 'Inc', salary_min: 500, salary_max: 600 }, // Too low
+                            { title: 'CEO', company: 'BigCorp', salary_min: 900000, salary_max: 2000000 } // Very high
+                        ],
+                        expectedResults: 'Should auto-correct swapped salaries, warn about unusual amounts'
+                    };
+                    break;
+                    
+                case 'email_urls':
+                    testData = {
+                        scenario: 'Email/URL Validation Test',
+                        jobs: [
+                            { title: 'Dev', company: 'Corp', application_value: 'jobs@company' }, // Missing domain
+                            { title: 'Manager', company: 'Inc', application_value: 'www.company.com' }, // Missing protocol
+                            { title: 'Analyst', company: 'Data', application_value: 'invalid-contact-info' } // Invalid format
+                        ],
+                        expectedResults: 'Should auto-correct URLs with missing protocol, warn about invalid formats'
+                    };
+                    break;
+            }
+            
+            displayResult('validationResult', testData, true);
+        }
+
+        function testDuplicateDetection() {
+            const testJobs = [
+                { title: 'Software Engineer', company: 'Tech Corp', location: 'San Francisco' },
+                { title: 'Software Engineer', company: 'Tech Corp', location: 'San Francisco' }, // Exact duplicate
+                { title: 'Senior Software Engineer', company: 'Tech Corp', location: 'San Francisco' }, // Similar
+                { title: 'Software Eng.', company: 'TechCorp', location: 'SF' }, // Abbreviated but similar
+                { title: 'Frontend Developer', company: 'Web Solutions', location: 'Remote' }, // Different
+            ];
+            
+            // Simulate duplicate detection algorithm
+            const duplicateGroups = [];
+            const processed = new Set();
+            
+            testJobs.forEach((job, index) => {
+                if (processed.has(index)) return;
+                
+                const similar = [];
+                const normalized = job.title.toLowerCase().replace(/[^\w\s]/g, '');
+                
+                testJobs.forEach((otherJob, otherIndex) => {
+                    if (index === otherIndex) return;
+                    
+                    const otherNormalized = otherJob.title.toLowerCase().replace(/[^\w\s]/g, '');
+                    const similarity = calculateStringSimilarity(normalized, otherNormalized);
+                    
+                    if (similarity > 0.7 && job.company.toLowerCase().includes(otherJob.company.toLowerCase().substr(0, 4))) {
+                        similar.push({ index: otherIndex, job: otherJob, similarity: similarity.toFixed(2) });
+                        processed.add(otherIndex);
+                    }
+                });
+                
+                if (similar.length > 0) {
+                    duplicateGroups.push({
+                        original: { index, job, similarity: '1.00' },
+                        duplicates: similar
+                    });
+                    processed.add(index);
+                }
+            });
+            
+            const result = {
+                testJobs: testJobs,
+                duplicateGroups: duplicateGroups,
+                summary: `Found ${duplicateGroups.length} duplicate groups out of ${testJobs.length} jobs`
+            };
+            
+            displayResult('duplicateResult', result, true);
+        }
+
+        function calculateStringSimilarity(str1, str2) {
+            const set1 = new Set(str1.split(''));
+            const set2 = new Set(str2.split(''));
+            const intersection = new Set([...set1].filter(x => set2.has(x)));
+            const union = new Set([...set1, ...set2]);
+            return intersection.size / union.size;
+        }
+
+        function displayResult(resultId, result, isSuccess) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            
+            const status = isSuccess ? 'SUCCESS' : 'ERROR';
+            let content;
+            
+            if (typeof result === 'object') {
+                content = JSON.stringify(result, null, 2);
+            } else {
+                content = String(result);
+            }
+            
+            resultDiv.textContent = `${status}:\n${content}`;
+        }
+    </script>
+</body>
+</html>

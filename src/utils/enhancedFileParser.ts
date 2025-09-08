@@ -208,39 +208,78 @@ const parseXLSXFile = async (file: File): Promise<ParsedFileData> => {
   });
 };
 
-// Enhanced file parser that handles both CSV and XLSX
+// Enhanced file parser that handles both CSV and XLSX with improved error handling
 export const parseFile = async (file: File): Promise<FileParseResult> => {
   try {
+    console.log(`🔄 Starting file parse: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       return {
         success: false,
-        error: 'File too large. Maximum size is 10MB.'
+        error: 'File too large. Maximum size is 10MB. Please reduce the file size or split your data into smaller files.'
+      };
+    }
+    
+    // Check if file is empty
+    if (file.size === 0) {
+      return {
+        success: false,
+        error: 'File is empty. Please upload a file with job data.'
       };
     }
     
     const fileType = detectFileType(file);
+    console.log(`📋 Detected file type: ${fileType}`);
     
     if (fileType === 'unsupported') {
       return {
         success: false,
-        error: 'Unsupported file format. Please upload a .csv or .xlsx file.'
+        error: 'Unsupported file format. Please upload a .csv or .xlsx file with job data.'
       };
     }
     
     let data: ParsedFileData;
     
-    if (fileType === 'csv') {
-      data = await parseCSVFile(file);
-    } else {
-      data = await parseXLSXFile(file);
+    try {
+      if (fileType === 'csv') {
+        data = await parseCSVFile(file);
+      } else {
+        data = await parseXLSXFile(file);
+      }
+    } catch (parseError: any) {
+      console.error('❌ File parsing failed:', parseError);
+      return {
+        success: false,
+        error: `Failed to parse ${fileType.toUpperCase()} file: ${parseError.message}. Please check the file format and try again.`
+      };
     }
     
     // Validate we have some headers
-    if (data.headers.length === 0) {
+    if (!data.headers || data.headers.length === 0) {
       return {
         success: false,
-        error: 'No valid headers found in file. Please check the file format.'
+        error: 'No valid headers found in file. Please ensure your file has a header row with column names like "Job Title", "Company", "Location", etc.'
+      };
+    }
+    
+    // Check for minimum required columns
+    const headerText = data.headers.join(' ').toLowerCase();
+    const hasJobTitle = headerText.includes('job') || headerText.includes('title') || headerText.includes('position');
+    const hasCompany = headerText.includes('company') || headerText.includes('employer');
+    
+    if (!hasJobTitle && !hasCompany) {
+      return {
+        success: false,
+        error: 'File appears to be missing essential job columns. Please ensure your file has columns like "Job Title" and "Company".'
+      };
+    }
+    
+    // Validate we have actual data
+    if (!data.rows || data.rows.length === 0) {
+      return {
+        success: false,
+        error: 'No data rows found in file. Please ensure your file contains job data below the header row.'
       };
     }
     
@@ -248,18 +287,39 @@ export const parseFile = async (file: File): Promise<FileParseResult> => {
     if (data.totalRows > 1000) {
       return {
         success: false,
-        error: 'File contains too many rows (maximum 1000). Please split your file.'
+        error: 'File contains too many rows (maximum 1000). Please split your file into smaller batches for better performance.'
       };
     }
+    
+    // Check for completely empty rows and filter them out
+    const validRows = data.rows.filter(row => 
+      Object.values(row).some(value => value && String(value).trim().length > 0)
+    );
+    
+    if (validRows.length === 0) {
+      return {
+        success: false,
+        error: 'All data rows appear to be empty. Please check your file and ensure it contains job information.'
+      };
+    }
+    
+    if (validRows.length !== data.rows.length) {
+      console.log(`📊 Filtered out ${data.rows.length - validRows.length} empty rows`);
+      data.rows = validRows;
+      data.totalRows = validRows.length;
+    }
+    
+    console.log(`✅ File parsed successfully: ${data.totalRows} rows, ${data.headers.length} columns`);
     
     return {
       success: true,
       data
     };
   } catch (error: any) {
+    console.error('❌ Unexpected error during file parsing:', error);
     return {
       success: false,
-      error: error.message || 'Failed to parse file'
+      error: `Unexpected error: ${error.message || 'Failed to parse file'}. Please try again or contact support if the problem persists.`
     };
   }
 };

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring Tool Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .test-button.loading {
+            background: #28a745;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CV Tailoring Tool - Test Suite</h1>
+    <p>This test suite validates the CV Tailoring Tool's error handling and functionality.</p>
+
+    <!-- API Configuration -->
+    <div class="test-section">
+        <h3>API Configuration</h3>
+        <div class="input-group">
+            <label for="apiUrl">Supabase Function URL:</label>
+            <input type="text" id="apiUrl" placeholder="https://mmbrvcndxhipaoxysvwr.supabase.co/functions/v1/tailor-cv">
+        </div>
+        <div class="input-group">
+            <label for="apiKey">Supabase Anon Key:</label>
+            <input type="text" id="apiKey" placeholder="Your Supabase anon key">
+        </div>
+    </div>
+
+    <!-- Test Case 1: Valid Input -->
+    <div class="test-section">
+        <h3>Test 1: Valid Input (Success Case)</h3>
+        <p>This should return a successfully tailored CV with analysis.</p>
+        <button class="test-button" onclick="runValidTest()">Run Valid Test</button>
+        <div id="result1" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Test Case 2: Empty Resume -->
+    <div class="test-section">
+        <h3>Test 2: Empty Resume Content</h3>
+        <p>This should return a user-friendly error about missing resume content.</p>
+        <button class="test-button" onclick="runEmptyResumeTest()">Run Empty Resume Test</button>
+        <div id="result2" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Test Case 3: Empty Job Description -->
+    <div class="test-section">
+        <h3>Test 3: Empty Job Description</h3>
+        <p>This should return a user-friendly error about missing job description.</p>
+        <button class="test-button" onclick="runEmptyJobTest()">Run Empty Job Test</button>
+        <div id="result3" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Test Case 4: Oversized Content -->
+    <div class="test-section">
+        <h3>Test 4: Oversized Content</h3>
+        <p>This should return an error about content being too large.</p>
+        <button class="test-button" onclick="runOversizeTest()">Run Oversize Test</button>
+        <div id="result4" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Test Case 5: Custom Input -->
+    <div class="test-section">
+        <h3>Test 5: Custom Input</h3>
+        <p>Test with your own resume and job description content.</p>
+        <div class="input-group">
+            <label for="customResume">Resume Content:</label>
+            <textarea id="customResume" placeholder="Paste your resume content here..."></textarea>
+        </div>
+        <div class="input-group">
+            <label for="customJob">Job Description:</label>
+            <textarea id="customJob" placeholder="Paste job description here..."></textarea>
+        </div>
+        <button class="test-button" onclick="runCustomTest()">Run Custom Test</button>
+        <div id="result5" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const sampleResume = `
+John Doe
+Senior Software Engineer
+Email: john.doe@email.com
+Phone: (555) 123-4567
+
+SUMMARY
+Experienced software engineer with 8+ years developing scalable web applications using JavaScript, React, Node.js, and cloud technologies. Proven track record of leading teams and delivering high-quality solutions.
+
+EXPERIENCE
+Senior Software Engineer - Tech Solutions Inc. (2020-Present)
+• Led development of microservices architecture serving 1M+ users
+• Implemented React-based dashboard reducing load times by 40%
+• Mentored 5 junior developers and conducted code reviews
+• Technologies: React, Node.js, AWS, Docker, MongoDB
+
+Software Engineer - Digital Innovations (2018-2020)
+• Built REST APIs using Node.js and Express framework
+• Developed responsive web applications with React and Redux
+• Collaborated with cross-functional teams in Agile environment
+• Technologies: JavaScript, React, Python, PostgreSQL
+
+SKILLS
+• Programming: JavaScript, TypeScript, Python, SQL
+• Frontend: React, Vue.js, HTML5, CSS3, Redux
+• Backend: Node.js, Express, Django, REST APIs
+• Database: MongoDB, PostgreSQL, Redis
+• Cloud: AWS, Docker, Kubernetes
+• Tools: Git, Jenkins, Jira, Slack
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology (2014-2018)
+        `.trim();
+
+        const sampleJobDescription = `
+Senior Full Stack Developer - Remote
+TechCorp Solutions
+
+We are seeking a Senior Full Stack Developer to join our growing engineering team. You will be responsible for developing and maintaining web applications that serve millions of users worldwide.
+
+REQUIREMENTS:
+• 5+ years of experience in full-stack development
+• Strong proficiency in JavaScript, TypeScript, and modern frameworks (React, Vue.js)
+• Experience with Node.js, Express, and RESTful API development
+• Knowledge of database systems (PostgreSQL, MongoDB)
+• Experience with cloud platforms (AWS, Azure, or GCP)
+• Familiarity with containerization (Docker, Kubernetes)
+• Strong understanding of Agile development methodologies
+• Excellent communication and teamwork skills
+
+RESPONSIBILITIES:
+• Design and develop scalable web applications
+• Collaborate with product managers and designers
+• Write clean, maintainable, and well-tested code
+• Participate in code reviews and technical discussions
+• Optimize applications for maximum speed and scalability
+• Stay up-to-date with emerging technologies and industry trends
+
+PREFERRED QUALIFICATIONS:
+• Experience with microservices architecture
+• Knowledge of CI/CD pipelines
+• Experience with GraphQL
+• Background in DevOps practices
+• Bachelor's degree in Computer Science or related field
+
+We offer competitive salary, comprehensive benefits, and the opportunity to work with cutting-edge technologies in a collaborative environment.
+        `.trim();
+
+        async function callTailorCV(data) {
+            const apiUrl = document.getElementById('apiUrl').value || 'https://mmbrvcndxhipaoxysvwr.supabase.co/functions/v1/tailor-cv';
+            const apiKey = document.getElementById('apiKey').value || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tYnJ2Y25keGhpcGFveHlzdndyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNzE2NDcsImV4cCI6MjA2MTg0NzY0N30.VWBmdbI7lMzHaaXl6ASJnc2116YnHm0WLHE0bkfW870';
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'apikey': apiKey
+                },
+                body: JSON.stringify(data)
+            });
+
+            return await response.json();
+        }
+
+        function setButtonLoading(buttonId, isLoading) {
+            const button = document.querySelector(`#${buttonId}`);
+            if (isLoading) {
+                button.disabled = true;
+                button.classList.add('loading');
+                button.textContent = button.textContent.replace('Run', 'Running...');
+            } else {
+                button.disabled = false;
+                button.classList.remove('loading');
+                button.textContent = button.textContent.replace('Running...', 'Run');
+            }
+        }
+
+        function displayResult(resultId, result, isSuccess) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            
+            const status = isSuccess ? 'SUCCESS' : 'ERROR';
+            const content = JSON.stringify(result, null, 2);
+            
+            resultDiv.textContent = `${status}:\n${content}`;
+        }
+
+        async function runValidTest() {
+            try {
+                setButtonLoading('result1', true);
+                
+                const data = {
+                    resumeContent: sampleResume,
+                    jobDescription: sampleJobDescription,
+                    jobTitle: 'Senior Full Stack Developer',
+                    companyName: 'TechCorp Solutions',
+                    candidateData: {
+                        name: 'John Doe',
+                        email: 'john.doe@email.com',
+                        phone: '(555) 123-4567'
+                    }
+                };
+
+                const result = await callTailorCV(data);
+                displayResult('result1', result, result.success !== false && !result.error);
+            } catch (error) {
+                displayResult('result1', { error: error.message }, false);
+            } finally {
+                setButtonLoading('result1', false);
+            }
+        }
+
+        async function runEmptyResumeTest() {
+            try {
+                setButtonLoading('result2', true);
+                
+                const data = {
+                    resumeContent: '',
+                    jobDescription: sampleJobDescription,
+                    jobTitle: 'Senior Full Stack Developer',
+                    companyName: 'TechCorp Solutions',
+                    candidateData: {}
+                };
+
+                const result = await callTailorCV(data);
+                displayResult('result2', result, result.success === false && result.error);
+            } catch (error) {
+                displayResult('result2', { error: error.message }, false);
+            } finally {
+                setButtonLoading('result2', false);
+            }
+        }
+
+        async function runEmptyJobTest() {
+            try {
+                setButtonLoading('result3', true);
+                
+                const data = {
+                    resumeContent: sampleResume,
+                    jobDescription: '',
+                    jobTitle: 'Senior Full Stack Developer',
+                    companyName: 'TechCorp Solutions',
+                    candidateData: {
+                        name: 'John Doe',
+                        email: 'john.doe@email.com'
+                    }
+                };
+
+                const result = await callTailorCV(data);
+                displayResult('result3', result, result.success === false && result.error);
+            } catch (error) {
+                displayResult('result3', { error: error.message }, false);
+            } finally {
+                setButtonLoading('result3', false);
+            }
+        }
+
+        async function runOversizeTest() {
+            try {
+                setButtonLoading('result4', true);
+                
+                // Create oversized content
+                const oversizedResume = sampleResume.repeat(1000); // Make it very large
+                
+                const data = {
+                    resumeContent: oversizedResume,
+                    jobDescription: sampleJobDescription,
+                    jobTitle: 'Senior Full Stack Developer',
+                    companyName: 'TechCorp Solutions',
+                    candidateData: {
+                        name: 'John Doe',
+                        email: 'john.doe@email.com'
+                    }
+                };
+
+                const result = await callTailorCV(data);
+                displayResult('result4', result, result.success === false && result.error);
+            } catch (error) {
+                displayResult('result4', { error: error.message }, false);
+            } finally {
+                setButtonLoading('result4', false);
+            }
+        }
+
+        async function runCustomTest() {
+            try {
+                setButtonLoading('result5', true);
+                
+                const customResume = document.getElementById('customResume').value;
+                const customJob = document.getElementById('customJob').value;
+                
+                const data = {
+                    resumeContent: customResume,
+                    jobDescription: customJob,
+                    jobTitle: 'Custom Job Title',
+                    companyName: 'Custom Company',
+                    candidateData: {
+                        name: 'Test User',
+                        email: 'test@email.com'
+                    }
+                };
+
+                const result = await callTailorCV(data);
+                displayResult('result5', result, result.success !== false && !result.error);
+            } catch (error) {
+                displayResult('result5', { error: error.message }, false);
+            } finally {
+                setButtonLoading('result5', false);
+            }
+        }
+
+        // Pre-populate custom test areas with sample data
+        window.onload = function() {
+            document.getElementById('customResume').value = sampleResume.substring(0, 1000) + '...';
+            document.getElementById('customJob').value = sampleJobDescription.substring(0, 500) + '...';
+        };
+    </script>
+</body>
+</html>

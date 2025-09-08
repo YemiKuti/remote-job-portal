@@ -103,6 +103,19 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       return;
     }
 
+    // Check file format if available
+    if (selectedResume.original_filename) {
+      const fileName = selectedResume.original_filename.toLowerCase();
+      const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
+      const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+      
+      if (!isSupported) {
+        setError('Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files only.');
+        toast.error('Please upload a valid CV in PDF, DOC, DOCX, or TXT format.');
+        return;
+      }
+    }
+
     if (!jobDescription || jobDescription.trim().length === 0) {
       setError('Please provide a job description to tailor your CV.');
       toast.error('Job description is required for CV tailoring.');
@@ -118,6 +131,12 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     if (jobDescription.length < 50) {
       setError('Job description appears too brief. Please provide more details about the job requirements.');
       toast.error('Job description is too brief. Please add more details about the job.');
+      return;
+    }
+
+    if (resumeContent.length > 50000) {
+      setError('Resume content is too large. Please provide a shorter resume.');
+      toast.error('Resume content is too large. Please provide a resume under 50,000 characters.');
       return;
     }
 

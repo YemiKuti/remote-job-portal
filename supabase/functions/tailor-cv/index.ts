@@ -343,11 +343,12 @@ serve(async (req) => {
         console.error(`❌ [${requestId}] Invalid JSON in request body:`, error);
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Invalid request format. Please ensure your data is properly formatted.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -362,11 +363,12 @@ serve(async (req) => {
       if (!resumeContent || resumeContent.trim() === '') {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Please upload a valid resume. Resume content is required for CV tailoring.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -375,11 +377,12 @@ serve(async (req) => {
       if (!jobDescription || jobDescription.trim() === '') {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Please provide a job description. Job requirements are needed to tailor your CV.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -389,11 +392,12 @@ serve(async (req) => {
       if (resumeContent.length > 50000) {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Resume content is too large. Please provide a resume under 50,000 characters.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -402,11 +406,12 @@ serve(async (req) => {
       if (jobDescription.length > 20000) {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Job description is too large. Please provide a job description under 20,000 characters.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -416,11 +421,12 @@ serve(async (req) => {
       if (resumeContent.length < 100) {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Resume content appears too short. Please provide a more detailed resume with work experience and skills.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -429,11 +435,12 @@ serve(async (req) => {
       if (jobDescription.length < 50) {
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'Job description appears too brief. Please provide a more detailed job description with requirements and responsibilities.',
             requestId: requestId 
           }),
           { 
-            status: 400, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
@@ -449,11 +456,12 @@ serve(async (req) => {
         console.error(`❌ [${requestId}] OpenAI API key not configured`);
         return new Response(
           JSON.stringify({ 
+            success: false,
             error: 'AI service not configured. Please contact support.',
             requestId: requestId 
           }),
           { 
-            status: 503, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );

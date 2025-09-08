@@ -275,45 +275,91 @@ export const parseCSVFile = (file: File): Promise<ParsedJobData[]> => {
   });
 };
 
-// Enhanced job validation with more flexible rules
+// Enhanced job validation with more intelligent auto-fixing
 export const validateJobData = (job: ParsedJobData, duplicateKey?: string): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   
-  // Required fields validation - be more flexible with defaults
+  // Auto-fix common data issues before validation
+  if (job.title) {
+    job.title = job.title.trim();
+    // Remove common prefixes/suffixes that might cause issues
+    job.title = job.title.replace(/^(job[\s\-:]?|position[\s\-:]?|role[\s\-:]?)/i, '').trim();
+    // Capitalize properly
+    if (job.title.length > 0 && job.title === job.title.toLowerCase()) {
+      job.title = job.title.replace(/\b\w/g, l => l.toUpperCase());
+    }
+  }
+  
+  if (job.company) {
+    job.company = job.company.trim();
+    // Capitalize properly if all lowercase
+    if (job.company.length > 0 && job.company === job.company.toLowerCase()) {
+      job.company = job.company.replace(/\b\w/g, l => l.toUpperCase());
+    }
+  }
+  
+  if (job.location) {
+    job.location = job.location.trim();
+    // Capitalize properly if all lowercase
+    if (job.location.length > 0 && job.location === job.location.toLowerCase()) {
+      job.location = job.location.replace(/\b\w/g, l => l.toUpperCase());
+    }
+  }
+  
+  // Required fields validation with smart defaults
   if (!job.title || job.title.trim() === '' || job.title === 'Not specified') {
     errors.push('Job title is required and cannot be empty');
-  } else if (job.title.length < 2) {
-    warnings.push('Job title is very short and may need more detail');
+  } else if (job.title.length < 3) {
+    warnings.push('Job title is very short - consider adding more detail');
+  } else if (job.title.length > 100) {
+    job.title = job.title.substring(0, 97) + '...';
+    warnings.push('Job title was truncated to 100 characters');
   }
   
   if (!job.company || job.company.trim() === '' || job.company === 'Not specified') {
     errors.push('Company name is required and cannot be empty');
   } else if (job.company.length < 2) {
-    warnings.push('Company name is very short and may need more detail');
+    warnings.push('Company name is very short - consider adding more detail');
+  } else if (job.company.length > 100) {
+    job.company = job.company.substring(0, 97) + '...';
+    warnings.push('Company name was truncated to 100 characters');
   }
   
-  // Location handling - more flexible
+  // Location handling with smart defaults
   if (!job.location || job.location.trim() === '') {
-    job.location = 'Remote'; // Auto-fix with default
-    warnings.push('Location was missing - set to "Remote" as default');
+    job.location = 'Location Not Specified';
+    warnings.push('Location was missing - set to "Location Not Specified"');
+  } else if (job.location.toLowerCase().includes('remote') || job.location.toLowerCase().includes('anywhere')) {
+    job.location = 'Remote';
+    job.remote = true;
+    warnings.push('Detected remote work - set remote flag to true');
   }
   
-  // Description handling
+  // Description handling with auto-generation
   if (!job.description || job.description.trim() === '' || job.description === 'Job description not provided') {
-    warnings.push('Job description is missing - this may affect job visibility');
+    // Auto-generate basic description from available data
+    const autoDesc = `We are looking for a ${job.title} to join ${job.company}${job.location !== 'Remote' ? ` in ${job.location}` : ' for a remote position'}.`;
+    job.description = autoDesc;
+    warnings.push('Job description was missing - generated a basic description from available data');
   } else {
+    // Clean up description
+    job.description = job.description.trim();
+    
     // Check description quality
     if (job.description.length < 50) {
-      warnings.push('Job description is quite short - consider adding more details');
+      warnings.push('Job description is quite short - consider adding more details about responsibilities and requirements');
     } else if (job.description.length > 2000) {
-      warnings.push('Job description was truncated to fit length limits');
+      job.description = truncateDescription(job.description, 2000);
+      warnings.push('Job description was truncated to fit length limits (2000 characters)');
     }
     
-    // Check for placeholder text
-    const placeholderTexts = ['lorem ipsum', 'placeholder', 'job description here', 'to be determined'];
+    // Check for placeholder text and auto-fix
+    const placeholderTexts = ['lorem ipsum', 'placeholder', 'job description here', 'to be determined', 'tbd', 'n/a'];
     if (placeholderTexts.some(placeholder => job.description.toLowerCase().includes(placeholder))) {
-      warnings.push('Job description appears to contain placeholder text');
+      const autoDesc = `We are seeking a qualified ${job.title} to join our team at ${job.company}. This is an excellent opportunity for professional growth in a dynamic work environment.`;
+      job.description = autoDesc;
+      warnings.push('Placeholder text detected in description - replaced with professional template');
     }
   }
   

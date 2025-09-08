@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Job Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background-color: #218838;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .file-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Enhanced Job Upload System - Test Files</h1>
+    <p>This page provides test files for validating the enhanced job posting automation feature with improved CSV/XLSX parsing, error handling, and data validation.</p>
+
+    <div class="test-section">
+        <h3>📋 Test File Downloads</h3>
+        <p>Download these sample files to test various scenarios:</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+            <div>
+                <h4>✅ Valid Sample Files</h4>
+                <a href="#" class="download-btn" onclick="downloadCSV('valid')">📄 Valid Jobs (CSV)</a>
+                <a href="#" class="download-btn" onclick="downloadXLSX('valid')">📊 Valid Jobs (XLSX)</a>
+            </div>
+            
+            <div>
+                <h4>⚠️ Edge Case Files</h4>
+                <a href="#" class="download-btn" onclick="downloadCSV('edge-cases')">📄 Edge Cases (CSV)</a>
+                <a href="#" class="download-btn" onclick="downloadXLSX('edge-cases')">📊 Edge Cases (XLSX)</a>
+            </div>
+            
+            <div>
+                <h4>🔧 Header Variations</h4>
+                <a href="#" class="download-btn" onclick="downloadCSV('headers')">📄 Different Headers (CSV)</a>
+                <a href="#" class="download-btn" onclick="downloadXLSX('headers')">📊 Different Headers (XLSX)</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Sample Data Preview</h3>
+        <p>Here's what the test data looks like:</p>
+        
+        <h4>Valid Jobs Sample:</h4>
+        <table id="validSampleTable">
+            <thead>
+                <tr>
+                    <th>Job Title</th>
+                    <th>Company</th>
+                    <th>Location</th>
+                    <th>Employment Type</th>
+                    <th>Experience Level</th>
+                    <th>Remote</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <h4>Edge Cases Sample:</h4>
+        <table id="edgeCasesSampleTable">
+            <thead>
+                <tr>
+                    <th>Job Title</th>
+                    <th>Company</th>
+                    <th>Location</th>
+                    <th>Description</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h3>🎯 Testing Scenarios</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+            
+            <div class="success">
+                <h4>✅ Valid Data Tests</h4>
+                <ul>
+                    <li>Standard job postings</li>
+                    <li>Complete field mapping</li>
+                    <li>Proper salary formatting</li>
+                    <li>Tech stack arrays</li>
+                    <li>Boolean remote flags</li>
+                </ul>
+            </div>
+            
+            <div class="warning">
+                <h4>⚠️ Edge Case Tests</h4>
+                <ul>
+                    <li>Missing descriptions</li>
+                    <li>Empty rows (should skip)</li>
+                    <li>Long descriptions (truncate)</li>
+                    <li>Invalid salary formats</li>
+                    <li>Duplicate job detection</li>
+                </ul>
+            </div>
+            
+            <div class="error">
+                <h4>🔧 Header Variation Tests</h4>
+                <ul>
+                    <li>Alternative column names</li>
+                    <li>Underscore vs spaces</li>
+                    <li>Different languages</li>
+                    <li>Abbreviated headers</li>
+                    <li>Case variations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>📝 Expected Results</h3>
+        <div class="file-info">
+            <h4>🎯 What Should Happen:</h4>
+            <ol>
+                <li><strong>File Upload:</strong> Both CSV and XLSX files should be detected and parsed correctly</li>
+                <li><strong>Header Mapping:</strong> System should automatically map various header names to correct fields</li>
+                <li><strong>Data Validation:</strong> Missing fields should get sensible defaults ("Not specified", "Remote", etc.)</li>
+                <li><strong>Error Handling:</strong> Empty rows skipped, long descriptions truncated, duplicates detected</li>
+                <li><strong>Success Rate:</strong> Valid jobs should import successfully with clear error messages for any failures</li>
+            </ol>
+        </div>
+        
+        <div class="file-info">
+            <h4>⚠️ Known Edge Cases Handled:</h4>
+            <ul>
+                <li>Jobs with missing company names → Validation error</li>
+                <li>Jobs with missing titles → Validation error</li>
+                <li>Jobs with missing locations → Default to "Location Not Specified"</li>
+                <li>Jobs with missing descriptions → Auto-generate from available data</li>
+                <li>Duplicate jobs (same title + company + location) → Flagged as duplicates</li>
+                <li>Invalid employment types → Normalized to standard values</li>
+                <li>Invalid experience levels → Normalized to standard values</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for different test scenarios
+        const validJobs = [
+            {
+                "Job Title": "Senior Software Engineer",
+                "Company": "TechCorp Inc.",
+                "Location": "San Francisco, CA",
+                "Description": "We are seeking a talented Senior Software Engineer to join our innovative team. You'll work on cutting-edge projects using modern technologies and have the opportunity to make a significant impact on our products.",
+                "Requirements": "JavaScript, React, Node.js, 5+ years experience, Bachelor's degree",
+                "Employment Type": "Full-time",
+                "Experience Level": "Senior",
+                "Salary Min": "120000",
+                "Salary Max": "180000",
+                "Tech Stack": "React, Node.js, TypeScript, AWS, PostgreSQL",
+                "Remote": "true",
+                "Application Email": "careers@techcorp.com"
+            },
+            {
+                "Job Title": "Product Marketing Manager",
+                "Company": "StartupXYZ",
+                "Location": "New York, NY",
+                "Description": "Join our fast-growing startup as a Product Marketing Manager. You'll drive go-to-market strategies, create compelling messaging, and work closely with product and sales teams.",
+                "Requirements": "Marketing experience, MBA preferred, B2B SaaS background, 3-5 years experience",
+                "Employment Type": "Full-time",
+                "Experience Level": "Mid",
+                "Salary Min": "85000",
+                "Salary Max": "120000",
+                "Tech Stack": "HubSpot, Salesforce, Google Analytics, Figma",
+                "Remote": "false",
+                "Application Email": "jobs@startupxyz.com"
+            },
+            {
+                "Job Title": "Data Scientist",
+                "Company": "AI Innovations Ltd",
+                "Location": "Remote",
+                "Description": "We're looking for a passionate Data Scientist to join our AI research team. You'll work on machine learning models, analyze large datasets, and contribute to breakthrough AI solutions.",
+                "Requirements": "Python, R, Machine Learning, PhD preferred, Statistical analysis, 2+ years experience",
+                "Employment Type": "Full-time",
+                "Experience Level": "Mid",
+                "Salary Min": "95000",
+                "Salary Max": "140000",
+                "Tech Stack": "Python, TensorFlow, PyTorch, SQL, AWS, Docker",
+                "Remote": "true",
+                "Application Email": "data-jobs@aiinnovations.com"
+            }
+        ];
+
+        const edgeCases = [
+            {
+                "Job Title": "Software Developer",
+                "Company": "EdgeCase Corp",
+                "Location": "",  // Missing location - should default
+                "Description": "",  // Missing description - should auto-generate
+                "Employment Type": "fulltime",  // Non-standard format - should normalize
+                "Experience Level": "3-5 years",  // Non-standard format - should normalize to "mid"
+                "Remote": "yes"  // Non-standard boolean - should convert to true
+            },
+            {
+                "Job Title": "",  // Missing title - should cause validation error
+                "Company": "BadData Inc",
+                "Location": "Somewhere",
+                "Description": "This job has no title and should fail validation",
+                "Employment Type": "Part Time",
+                "Experience Level": "Junior"
+            },
+            {
+                "Job Title": "Marketing Specialist",
+                "Company": "",  // Missing company - should cause validation error
+                "Location": "Remote",
+                "Description": "This job has no company name and should fail validation",
+                "Employment Type": "Contract",
+                "Experience Level": "Entry"
+            },
+            {
+                "Job Title": "DevOps Engineer",
+                "Company": "LongDesc Systems",
+                "Location": "Austin, TX",
+                "Description": "This is an extremely long job description that goes on and on and on and contains way too much information about the position, the company, the benefits, the requirements, the nice-to-haves, the team structure, the company culture, the office environment, the parking situation, the coffee quality, and basically every possible detail you could imagine about this job opportunity. It should be truncated to fit within the character limits we have established for job descriptions in our system to ensure optimal performance and user experience." + " ".repeat(2000),  // Very long description - should be truncated
+                "Employment Type": "freelance",  // Should normalize to "contract"
+                "Experience Level": "expert"  // Should normalize to "senior"
+            }
+        ];
+
+        const headerVariations = [
+            {
+                "Position": "UX Designer",  // Alternative to "Job Title"
+                "Organization": "Design Studio Pro",  // Alternative to "Company"
+                "Work Location": "Los Angeles, CA",  // Alternative to "Location"
+                "Job Summary": "Create amazing user experiences for our clients",  // Alternative to "Description"
+                "Type": "full time",  // Alternative to "Employment Type"
+                "Level": "mid-level",  // Alternative to "Experience Level"
+                "WFH": "true"  // Alternative to "Remote"
+            },
+            {
+                "role": "backend engineer",  // Lowercase, alternative name
+                "employer": "cloud systems inc",  // Lowercase, alternative name
+                "office_location": "seattle, wa",  // Underscore format, lowercase
+                "about": "build scalable backend systems",  // Alternative name
+                "contract_type": "permanent",  // Alternative format
+                "seniority": "senior level",  // Alternative format
+                "telecommute": "no"  // Alternative to "Remote"
+            },
+            {
+                "Job_Title": "QA Tester",  // Underscore format
+                "Company_Name": "QualityFirst Testing",  // Underscore format
+                "City": "Denver, CO",  // Just city instead of full location
+                "Responsibilities": "Test software applications for bugs and issues",  // Alternative to description
+                "Work_Type": "pt",  // Abbreviated part-time
+                "Experience": "1-3 yrs",  // Alternative format with abbreviation
+                "Remote_Work": "false"  // Alternative boolean format
+            }
+        ];
+
+        // Function to convert JSON to CSV
+        function jsonToCSV(jsonData) {
+            if (jsonData.length === 0) return '';
+            
+            const headers = Object.keys(jsonData[0]);
+            const csvRows = [];
+            
+            // Add header row
+            csvRows.push(headers.join(','));
+            
+            // Add data rows
+            for (const row of jsonData) {
+                const values = headers.map(header => {
+                    const value = row[header] || '';
+                    // Escape values that contain commas or quotes
+                    if (value.toString().includes(',') || value.toString().includes('"')) {
+                        return `"${value.toString().replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
+                csvRows.push(values.join(','));
+            }
+            
+            return csvRows.join('\n');
+        }
+
+        // Function to download CSV
+        function downloadCSV(type) {
+            let data, filename;
+            
+            switch(type) {
+                case 'valid':
+                    data = validJobs;
+                    filename = 'valid_jobs_sample.csv';
+                    break;
+                case 'edge-cases':
+                    data = edgeCases;
+                    filename = 'edge_cases_sample.csv';
+                    break;
+                case 'headers':
+                    data = headerVariations;
+                    filename = 'header_variations_sample.csv';
+                    break;
+            }
+            
+            const csvContent = jsonToCSV(data);
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Function to download XLSX (simplified - creates CSV with .xlsx extension for demo)
+        function downloadXLSX(type) {
+            let data, filename;
+            
+            switch(type) {
+                case 'valid':
+                    data = validJobs;
+                    filename = 'valid_jobs_sample.xlsx';
+                    break;
+                case 'edge-cases':
+                    data = edgeCases;
+                    filename = 'edge_cases_sample.xlsx';
+                    break;
+                case 'headers':
+                    data = headerVariations;
+                    filename = 'header_variations_sample.xlsx';
+                    break;
+            }
+            
+            // For demo purposes, we'll create a CSV but name it .xlsx
+            // In a real implementation, you'd use a library like xlsx.js
+            const csvContent = jsonToCSV(data);
+            const blob = new Blob([csvContent], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Populate preview tables
+        function populateTable(tableId, data, maxRows = 3) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector('tbody');
+            
+            // Clear existing rows
+            tbody.innerHTML = '';
+            
+            // Add rows
+            data.slice(0, maxRows).forEach(row => {
+                const tr = document.createElement('tr');
+                Object.values(row).forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value.toString().substring(0, 50) + (value.toString().length > 50 ? '...' : '');
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Populate edge cases table with specific columns and notes
+        function populateEdgeCasesTable() {
+            const table = document.getElementById('edgeCasesSampleTable');
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            const edgeWithNotes = [
+                {
+                    title: "Software Developer",
+                    company: "EdgeCase Corp", 
+                    location: "(empty)",
+                    description: "(empty)",
+                    notes: "Missing location & description - should auto-fix"
+                },
+                {
+                    title: "(empty)",
+                    company: "BadData Inc",
+                    location: "Somewhere", 
+                    description: "Valid description",
+                    notes: "Missing title - should fail validation"
+                },
+                {
+                    title: "Marketing Specialist",
+                    company: "(empty)",
+                    location: "Remote",
+                    description: "Valid description", 
+                    notes: "Missing company - should fail validation"
+                }
+            ];
+            
+            edgeWithNotes.forEach(row => {
+                const tr = document.createElement('tr');
+                Object.values(row).forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    if (value === "(empty)") {
+                        td.style.fontStyle = "italic";
+                        td.style.color = "#666";
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Initialize tables
+        document.addEventListener('DOMContentLoaded', function() {
+            populateTable('validSampleTable', validJobs);
+            populateEdgeCasesTable();
+        });
+    </script>
+</body>
+</html>

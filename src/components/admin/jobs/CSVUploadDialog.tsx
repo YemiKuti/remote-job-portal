@@ -51,13 +51,18 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     if (!file) return;
 
     setIsProcessing(true);
+    console.log(`🔄 Processing file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    
     try {
       const result = await parseFile(file);
       
       if (!result.success || !result.data) {
+        const errorMsg = result.error || 'Failed to parse file. Please check the file format and try again.';
+        console.error('❌ File parsing failed:', errorMsg);
+        
         toast({
-          title: 'Parse Error',
-          description: result.error || 'Failed to parse file.',
+          title: 'File Parse Error',
+          description: errorMsg,
           variant: 'destructive'
         });
         setIsProcessing(false);
@@ -65,11 +70,20 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
       }
 
       const data = result.data;
+      console.log(`✅ File parsed successfully:`, {
+        fileType: data.fileType,
+        totalRows: data.totalRows,
+        headers: data.headers.length,
+        fileName: data.fileName
+      });
+      
       setFileData(data);
       
       // Generate intelligent header mapping
       const mapping = generateHeaderMapping(data.headers);
       setHeaderMapping(mapping);
+      
+      console.log('🎯 Generated header mapping:', mapping);
       
       toast({
         title: 'File Parsed Successfully',
@@ -78,9 +92,12 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
       
       setStep('mapping');
     } catch (error: any) {
+      const errorMsg = error.message || 'Failed to parse file. Please check the file format.';
+      console.error('❌ File processing error:', error);
+      
       toast({
-        title: 'Parse Error',
-        description: error.message || 'Failed to parse file.',
+        title: 'File Processing Error',
+        description: errorMsg,
         variant: 'destructive'
       });
     }
@@ -90,47 +107,71 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
   const handleMappingComplete = () => {
     if (!fileData) return;
 
-    // Check if all required fields are mapped
-    const requiredFields = ['title', 'company', 'location', 'description'];
-    const mappedFields = new Set(Object.values(headerMapping));
-    const missingFields = requiredFields.filter(field => !mappedFields.has(field));
+    console.log('🎯 Processing header mapping:', headerMapping);
     
-    if (missingFields.length > 0) {
+    // Check if essential fields are mapped (be more flexible)
+    const essentialFields = ['title', 'company'];
+    const mappedFields = new Set(Object.values(headerMapping));
+    const missingEssential = essentialFields.filter(field => !mappedFields.has(field));
+    
+    if (missingEssential.length > 0) {
       toast({
-        title: 'Missing Required Fields',
-        description: `Please map the following required fields: ${missingFields.join(', ')}`,
+        title: 'Missing Essential Fields',
+        description: `Please map these essential fields: ${missingEssential.join(', ')}. Location and description can use defaults if not provided.`,
         variant: 'destructive'
       });
       return;
     }
 
-    // Convert data using header mapping
-    const jobs = convertToJobData(fileData.rows, headerMapping);
-    setParsedJobs(jobs);
+    console.log('🔄 Converting data using header mapping...');
     
-    // Detect duplicates
-    const duplicateMap = detectDuplicates(jobs);
-    setDuplicates(duplicateMap);
-    
-    // Validate each job
-    const results = jobs.map((job, index) => {
-      const duplicateKey = Array.from(duplicateMap.keys()).find(key => 
-        duplicateMap.get(key)?.includes(index)
-      );
-      return validateJobData(job, duplicateKey);
-    });
-    
-    setValidationResults(results);
-    setStep('preview');
-    
-    const validCount = results.filter(r => r.isValid && !r.isDuplicate).length;
-    const invalidCount = results.filter(r => !r.isValid).length;
-    const duplicateCount = results.filter(r => r.isDuplicate).length;
-    
-    toast({
-      title: 'Data Processed',
-      description: `Found ${validCount} valid jobs, ${invalidCount} invalid, ${duplicateCount} duplicates.`
-    });
+    try {
+      // Convert data using header mapping
+      const jobs = convertToJobData(fileData.rows, headerMapping);
+      console.log(`📊 Converted ${jobs.length} jobs from ${fileData.rows.length} rows`);
+      
+      setParsedJobs(jobs);
+      
+      // Detect duplicates
+      const duplicateMap = detectDuplicates(jobs);
+      setDuplicates(duplicateMap);
+      console.log(`🔍 Found ${duplicateMap.size} duplicate groups`);
+      
+      // Validate each job
+      const results = jobs.map((job, index) => {
+        const duplicateKey = Array.from(duplicateMap.keys()).find(key => 
+          duplicateMap.get(key)?.includes(index)
+        );
+        return validateJobData(job, duplicateKey);
+      });
+      
+      setValidationResults(results);
+      setStep('preview');
+      
+      const validCount = results.filter(r => r.isValid && !r.isDuplicate).length;
+      const invalidCount = results.filter(r => !r.isValid).length;
+      const duplicateCount = results.filter(r => r.isDuplicate).length;
+      const warningCount = results.filter(r => r.warnings && r.warnings.length > 0).length;
+      
+      console.log('📋 Validation summary:', {
+        valid: validCount,
+        invalid: invalidCount,
+        duplicates: duplicateCount,
+        warnings: warningCount
+      });
+      
+      toast({
+        title: 'Data Processed Successfully',
+        description: `${validCount} valid jobs ready for upload${invalidCount > 0 ? `, ${invalidCount} need fixes` : ''}${duplicateCount > 0 ? `, ${duplicateCount} duplicates found` : ''}.`
+      });
+    } catch (error: any) {
+      console.error('❌ Error processing data:', error);
+      toast({
+        title: 'Data Processing Error',
+        description: error.message || 'Failed to process job data. Please check your file format.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleBulkUpload = async () => {
@@ -139,10 +180,12 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
       return result.isValid && !result.isDuplicate;
     });
     
+    console.log(`🚀 Starting bulk upload of ${validJobs.length} valid jobs out of ${parsedJobs.length} total`);
+    
     if (validJobs.length === 0) {
       toast({
-        title: 'No Valid Jobs',
-        description: 'No valid jobs found to upload.',
+        title: 'No Valid Jobs to Upload',
+        description: 'Please fix validation errors before uploading, or check if all jobs are duplicates.',
         variant: 'destructive'
       });
       return;
@@ -153,27 +196,50 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     setStep('uploading');
 
     try {
+      console.log('📦 Calling createJobsBatch...');
       const result = await createJobsBatch(validJobs, (completed, total) => {
+        console.log(`📈 Upload progress: ${completed}/${total}`);
         setUploadProgress({ current: completed, total });
       });
 
-      toast({
-        title: 'Upload Complete',
-        description: `Successfully created ${result.successful} jobs${result.failed > 0 ? `, ${result.failed} failed` : ''}.`
-      });
+      console.log('🎯 Upload completed:', result);
 
-      if (result.errors.length > 0) {
-        console.error('Upload errors:', result.errors);
+      if (result.successful > 0) {
+        toast({
+          title: 'Upload Successful!',
+          description: `Successfully created ${result.successful} jobs${result.failed > 0 ? `. ${result.failed} jobs failed - check console for details` : ''}.`
+        });
+
+        if (result.errors.length > 0) {
+          console.error('❌ Upload errors:', result.errors);
+          // Show first few errors to user
+          const errorSample = result.errors.slice(0, 3).join('\n');
+          toast({
+            title: 'Some Jobs Failed',
+            description: `${result.failed} jobs failed to upload. First few errors:\n${errorSample}`,
+            variant: 'destructive'
+          });
+        }
+
+        onJobsUploaded();
+        setStep('complete');
+      } else {
+        console.error('❌ All jobs failed to upload:', result.errors);
+        toast({
+          title: 'Upload Failed',
+          description: `All ${result.failed} jobs failed to upload. Check console for details.`,
+          variant: 'destructive'
+        });
+        setStep('preview'); // Go back to preview to let user try again
       }
-
-      onJobsUploaded();
-      setStep('complete');
     } catch (error: any) {
+      console.error('❌ Bulk upload error:', error);
       toast({
-        title: 'Upload Failed',
-        description: error.message || 'Failed to upload jobs.',
+        title: 'Upload Error',
+        description: error.message || 'Unexpected error during job upload. Please try again.',
         variant: 'destructive'
       });
+      setStep('preview'); // Go back to preview to let user try again
     }
     setIsUploading(false);
   };

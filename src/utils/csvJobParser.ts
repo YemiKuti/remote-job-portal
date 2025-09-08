@@ -237,57 +237,76 @@ export const validateJobData = (job: ParsedJobData, duplicateKey?: string): Vali
   const errors: string[] = [];
   const warnings: string[] = [];
   
-  // Required fields validation
-  if (!job.title || job.title.trim() === '') {
+  // Required fields validation with more lenient checks
+  if (!job.title || job.title.trim() === '' || job.title === 'Not specified') {
     errors.push('Job title is required');
   }
   
-  if (!job.company || job.company.trim() === '') {
+  if (!job.company || job.company.trim() === '' || job.company === 'Not specified') {
     errors.push('Company name is required');
   }
   
   if (!job.location || job.location.trim() === '') {
-    errors.push('Location is required');
+    warnings.push('Location not specified - using "Remote" as default');
   }
   
-  if (!job.description || job.description.trim() === '') {
-    errors.push('Job description is required');
+  if (!job.description || job.description.trim() === '' || job.description === 'Job description not provided') {
+    warnings.push('Job description is missing or minimal');
   } else if (job.description.length > 2000) {
     warnings.push('Description was truncated to fit length limits');
   }
   
-  if (!job.employment_type || job.employment_type.trim() === '') {
-    errors.push('Employment type is required');
-  }
-  
-  if (!job.experience_level || job.experience_level.trim() === '') {
-    errors.push('Experience level is required');
-  }
-  
-  // Validate employment type
+  // Employment type validation - more flexible
   const validEmploymentTypes = ['full-time', 'part-time', 'contract', 'temporary', 'internship'];
   if (job.employment_type && !validEmploymentTypes.includes(job.employment_type.toLowerCase())) {
-    errors.push(`Invalid employment type. Must be one of: ${validEmploymentTypes.join(', ')}`);
+    // Auto-correct common variations instead of erroring
+    job.employment_type = 'full-time'; // Default fallback
+    warnings.push(`Employment type was normalized to: ${job.employment_type}`);
   }
   
-  // Validate experience level
-  const validExperienceLevels = ['entry', 'junior', 'mid', 'senior', 'lead', 'principal'];
+  // Experience level validation - more flexible
+  const validExperienceLevels = ['entry', 'mid', 'senior', 'principal'];
   if (job.experience_level && !validExperienceLevels.includes(job.experience_level.toLowerCase())) {
-    errors.push(`Invalid experience level. Must be one of: ${validExperienceLevels.join(', ')}`);
+    // Auto-correct common variations instead of erroring
+    job.experience_level = 'mid'; // Default fallback
+    warnings.push(`Experience level was normalized to: ${job.experience_level}`);
   }
   
   // Validate salary range
   if (job.salary_min && job.salary_max && job.salary_min > job.salary_max) {
-    errors.push('Minimum salary cannot be greater than maximum salary');
+    warnings.push('Minimum salary is greater than maximum salary - please verify');
+    // Swap them if they're clearly reversed
+    if (job.salary_min > job.salary_max * 2) {
+      [job.salary_min, job.salary_max] = [job.salary_max, job.salary_min];
+      warnings.push('Salary range was automatically corrected');
+    }
   }
   
-  // Validate application value (email or URL)
+  // Validate application value (email or URL) - more lenient
   if (job.application_value) {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(job.application_value);
     const isUrl = /^https?:\/\/.+/.test(job.application_value);
     if (!isEmail && !isUrl) {
-      errors.push('Application value must be a valid email or URL');
+      // Try to fix common issues
+      if (job.application_value.includes('@') && !job.application_value.includes('.')) {
+        warnings.push('Application email may be missing domain extension');
+      } else if (job.application_value.includes('www.') && !job.application_value.startsWith('http')) {
+        job.application_value = 'https://' + job.application_value;
+        warnings.push('Application URL was corrected to include protocol');
+      } else {
+        warnings.push('Application value should be a valid email or URL');
+        // Don't error out, just warn
+      }
     }
+  }
+  
+  // Additional data quality checks
+  if (job.title && job.title.length < 3) {
+    warnings.push('Job title is very short');
+  }
+  
+  if (job.company && job.company.length < 2) {
+    warnings.push('Company name is very short');
   }
   
   return {
@@ -304,52 +323,116 @@ export const createJobsBatch = async (
   jobs: ParsedJobData[], 
   onProgress?: (completed: number, total: number) => void
 ): Promise<{ successful: number; failed: number; errors: string[] }> => {
-  const batchSize = 10;
+  console.log(`🚀 Starting batch upload of ${jobs.length} jobs`);
+  
+  const batchSize = 5; // Reduce batch size for better stability
   let successful = 0;
   let failed = 0;
   const errors: string[] = [];
+  let processed = 0;
   
   for (let i = 0; i < jobs.length; i += batchSize) {
     const batch = jobs.slice(i, i + batchSize);
+    console.log(`📦 Processing batch ${Math.floor(i/batchSize) + 1}: jobs ${i + 1} to ${Math.min(i + batchSize, jobs.length)}`);
     
     try {
-      const promises = batch.map(async (job) => {
+      const promises = batch.map(async (job, batchIndex) => {
+        const jobIndex = i + batchIndex;
         try {
+          console.log(`📝 Creating job ${jobIndex + 1}: "${job.title}" at ${job.company}`);
+          
+          // Validate job data before sending
+          const validation = validateJobData(job);
+          if (!validation.isValid) {
+            console.warn(`⚠️ Job ${jobIndex + 1} has validation errors:`, validation.errors);
+            return { success: false, error: `Validation failed: ${validation.errors?.join(', ')}` };
+          }
+          
+          // Ensure all required fields are present with defaults
+          const jobData = {
+            ...job,
+            title: job.title || 'Job Title Not Specified',
+            company: job.company || 'Company Not Specified', 
+            location: job.location || 'Location Not Specified',
+            description: job.description || 'Job description not provided.',
+            employment_type: job.employment_type || 'full-time',
+            experience_level: job.experience_level || 'mid',
+            requirements: job.requirements || [],
+            tech_stack: job.tech_stack || [],
+            salary_currency: job.salary_currency || 'USD',
+            visa_sponsorship: job.visa_sponsorship || false,
+            remote: job.remote || false,
+            status: 'active',
+            sponsored: true
+          };
+          
           const { createAdminJob } = await import('@/utils/api/adminApi');
-          await createAdminJob(job);
-          return { success: true };
+          const result = await createAdminJob(jobData);
+          
+          console.log(`✅ Job ${jobIndex + 1} created successfully:`, result);
+          return { success: true, jobId: result };
         } catch (error: any) {
-          return { success: false, error: error.message };
+          console.error(`❌ Job ${jobIndex + 1} failed:`, error);
+          return { 
+            success: false, 
+            error: error.message || 'Unknown error during job creation',
+            jobTitle: job.title,
+            jobCompany: job.company
+          };
         }
       });
       
       const results = await Promise.all(promises);
       
       results.forEach((result, index) => {
+        const jobIndex = i + index;
+        processed++;
+        
         if (result.success) {
           successful++;
+          console.log(`✅ Job ${jobIndex + 1} uploaded successfully`);
         } else {
           failed++;
-          const jobIndex = i + index;
-          errors.push(`Job ${jobIndex + 1} (${jobs[jobIndex].title}): ${result.error}`);
+          const errorMsg = `Job ${jobIndex + 1} (${result.jobTitle || jobs[jobIndex].title} at ${result.jobCompany || jobs[jobIndex].company}): ${result.error}`;
+          errors.push(errorMsg);
+          console.error(`❌ ${errorMsg}`);
         }
       });
       
+      // Update progress
       if (onProgress) {
-        onProgress(i + batch.length, jobs.length);
+        onProgress(processed, jobs.length);
       }
       
-      // Small delay to prevent overwhelming the database
+      // Add a delay between batches to prevent overwhelming the database
       if (i + batchSize < jobs.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log(`⏱️ Waiting 200ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
-    } catch (error: any) {
-      batch.forEach((_, index) => {
+      
+    } catch (batchError: any) {
+      console.error(`❌ Batch processing error:`, batchError);
+      
+      // Mark all jobs in this batch as failed
+      batch.forEach((job, index) => {
         failed++;
+        processed++;
         const jobIndex = i + index;
-        errors.push(`Job ${jobIndex + 1} (${jobs[jobIndex].title}): ${error.message}`);
+        const errorMsg = `Job ${jobIndex + 1} (${job.title} at ${job.company}): Batch failed - ${batchError.message}`;
+        errors.push(errorMsg);
       });
+      
+      // Update progress even on batch failure
+      if (onProgress) {
+        onProgress(processed, jobs.length);
+      }
     }
+  }
+  
+  console.log(`🎯 Batch upload complete: ${successful} successful, ${failed} failed`);
+  
+  if (errors.length > 0) {
+    console.error('❌ Upload errors:', errors);
   }
   
   return { successful, failed, errors };

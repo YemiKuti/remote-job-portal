@@ -295,60 +295,151 @@ export const convertToJobData = (
   rows: RawRowData[], 
   headerMapping: HeaderMapping
 ): ParsedJobData[] => {
-  return rows.map(row => {
+  return rows.map((row, rowIndex) => {
     const mappedRow: any = {};
     
     // Apply header mapping
     Object.entries(row).forEach(([originalHeader, value]) => {
       const mappedHeader = headerMapping[originalHeader];
       if (mappedHeader && value !== null && value !== undefined) {
-        mappedRow[mappedHeader] = String(value).trim();
+        const cleanValue = String(value).trim();
+        if (cleanValue) {
+          mappedRow[mappedHeader] = cleanValue;
+        }
       }
     });
     
-    // Parse and validate individual fields
+    // Parse and validate individual fields with better defaults
     const getField = (field: string): string => {
-      return mappedRow[field] || '';
+      const value = mappedRow[field] || '';
+      return typeof value === 'string' ? value.trim() : String(value).trim();
     };
     
     const parseBoolean = (value: string): boolean => {
+      if (!value) return false;
       const normalized = value.toLowerCase().trim();
-      return ['true', 'yes', '1', 'y'].includes(normalized);
+      return ['true', 'yes', '1', 'y', 'on', 'enabled'].includes(normalized);
     };
     
     const parseArray = (value: string): string[] => {
       if (!value) return [];
-      return value.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
+      return value.split(/[,;|\n]/).map(item => item.trim()).filter(item => item.length > 0);
     };
     
     const parseSalary = (value: string): number | undefined => {
       if (!value) return undefined;
-      const numericValue = value.replace(/[^0-9]/g, '');
-      const parsed = parseInt(numericValue, 10);
-      return isNaN(parsed) ? undefined : parsed;
+      // Remove currency symbols and non-numeric characters except decimal points
+      const numericValue = value.replace(/[^\d.]/g, '');
+      const parsed = parseFloat(numericValue);
+      return isNaN(parsed) || parsed <= 0 ? undefined : Math.floor(parsed);
     };
     
-    return {
-      title: getField('title'),
-      company: getField('company'),
-      location: getField('location'),
-      description: getField('description'),
-      requirements: parseArray(getField('requirements')),
-      employment_type: getField('employment_type') || 'full-time',
-      experience_level: getField('experience_level') || 'mid',
-      salary_min: parseSalary(getField('salary_min')),
-      salary_max: parseSalary(getField('salary_max')),
-      salary_currency: getField('salary_currency') || 'USD',
-      tech_stack: parseArray(getField('tech_stack')),
-      visa_sponsorship: parseBoolean(getField('visa_sponsorship')),
-      remote: parseBoolean(getField('remote')),
-      company_size: getField('company_size') || undefined,
-      application_deadline: undefined,
-      logo: undefined,
-      status: 'active',
-      application_type: getField('application_value') ? 'email' : 'internal',
-      application_value: getField('application_value') || undefined,
-      sponsored: true
-    } as ParsedJobData;
+    const normalizeEmploymentType = (type: string): string => {
+      if (!type) return 'full-time';
+      const normalized = type.toLowerCase().trim();
+      const typeMap: Record<string, string> = {
+        'fulltime': 'full-time',
+        'full time': 'full-time',
+        'permanent': 'full-time',
+        'ft': 'full-time',
+        'parttime': 'part-time', 
+        'part time': 'part-time',
+        'pt': 'part-time',
+        'contractor': 'contract',
+        'freelance': 'contract',
+        'temporary': 'contract',
+        'temp': 'contract',
+        'intern': 'internship',
+        'graduate': 'internship'
+      };
+      return typeMap[normalized] || (normalized.includes('part') ? 'part-time' : 
+             normalized.includes('contract') || normalized.includes('freelance') ? 'contract' :
+             normalized.includes('intern') ? 'internship' : type);
+    };
+    
+    const normalizeExperienceLevel = (level: string): string => {
+      if (!level) return 'mid';
+      const normalized = level.toLowerCase().trim();
+      const levelMap: Record<string, string> = {
+        'junior': 'entry',
+        'graduate': 'entry',
+        'fresh': 'entry',
+        'beginner': 'entry',
+        'entry-level': 'entry',
+        'intermediate': 'mid',
+        'middle': 'mid',
+        'experienced': 'mid',
+        'sr': 'senior',
+        'lead': 'senior',
+        'expert': 'senior',
+        'advanced': 'senior',
+        'staff': 'principal',
+        'architect': 'principal',
+        'director': 'principal'
+      };
+      return levelMap[normalized] || (normalized.includes('junior') || normalized.includes('entry') ? 'entry' :
+             normalized.includes('senior') || normalized.includes('lead') ? 'senior' :
+             normalized.includes('principal') || normalized.includes('architect') ? 'principal' : level);
+    };
+    
+    // Extract and clean field values
+    const title = getField('title') || 'Not specified';
+    const company = getField('company') || 'Not specified';
+    const location = getField('location') || 'Remote';
+    const description = getField('description') || 'Job description not provided';
+    const employmentType = normalizeEmploymentType(getField('employment_type'));
+    const experienceLevel = normalizeExperienceLevel(getField('experience_level'));
+    
+    // Truncate description if too long
+    const truncateDescription = (desc: string): string => {
+      if (desc.length <= 2000) return desc;
+      const truncated = desc.substring(0, 1900);
+      const lastSpace = truncated.lastIndexOf(' ');
+      return (lastSpace > 1800 ? truncated.substring(0, lastSpace) : truncated) + '...';
+    };
+    
+    try {
+      return {
+        title,
+        company,
+        location,
+        description: truncateDescription(description),
+        requirements: parseArray(getField('requirements')),
+        employment_type: employmentType,
+        experience_level: experienceLevel,
+        salary_min: parseSalary(getField('salary_min')),
+        salary_max: parseSalary(getField('salary_max')),
+        salary_currency: getField('salary_currency') || 'USD',
+        tech_stack: parseArray(getField('tech_stack')),
+        visa_sponsorship: parseBoolean(getField('visa_sponsorship')),
+        remote: parseBoolean(getField('remote')),
+        company_size: getField('company_size') || undefined,
+        application_deadline: undefined,
+        logo: undefined,
+        status: 'active',
+        application_type: getField('application_value') ? 'email' : 'internal',
+        application_value: getField('application_value') || undefined,
+        sponsored: true
+      } as ParsedJobData;
+    } catch (error: any) {
+      console.warn(`Error parsing row ${rowIndex + 1}:`, error.message, { row });
+      // Return minimal valid job data if parsing fails
+      return {
+        title: title || `Job ${rowIndex + 1}`,
+        company: company || 'Company Name',
+        location: location || 'Location',
+        description: description || 'Job description not available',
+        requirements: [],
+        employment_type: 'full-time',
+        experience_level: 'mid',
+        salary_currency: 'USD',
+        tech_stack: [],
+        visa_sponsorship: false,
+        remote: false,
+        status: 'active',
+        application_type: 'internal',
+        sponsored: true
+      } as ParsedJobData;
+    }
   });
 };

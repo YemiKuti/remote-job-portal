@@ -195,9 +195,11 @@ export const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ onJobsUploaded
     setUploadProgress({ current: 0, total: validJobs.length });
     setStep('uploading');
 
-    try {
-      console.log('📦 Calling createJobsBatch...');
-      const result = await createJobsBatch(validJobs, (completed, total) => {
+      try {
+        console.log('📦 Calling createJobsBatch...');
+        console.log('📊 Valid jobs to upload:', validJobs.map(job => ({ title: job.title, company: job.company })));
+        
+        const result = await createJobsBatch(validJobs, (completed, total) => {
         console.log(`📈 Upload progress: ${completed}/${total}`);
         setUploadProgress({ current: completed, total });
       });

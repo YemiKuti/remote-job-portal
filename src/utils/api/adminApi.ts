@@ -456,6 +456,13 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
   console.log('Creating admin job:', jobData);
   
   try {
+    console.log('🔧 Creating admin job with data:', {
+      title: jobData.title,
+      company: jobData.company,
+      location: jobData.location,
+      status: jobData.status
+    });
+    
     const { data, error } = await supabase
       .rpc('admin_create_job', {
         job_title: jobData.title,
@@ -482,7 +489,13 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
       });
     
     if (error) {
-      console.error('Error creating admin job:', error);
+      console.error('❌ Admin job creation error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       throw new Error(`Failed to create job: ${error.message}`);
     }
     

@@ -168,7 +168,12 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
 
       clearInterval(progressInterval);
 
-      console.log('📝 AI response received:', { data, error: functionError });
+      console.log('📝 AI response received:', { 
+        data: data ? 'Response received' : 'No data',
+        hasError: !!functionError,
+        errorMessage: functionError?.message,
+        responseKeys: data ? Object.keys(data) : []
+      });
 
       // Check for function call errors first
       if (functionError) {

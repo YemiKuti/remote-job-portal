@@ -502,7 +502,17 @@ export const createJobsBatch = async (
             sponsored: true
           };
           
+          console.log('📋 Job data being sent:', {
+            title: jobData.title,
+            company: jobData.company,
+            status: jobData.status,
+            employer_id: jobData.employer_id
+          });
+          
+          console.log('🔄 Importing createAdminJob...');
           const { createAdminJob } = await import('@/utils/api/adminApi');
+          console.log('✅ createAdminJob imported successfully');
+          
           const result = await createAdminJob(jobData);
           
           console.log(`✅ Job ${jobIndex + 1} created successfully:`, result);

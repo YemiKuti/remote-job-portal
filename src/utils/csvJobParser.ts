@@ -201,7 +201,7 @@ const parseJobRow = (row: any): ParsedJobData => {
   const requirements = getField('requirements') || getField('qualifications');
   const employment_type = validateEmploymentType(getField('employment type') || getField('type'));
   const experience_level = validateExperienceLevel(getField('experience level') || getField('level'));
-  const application_value = getField('application email') || getField('email') || getField('contact');
+  const application_value = getField('application email') || getField('email') || getField('contact') || getField('recruiter email') || getField('apply email') || getField('contact email');
 
   return {
     title,
@@ -220,8 +220,8 @@ const parseJobRow = (row: any): ParsedJobData => {
     company_size: getField('company size') || undefined,
     application_deadline: undefined,
     logo: undefined,
-    status: 'active',
-    application_type: application_value ? 'email' : 'internal',
+    status: 'draft', // All uploaded jobs start as drafts requiring approval
+    application_type: application_value ? 'external' : 'internal',
     application_value: application_value || undefined,
     sponsored: true
   };

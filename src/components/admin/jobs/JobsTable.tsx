@@ -13,6 +13,11 @@ interface JobData {
   created_at: string;
   status: string;
   applications: number;
+  salary_min?: number;
+  salary_max?: number;
+  salary_currency?: string;
+  application_value?: string;
+  description?: string;
 }
 
 interface JobsTableProps {
@@ -45,7 +50,8 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
           <TableHead>Title</TableHead>
           <TableHead>Company</TableHead>
           <TableHead>Location</TableHead>
-          <TableHead>Posted Date</TableHead>
+          <TableHead>Salary</TableHead>
+          <TableHead>Contact</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Applications</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -53,11 +59,48 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
       </TableHeader>
       <TableBody>
         {jobs.map((job) => (
-          <TableRow key={job.id}>
-            <TableCell className="font-medium">{job.title}</TableCell>
-            <TableCell>{job.company}</TableCell>
+          <TableRow key={job.id} className="hover:bg-muted/50">
+            <TableCell className="font-medium">
+              <div className="max-w-xs">
+                <div className="font-semibold text-foreground">{job.title}</div>
+                {job.description && (
+                  <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {job.description.substring(0, 100)}...
+                  </div>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="font-medium">{job.company}</TableCell>
             <TableCell>{job.location}</TableCell>
-            <TableCell>{job.created_at ? new Date(job.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+            <TableCell>
+              {job.salary_min && job.salary_max ? (
+                <div className="text-sm">
+                  <span className="font-medium">
+                    {job.salary_currency || 'USD'} {job.salary_min?.toLocaleString()} - {job.salary_max?.toLocaleString()}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Not specified</span>
+              )}
+            </TableCell>
+            <TableCell>
+              {job.application_value ? (
+                <div className="text-sm">
+                  {job.application_value.includes('@') ? (
+                    <a 
+                      href={`mailto:${job.application_value}`}
+                      className="text-primary hover:underline"
+                    >
+                      {job.application_value}
+                    </a>
+                  ) : (
+                    <span className="text-foreground">{job.application_value}</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Internal</span>
+              )}
+            </TableCell>
             <TableCell>
               <JobStatusBadge status={job.status} />
             </TableCell>

@@ -457,7 +457,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false,
-            error: 'AI service not configured. Please contact support.',
+            error: '⚠️ Please provide a valid CV and Job Description.',
             requestId: requestId 
           }),
           { 

@@ -817,3 +817,128 @@ export const fetchRecentJobs = async (limit: number = 5): Promise<any[]> => {
     throw new Error(error.message || 'Failed to fetch recent jobs');
   }
 };
+
+// Batch create jobs from CSV/XLSX upload
+export const createJobsBatch = async (jobs: any[]): Promise<{ success: boolean; results: any[]; errors: string[] }> => {
+  console.log('🔄 Starting batch job creation...');
+  console.log('📊 Batch size:', jobs.length);
+  
+  const results: any[] = [];
+  const errors: string[] = [];
+  
+  // Validate input
+  if (!jobs || jobs.length === 0) {
+    throw new Error('No jobs provided for batch creation');
+  }
+  
+  // Process in smaller batches to avoid overwhelming the system
+  const BATCH_SIZE = 10;
+  const batches = [];
+  
+  for (let i = 0; i < jobs.length; i += BATCH_SIZE) {
+    batches.push(jobs.slice(i, i + BATCH_SIZE));
+  }
+  
+  console.log(`📦 Processing ${batches.length} batches of up to ${BATCH_SIZE} jobs each`);
+  
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    console.log(`🔄 Processing batch ${batchIndex + 1}/${batches.length}`);
+    
+    const batchPromises = batch.map(async (jobData, jobIndex) => {
+      const globalIndex = batchIndex * BATCH_SIZE + jobIndex;
+      try {
+        console.log(`📝 Creating job ${globalIndex + 1}/${jobs.length}: ${jobData.title} at ${jobData.company}`);
+        
+        // Enhanced validation for each job
+        const validationErrors = [];
+        if (!jobData.title?.trim()) validationErrors.push('title is required');
+        if (!jobData.company?.trim()) validationErrors.push('company is required');
+        if (!jobData.location?.trim()) validationErrors.push('location is required');
+        if (!jobData.description?.trim()) validationErrors.push('description is required');
+        
+        if (validationErrors.length > 0) {
+          throw new Error(`⚠️ Skipped row ${globalIndex + 1}: missing required field - ${validationErrors.join(', ')}`);
+        }
+        
+        // Set default values for missing fields
+        const processedJobData = {
+          ...jobData,
+          requirements: jobData.requirements || [],
+          tech_stack: jobData.tech_stack || [],
+          employment_type: jobData.employment_type || 'full-time',
+          experience_level: jobData.experience_level || 'mid-level',
+          status: jobData.status || 'draft', // Default to draft for approval workflow
+          salary_currency: jobData.salary_currency || 'USD',
+          visa_sponsorship: jobData.visa_sponsorship || false,
+          remote: jobData.remote || false,
+          sponsored: jobData.sponsored !== undefined ? jobData.sponsored : true,
+          application_type: jobData.application_type || 'external',
+          employer_id: null // Admin creates jobs without specific employer
+        };
+        
+        console.log(`📤 Job ${globalIndex + 1} data:`, {
+          title: processedJobData.title,
+          company: processedJobData.company,
+          location: processedJobData.location,
+          status: processedJobData.status,
+          employment_type: processedJobData.employment_type,
+          application_type: processedJobData.application_type,
+          application_value: processedJobData.application_value
+        });
+        
+        const jobId = await createAdminJob(processedJobData);
+        console.log(`✅ Job ${globalIndex + 1} created successfully with ID: ${jobId}`);
+        
+        return {
+          success: true,
+          jobId,
+          title: processedJobData.title,
+          company: processedJobData.company,
+          index: globalIndex
+        };
+      } catch (error: any) {
+        console.error(`❌ Error creating job ${globalIndex + 1}:`, error);
+        
+        const errorMessage = error.message.includes('⚠️ Skipped') 
+          ? error.message 
+          : `Row ${globalIndex + 1} (${jobData.title || 'Unknown'} at ${jobData.company || 'Unknown'}): ${error.message}`;
+        errors.push(errorMessage);
+        
+        return {
+          success: false,
+          error: error.message,
+          title: jobData.title,
+          company: jobData.company,
+          index: globalIndex
+        };
+      }
+    });
+    
+    // Wait for current batch to complete before moving to next
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+    
+    // Add a small delay between batches to prevent overwhelming the system
+    if (batchIndex < batches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  const successfulJobs = results.filter(r => r.success);
+  const failedJobs = results.filter(r => !r.success);
+  
+  console.log(`📊 Batch creation completed:`);
+  console.log(`✅ Successful: ${successfulJobs.length}`);
+  console.log(`❌ Failed: ${failedJobs.length}`);
+  
+  if (errors.length > 0) {
+    console.log('❌ Errors encountered:', errors);
+  }
+  
+  return {
+    success: true,
+    results,
+    errors
+  };
+};

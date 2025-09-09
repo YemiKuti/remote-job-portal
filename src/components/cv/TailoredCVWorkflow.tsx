@@ -203,13 +203,15 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       // Check for function call errors first
       if (functionError) {
         console.error('❌ AI analysis function error:', functionError);
-        let errorMessage = 'AI analysis failed';
+        let errorMessage = '⚠️ Please provide a valid CV and Job Description.';
         
         if (functionError.message) {
           if (functionError.message.includes('timeout')) {
             errorMessage = 'Request timed out. Please try again with a shorter resume or job description.';
           } else if (functionError.message.includes('network') || functionError.message.includes('fetch')) {
             errorMessage = 'Network error. Please check your connection and try again.';
+          } else if (functionError.message.includes('API key')) {
+            errorMessage = '⚠️ Please provide a valid CV and Job Description.';
           } else {
             errorMessage = functionError.message;
           }

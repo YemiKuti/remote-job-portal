@@ -454,12 +454,22 @@ export const validateJobData = (job: ParsedJobData, duplicateKey?: string): Vali
   };
 };
 
-// Batch create jobs with progress tracking
+// Enhanced batch create jobs with better error handling and progress tracking
 export const createJobsBatch = async (
   jobs: ParsedJobData[], 
   onProgress?: (completed: number, total: number) => void
 ): Promise<{ successful: number; failed: number; errors: string[] }> => {
   console.log(`🚀 Starting batch upload of ${jobs.length} jobs`);
+  
+  // Validate inputs
+  if (!jobs || jobs.length === 0) {
+    console.error('❌ No jobs provided for batch upload');
+    return { successful: 0, failed: 0, errors: ['No jobs provided for upload'] };
+  }
+
+  if (jobs.length > 1000) {
+    console.warn(`⚠️ Large batch detected: ${jobs.length} jobs. Consider splitting into smaller batches.`);
+  }
   
   const batchSize = 3; // Reduce batch size for better stability
   let successful = 0;
@@ -513,9 +523,28 @@ export const createJobsBatch = async (
           const { createAdminJob } = await import('@/utils/api/adminApi');
           console.log('✅ createAdminJob imported successfully');
           
+          // Additional validation before API call
+          if (!jobData.title || !jobData.company) {
+            throw new Error('Job title and company are required');
+          }
+
+          if (jobData.title.length > 200) {
+            console.warn(`⚠️ Job title too long, truncating: ${jobData.title}`);
+            jobData.title = jobData.title.substring(0, 197) + '...';
+          }
+
+          if (jobData.company.length > 100) {
+            console.warn(`⚠️ Company name too long, truncating: ${jobData.company}`);
+            jobData.company = jobData.company.substring(0, 97) + '...';
+          }
+          
           const result = await createAdminJob(jobData);
           
-          console.log(`✅ Job ${jobIndex + 1} created successfully:`, result);
+          if (!result) {
+            throw new Error('No response from admin job creation');
+          }
+          
+          console.log(`✅ Job ${jobIndex + 1} created successfully with ID:`, result);
           return { success: true, jobId: result };
         } catch (error: any) {
           console.error(`❌ Job ${jobIndex + 1} failed:`, error);

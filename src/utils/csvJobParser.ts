@@ -461,7 +461,7 @@ export const createJobsBatch = async (
 ): Promise<{ successful: number; failed: number; errors: string[] }> => {
   console.log(`🚀 Starting batch upload of ${jobs.length} jobs`);
   
-  const batchSize = 5; // Reduce batch size for better stability
+  const batchSize = 3; // Reduce batch size for better stability
   let successful = 0;
   let failed = 0;
   const errors: string[] = [];

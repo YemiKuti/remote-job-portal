@@ -466,35 +466,47 @@ serve(async (req) => {
           }
         );
       }
-
+      
       // Analyze job requirements comprehensively
       console.log(`🎯 [${requestId}] Analyzing job requirements...`);
       const jobAnalysis = analyzeJobRequirements(jobDescription, jobTitle || '');
       console.log(`🎯 [${requestId}] Job analysis completed:`, {
         essentialSkills: jobAnalysis.essentialSkills.length,
         preferredSkills: jobAnalysis.preferredSkills.length,
-        experienceLevel: jobAnalysis.experienceLevel
+        experienceLevel: jobAnalysis.experienceLevel,
+        keywords: jobAnalysis.keywords.length
       });
-      
-      // Analyze candidate's resume
-      console.log(`📊 [${requestId}] Analyzing candidate resume...`);
-      const candidateAnalysis = analyzeResumeContent(resumeContent, candidateData);
-      console.log(`📊 [${requestId}] Candidate analysis completed:`, {
-        currentSkills: candidateAnalysis.currentSkills.length,
-        achievements: candidateAnalysis.achievements.length,
-        careerLevel: candidateAnalysis.careerLevel
+
+      // Analyze resume content
+      console.log(`📋 [${requestId}] Analyzing resume content...`);
+      const resumeAnalysis = analyzeResumeContent(resumeContent, candidateData);
+      console.log(`📋 [${requestId}] Resume analysis completed:`, {
+        currentSkills: resumeAnalysis.currentSkills.length,
+        achievements: resumeAnalysis.achievements.length,
+        careerLevel: resumeAnalysis.careerLevel,
+        educationLevel: resumeAnalysis.educationLevel
       });
-      
-      // Identify skill alignment and gaps
-      const skillAlignment = candidateAnalysis.currentSkills.filter(skill => 
-        jobAnalysis.essentialSkills.includes(skill) || jobAnalysis.preferredSkills.includes(skill)
+
+      // Calculate skill alignment
+      const skillAlignment = resumeAnalysis.currentSkills.filter(skill => 
+        jobAnalysis.essentialSkills.some(essentialSkill => 
+          skill.toLowerCase().includes(essentialSkill.toLowerCase()) || 
+          essentialSkill.toLowerCase().includes(skill.toLowerCase())
+        )
       );
-      const criticalGaps = jobAnalysis.essentialSkills.filter(skill => 
-        !candidateAnalysis.currentSkills.includes(skill)
-      ).slice(0, 5);
       
-      console.log(`✅ [${requestId}] Skill alignment: ${skillAlignment.length} skills matched`);
-      console.log(`⚠️ [${requestId}] Critical gaps: ${criticalGaps.length} essential skills missing`);
+      // Calculate initial match score
+      const skillsMatched = skillAlignment.length;
+      const matchScore = jobAnalysis.essentialSkills.length > 0 
+        ? Math.round((skillsMatched / jobAnalysis.essentialSkills.length) * 100)
+        : 85;
+
+      console.log(`📊 [${requestId}] Match analysis:`, {
+        skillsMatched,
+        totalEssentialSkills: jobAnalysis.essentialSkills.length,
+        matchScore,
+        alignedSkills: skillAlignment.slice(0, 5)
+      });
       
       // Format candidate information
       const candidateInfo = formatCandidateInfo(candidateData, resumeContent);
@@ -520,9 +532,9 @@ Key Responsibilities: ${jobAnalysis.responsibilities.slice(0, 4).join('; ')}
 Required Education: ${jobAnalysis.education.join(', ') || 'Not specified'}
 
 CANDIDATE STRENGTHS:
-Current Skill Set: ${candidateAnalysis.currentSkills.join(', ')}
-Career Level: ${candidateAnalysis.careerLevel}
-Key Achievements: ${candidateAnalysis.achievements.slice(0, 5).join('; ')}
+Current Skill Set: ${resumeAnalysis.currentSkills.join(', ')}
+Career Level: ${resumeAnalysis.careerLevel}
+Key Achievements: ${resumeAnalysis.achievements.slice(0, 5).join('; ')}
 Aligned Skills: ${skillAlignment.join(', ')}
 
 CRITICAL FORMATTING & STRUCTURE REQUIREMENTS:
@@ -550,7 +562,7 @@ CRITICAL FORMATTING & STRUCTURE REQUIREMENTS:
 
 2. **PROFESSIONAL SUMMARY REQUIREMENTS**:
    - Exactly 3 sentences maximum
-   - Include ${candidateAnalysis.careerLevel} level positioning
+   - Include ${resumeAnalysis.careerLevel} level positioning
    - Naturally incorporate 3-4 of these essential skills: ${jobAnalysis.essentialSkills.slice(0, 6).join(', ')}
    - Quantify experience (years, scope, results)
    - End with value proposition for the target role

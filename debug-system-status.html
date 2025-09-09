@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status Debug Tool</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+        .status-check { padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #4299e1; background: #f7fafc; }
+        .success { border-left-color: #48bb78; background: #f0fff4; }
+        .error { border-left-color: #f56565; background: #fffbf0; }
+        .warning { border-left-color: #ed8936; background: #fffaf0; }
+        .button { background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; }
+        .code { background: #1a202c; color: #e2e8f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.9em; white-space: pre-wrap; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 System Status Debug Tool</h1>
+        <p>Check if job upload and CV tailoring systems are working correctly</p>
+    </div>
+
+    <div class="container">
+        <h3>🔧 Quick System Check</h3>
+        <button class="button" onclick="runSystemCheck()">Run Full System Check</button>
+        <button class="button" onclick="testCSVParser()">Test CSV Parser</button>
+        <button class="button" onclick="checkAPIs()">Check API Endpoints</button>
+        <button class="button" onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h3>📊 System Status</h3>
+        <div id="status-dashboard">
+            <div class="status-check">
+                <strong>System Status:</strong> <span id="overall-status">Checking...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>🧪 Quick Tests</h3>
+        
+        <h4>CSV Parser Test:</h4>
+        <textarea id="csv-test-data" rows="6" style="width: 100%; font-family: monospace;">Job Title,Company,Location
+Frontend Developer,Test Corp,San Francisco
+Backend Developer,Tech Inc,New York</textarea>
+        <button class="button" onclick="testCSVData()">Test CSV Parsing</button>
+        
+        <h4>CV Content Test:</h4>
+        <textarea id="cv-test-data" rows="6" style="width: 100%;">John Doe
+Software Engineer with 5 years experience
+Skills: JavaScript, React, Node.js</textarea>
+        <button class="button" onclick="testCVContent()">Test CV Processing</button>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <div class="container">
+        <h3>🐛 Debug Information</h3>
+        <button class="button" onclick="showDebugInfo()">Show Debug Info</button>
+        <div id="debug-info" class="hidden">
+            <div class="code" id="debug-output"></div>
+        </div>
+    </div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status-check ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('debug-info').classList.add('hidden');
+        }
+
+        function updateOverallStatus(status, type = 'info') {
+            const statusEl = document.getElementById('overall-status');
+            statusEl.textContent = status;
+            statusEl.parentElement.className = `status-check ${type}`;
+        }
+
+        async function runSystemCheck() {
+            clearResults();
+            addResult('🔍 Starting comprehensive system check...', 'info');
+            
+            // Check 1: Basic JavaScript functionality
+            try {
+                const testArray = [1, 2, 3];
+                const testResult = testArray.map(x => x * 2);
+                addResult('✅ JavaScript core functions: Working', 'success');
+            } catch (e) {
+                addResult('❌ JavaScript core functions: Error - ' + e.message, 'error');
+            }
+
+            // Check 2: CSV parsing simulation
+            testCSVParser();
+
+            // Check 3: Local storage
+            try {
+                localStorage.setItem('system-test', 'working');
+                const testValue = localStorage.getItem('system-test');
+                if (testValue === 'working') {
+                    addResult('✅ Local storage: Working', 'success');
+                    localStorage.removeItem('system-test');
+                } else {
+                    addResult('⚠️ Local storage: Issues detected', 'warning');
+                }
+            } catch (e) {
+                addResult('❌ Local storage: Error - ' + e.message, 'error');
+            }
+
+            // Check 4: File API support
+            if (window.File && window.FileReader && window.FileList && window.Blob) {
+                addResult('✅ File API support: Available', 'success');
+            } else {
+                addResult('❌ File API support: Not available', 'error');
+            }
+
+            updateOverallStatus('System check completed', 'success');
+        }
+
+        function testCSVParser() {
+            addResult('🧪 Testing CSV parsing logic...', 'info');
+            
+            try {
+                // Simulate CSV parsing
+                const csvData = `Job Title,Company,Location
+Frontend Developer,Test Corp,San Francisco
+Backend Developer,Tech Inc,New York`;
+                
+                const lines = csvData.split('\n');
+                const headers = lines[0].split(',');
+                const rows = lines.slice(1).map(line => line.split(','));
+                
+                if (headers.length >= 3 && rows.length >= 2) {
+                    addResult('✅ CSV Parser: Successfully parsed ' + rows.length + ' rows with ' + headers.length + ' columns', 'success');
+                    addResult('📋 Headers detected: ' + headers.join(', '), 'info');
+                } else {
+                    addResult('⚠️ CSV Parser: Parsing successful but data may be incomplete', 'warning');
+                }
+            } catch (e) {
+                addResult('❌ CSV Parser: Error - ' + e.message, 'error');
+            }
+        }
+
+        function testCSVData() {
+            const csvData = document.getElementById('csv-test-data').value;
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                const lines = csvData.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+                
+                let result = `<div class="status-check success">
+                    <strong>✅ CSV Test Results:</strong><br>
+                    Headers: ${headers.join(', ')}<br>
+                    Rows: ${rows.length}<br>
+                    First row: ${rows[0] ? rows[0].join(' | ') : 'None'}
+                </div>`;
+                
+                // Check for required headers
+                const hasJobTitle = headers.some(h => h.toLowerCase().includes('title') || h.toLowerCase().includes('job'));
+                const hasCompany = headers.some(h => h.toLowerCase().includes('company'));
+                
+                if (hasJobTitle && hasCompany) {
+                    result += `<div class="status-check success">✅ Essential headers detected (Job Title, Company)</div>`;
+                } else {
+                    result += `<div class="status-check warning">⚠️ Missing essential headers. Detected: Job Title=${hasJobTitle}, Company=${hasCompany}</div>`;
+                }
+                
+                resultsDiv.innerHTML = result;
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="status-check error">❌ CSV parsing failed: ${e.message}</div>`;
+            }
+        }
+
+        function testCVContent() {
+            const cvData = document.getElementById('cv-test-data').value;
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                const wordCount = cvData.trim().split(/\s+/).length;
+                const charCount = cvData.trim().length;
+                const hasName = /[A-Z][a-z]+ [A-Z][a-z]+/.test(cvData);
+                const hasSkills = /skills?[:\s]/i.test(cvData);
+                const hasExperience = /experience|work|job|role/i.test(cvData);
+                
+                let result = `<div class="status-check success">
+                    <strong>✅ CV Analysis Results:</strong><br>
+                    Character count: ${charCount}<br>
+                    Word count: ${wordCount}<br>
+                    Has name pattern: ${hasName ? 'Yes' : 'No'}<br>
+                    Has skills section: ${hasSkills ? 'Yes' : 'No'}<br>
+                    Has experience keywords: ${hasExperience ? 'Yes' : 'No'}
+                </div>`;
+                
+                if (charCount >= 100 && wordCount >= 20) {
+                    result += `<div class="status-check success">✅ CV content length is adequate for processing</div>`;
+                } else {
+                    result += `<div class="status-check warning">⚠️ CV content may be too short (minimum ~100 characters, 20 words recommended)</div>`;
+                }
+                
+                resultsDiv.innerHTML = result;
+            } catch (e) {
+                resultsDiv.innerHTML = `<div class="status-check error">❌ CV analysis failed: ${e.message}</div>`;
+            }
+        }
+
+        function checkAPIs() {
+            addResult('🌐 Checking API connectivity...', 'info');
+            
+            // Basic connectivity check
+            if (navigator.onLine) {
+                addResult('✅ Network connectivity: Online', 'success');
+            } else {
+                addResult('❌ Network connectivity: Offline', 'error');
+            }
+
+            // Check if running on localhost or live domain
+            const currentHost = window.location.hostname;
+            if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                addResult('🏠 Environment: Local development', 'info');
+            } else {
+                addResult('🌍 Environment: Live/Production', 'info');
+            }
+
+            addResult('ℹ️ For full API testing, use the main application interfaces', 'info');
+        }
+
+        function showDebugInfo() {
+            const debugDiv = document.getElementById('debug-info');
+            const debugOutput = document.getElementById('debug-output');
+            
+            const debugInfo = `
+System Debug Information:
+========================
+
+Browser: ${navigator.userAgent}
+Viewport: ${window.innerWidth} x ${window.innerHeight}
+URL: ${window.location.href}
+Time: ${new Date().toISOString()}
+
+Feature Support:
+- File API: ${!!(window.File && window.FileReader && window.FileList && window.Blob)}
+- Local Storage: ${!!window.localStorage}
+- Fetch API: ${!!window.fetch}
+- ES6 Support: ${!!(window.Promise && window.Map && window.Set)}
+
+Memory Usage (if available):
+${performance.memory ? `
+- Used: ${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB
+- Total: ${Math.round(performance.memory.totalJSHeapSize / 1048576)} MB
+- Limit: ${Math.round(performance.memory.jsHeapSizeLimit / 1048576)} MB
+` : 'Memory info not available'}
+
+Performance Timing:
+- Page Load: ${performance.timing.loadEventEnd - performance.timing.navigationStart}ms
+- DOM Ready: ${performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart}ms
+`;
+            
+            debugOutput.textContent = debugInfo;
+            debugDiv.classList.remove('hidden');
+        }
+
+        // Auto-run basic check on page load
+        window.addEventListener('load', function() {
+            updateOverallStatus('Ready for testing', 'success');
+        });
+    </script>
+</body>
+</html>

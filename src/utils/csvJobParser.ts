@@ -188,42 +188,68 @@ const validateExperienceLevel = (level: string): string => {
   return level; // Return as-is if no match
 };
 
-// Parse individual job row
+// Enhanced job row parsing with better formatting preservation
 const parseJobRow = (row: any): ParsedJobData => {
   const getField = (field: string): string => {
-    return row[field]?.toString().trim() || '';
+    const value = row[field]?.toString() || '';
+    // Preserve line breaks and formatting while trimming excessive whitespace
+    return value.replace(/\r\n|\r|\n/g, '\n').replace(/\s+/g, ' ').trim();
   };
 
-  const title = getField('job title') || getField('title') || getField('position');
-  const company = getField('company') || getField('company name');
-  const location = getField('location') || getField('city');
-  const description = getField('description') || getField('job description');
-  const requirements = getField('requirements') || getField('qualifications');
-  const employment_type = validateEmploymentType(getField('employment type') || getField('type'));
-  const experience_level = validateExperienceLevel(getField('experience level') || getField('level'));
-  const application_value = getField('application email') || getField('email') || getField('contact') || getField('recruiter email') || getField('apply email') || getField('contact email');
+  const getFormattedField = (field: string): string => {
+    const value = row[field]?.toString() || '';
+    // Preserve line breaks and paragraph structure for descriptions
+    return value
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\n\s*\n/g, '\n\n') // Preserve paragraph breaks
+      .replace(/[ \t]+/g, ' ') // Normalize spaces but keep line breaks
+      .trim();
+  };
+
+  const title = getField('job title') || getField('title') || getField('position') || getField('job_title');
+  const company = getField('company') || getField('company name') || getField('company_name') || getField('employer');
+  const location = getField('location') || getField('city') || getField('job_location') || getField('work_location');
+  
+  // Use formatted field for description to preserve structure
+  const description = getFormattedField('description') || getFormattedField('job description') || 
+                     getFormattedField('job_description') || getFormattedField('summary');
+  
+  const requirements = getFormattedField('requirements') || getFormattedField('qualifications') || 
+                      getFormattedField('job_requirements') || getFormattedField('skills required');
+  
+  const employment_type = validateEmploymentType(getField('employment type') || getField('type') || 
+                                               getField('employment_type') || getField('job_type'));
+  const experience_level = validateExperienceLevel(getField('experience level') || getField('level') || 
+                                                 getField('experience_level') || getField('seniority'));
+  
+  // Enhanced email field mapping
+  const application_value = getField('application email') || getField('email') || getField('contact') || 
+                          getField('recruiter email') || getField('apply email') || getField('contact email') ||
+                          getField('application_email') || getField('recruiter_email') || getField('contact_email') ||
+                          getField('apply_email') || getField('hr_email') || getField('hiring_email');
 
   return {
     title,
     company,
     location,
-    description,
+    description: description || `Join ${company} as a ${title}. We are looking for talented professionals to join our team in ${location}.`,
     requirements: requirements ? parseArray(requirements) : [],
     employment_type,
     experience_level,
-    salary_min: parseSalary(getField('salary min') || getField('min salary')),
-    salary_max: parseSalary(getField('salary max') || getField('max salary')),
-    salary_currency: 'USD',
-    tech_stack: parseArray(getField('tech stack') || getField('technologies')),
-    visa_sponsorship: parseBoolean(getField('visa sponsorship') || getField('visa')),
-    remote: parseBoolean(getField('remote')),
-    company_size: getField('company size') || undefined,
+    salary_min: parseSalary(getField('salary min') || getField('min salary') || getField('salary_min') || getField('min_salary')),
+    salary_max: parseSalary(getField('salary max') || getField('max salary') || getField('salary_max') || getField('max_salary')),
+    salary_currency: getField('currency') || getField('salary_currency') || 'USD',
+    tech_stack: parseArray(getField('tech stack') || getField('technologies') || getField('tech_stack') || getField('skills')),
+    visa_sponsorship: parseBoolean(getField('visa sponsorship') || getField('visa') || getField('visa_sponsorship')),
+    remote: parseBoolean(getField('remote') || getField('remote_work') || getField('work_from_home')),
+    company_size: getField('company size') || getField('company_size') || undefined,
     application_deadline: undefined,
-    logo: undefined,
-    status: 'draft', // All uploaded jobs start as drafts requiring approval
+    logo: getField('logo') || getField('company_logo') || undefined,
+    status: 'pending', // All uploaded jobs start as pending approval
     application_type: application_value ? 'external' : 'internal',
     application_value: application_value || undefined,
-    sponsored: true
+    sponsored: parseBoolean(getField('sponsored') || getField('featured')) || true
   };
 };
 

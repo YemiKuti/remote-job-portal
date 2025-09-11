@@ -1,7 +1,8 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Plus } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { extractResumeContent } from '@/utils/resumeProcessor';
@@ -13,41 +14,53 @@ interface ResumeUploadZoneProps {
 
 export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneProps) {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
   const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf', 
-      'application/msword', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Please upload a PDF, DOC, DOCX, or TXT file');
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
-      return;
-    }
-
     setUploading(true);
-    try {
-      // Extract resume content and candidate data
-      console.log('📄 Extracting resume content...');
-      const resumeContent = await extractResumeContent(file);
+    setError(null);
+    setUploadProgress('Validating file...');
 
-      // Upload file to documents bucket
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${userId}/${fileName}`;
+    try {
+      // Enhanced file validation
+      const fileName = file.name.toLowerCase();
+      const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
+      const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+      
+      if (!isSupported) {
+        throw new Error('Please upload a PDF, DOC, DOCX, or TXT file.');
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File is too large. Please upload a file smaller than 10MB.');
+      }
+
+      // Validate minimum file size
+      if (file.size < 1024) {
+        throw new Error('File is too small. Please upload a resume with more content.');
+      }
+
+      setUploadProgress('Extracting resume content...');
+      
+      // Extract content from the resume with enhanced error handling
+      let resumeContent;
+      try {
+        resumeContent = await extractResumeContent(file);
+      } catch (extractError: any) {
+        console.error('Content extraction error:', extractError);
+        throw new Error(extractError.message || 'Unable to read resume content.');
+      }
+
+      setUploadProgress('Uploading to storage...');
+
+      // Upload file to Supabase storage
+      const fileName_unique = `${Date.now()}-${file.name}`;
+      const filePath = `${userId}/${fileName_unique}`;
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -57,48 +70,64 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
+
+      setUploadProgress('Saving resume data...');
 
       // Convert candidate data to JSON-compatible format
       const candidateDataJson = JSON.parse(JSON.stringify(resumeContent.candidateData));
 
-      // Save resume record to database with extracted candidate data
-      const { data: resume, error: dbError } = await supabase
+      // Save resume record to database
+      const { data: savedResume, error: saveError } = await supabase
         .from('candidate_resumes')
         .insert({
           user_id: userId,
           name: file.name,
           file_path: filePath,
           file_size: file.size,
-          is_default: false,
+          extracted_content: resumeContent.text,
           candidate_data: candidateDataJson,
-          extracted_content: resumeContent.text
+          is_default: false
         })
         .select()
         .single();
 
-      if (dbError) {
-        console.error('Database error:', dbError);
+      if (saveError) {
         // Clean up uploaded file if database insert fails
         await supabase.storage.from('documents').remove([filePath]);
-        throw new Error(`Database error: ${dbError.message}`);
+        throw new Error(`Failed to save resume: ${saveError.message}`);
       }
 
-      console.log('✅ Resume uploaded with candidate data:', resumeContent.candidateData);
-      toast.success('Resume uploaded and processed successfully');
-      onResumeUploaded(resume);
+      // Enhance the resume object with content for immediate use
+      const enhancedResume = {
+        ...savedResume,
+        content: resumeContent,
+        resume_text: resumeContent.text,
+        parsed_content: resumeContent.text,
+        original_filename: file.name,
+        sections: resumeContent.sections
+      };
+
+      console.log('✅ Resume uploaded successfully:', {
+        id: savedResume.id,
+        name: file.name,
+        contentLength: resumeContent.text.length,
+        hasPersonalInfo: !!resumeContent.candidateData.personalInfo
+      });
+
+      onResumeUploaded(enhancedResume);
+      toast.success('Resume uploaded and processed successfully!');
+
     } catch (error: any) {
-      console.error('Error uploading resume:', error);
+      console.error('❌ Resume upload error:', error);
+      setError(error.message || 'Failed to upload resume');
       toast.error(error.message || 'Failed to upload resume');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setUploadProgress('');
     }
-  };
+  }, [userId, onResumeUploaded]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -128,48 +157,78 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
   };
 
   return (
-    <div
-      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-        dragOver
-          ? 'border-blue-500 bg-blue-50'
-          : 'border-gray-300 hover:border-gray-400'
-      }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium">Upload Your Resume</h3>
-        <p className="text-gray-600">
-          Drag and drop your resume here, or click to browse
-        </p>
-        <p className="text-sm text-gray-500">
-          Supports PDF, DOC, DOCX, TXT (Max 5MB)
-        </p>
-        {uploading && (
-          <p className="text-sm text-blue-600">
-            Processing resume and extracting candidate information...
-          </p>
-        )}
-      </div>
-      
-      <Button 
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className="mt-4"
+    <div className="space-y-4">
+      <div
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+          ${dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'}
+          ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400 hover:bg-blue-50'}
+        `}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !uploading && document.getElementById('file-input')?.click()}
       >
-        <Plus className="h-4 w-4 mr-2" />
-        {uploading ? 'Processing...' : 'Choose File'}
-      </Button>
-      
+        <div className="space-y-4">
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+              <div className="text-sm font-medium">{uploadProgress}</div>
+            </div>
+          ) : (
+            <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+          )}
+          
+          <div>
+            <p className="text-lg font-medium text-gray-700">
+              {dragOver
+                ? 'Drop your resume here...'
+                : 'Drop your resume here, or click to browse'
+              }
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Supports PDF, DOC, DOCX, and TXT files (max 10MB)
+            </p>
+          </div>
+          
+          {!uploading && (
+            <Button type="button" variant="outline" disabled={uploading}>
+              <FileText className="h-4 w-4 mr-2" />
+              Choose File
+            </Button>
+          )}
+        </div>
+      </div>
+
       <input
+        id="file-input"
         type="file"
-        ref={fileInputRef}
         onChange={handleFileChange}
         accept=".pdf,.doc,.docx,.txt"
         className="hidden"
       />
+
+      {error && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <AlertDescription className="text-red-700">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="text-sm text-gray-600 space-y-2">
+        <p className="font-medium">📋 Supported Formats:</p>
+        <ul className="list-disc list-inside space-y-1 text-sm">
+          <li><strong>PDF (.pdf)</strong> - Most common format (text extraction available)</li>
+          <li><strong>Word Document (.docx)</strong> - Good compatibility</li>
+          <li><strong>Legacy Word (.doc)</strong> - Limited support</li>
+          <li><strong>Plain Text (.txt)</strong> - Recommended for best results</li>
+        </ul>
+        <p className="text-xs text-gray-500 mt-2">
+          💡 <strong>Tip:</strong> For optimal CV tailoring, save your resume as a .txt file to ensure all content is properly extracted.
+        </p>
+      </div>
     </div>
   );
 }

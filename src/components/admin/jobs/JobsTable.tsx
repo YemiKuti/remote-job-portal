@@ -61,11 +61,14 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
         {jobs.map((job) => (
           <TableRow key={job.id} className="hover:bg-muted/50">
             <TableCell className="font-medium">
-              <div className="max-w-xs">
-                <div className="font-semibold text-foreground">{job.title}</div>
+              <div className="max-w-md">
+                <div className="font-semibold text-foreground mb-1">{job.title}</div>
                 {job.description && (
-                  <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {job.description.substring(0, 100)}...
+                  <div className="text-sm text-muted-foreground whitespace-pre-line">
+                    {job.description.length > 150 
+                      ? job.description.substring(0, 150).replace(/\n+/g, ' ') + '...'
+                      : job.description.replace(/\n+/g, ' ')
+                    }
                   </div>
                 )}
               </div>

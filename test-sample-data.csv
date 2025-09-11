@@ -1,0 +1,40 @@
+job_title,company,location,description,application_email,salary_min,salary_max,employment_type,experience_level
+"Senior Software Engineer","Tech Innovations Inc","San Francisco, CA","We are seeking a Senior Software Engineer to join our dynamic team.
+
+Key Responsibilities:
+• Design and develop scalable web applications
+• Collaborate with cross-functional teams
+• Mentor junior developers
+• Lead technical architecture decisions
+
+Requirements:
+• 5+ years of software development experience
+• Strong knowledge of React, Node.js, and TypeScript
+• Experience with cloud platforms (AWS, Azure)
+• Excellent problem-solving skills","careers@techinnovations.com",120000,160000,"full-time","senior"
+"Marketing Manager","Creative Solutions Ltd","New York, NY","Join our marketing team as a Marketing Manager!
+
+What you'll do:
+• Develop and execute marketing campaigns
+• Analyze market trends and customer behavior
+• Manage social media presence
+• Coordinate with sales teams
+
+We're looking for:
+• 3+ years of marketing experience
+• Strong analytical and creative skills
+• Experience with digital marketing tools
+• Bachelor's degree in Marketing or related field","hr@creativesolutions.com",70000,90000,"full-time","mid"
+"Data Analyst","Analytics Pro","Remote","Remote Data Analyst opportunity with a growing analytics company.
+
+Your role:
+• Analyze large datasets to identify trends
+• Create detailed reports and visualizations
+• Work with stakeholders to define requirements
+• Present findings to executive team
+
+Required skills:
+• SQL, Python, R programming
+• Tableau or Power BI experience
+• Statistical analysis knowledge
+• Strong communication skills","jobs@analyticspro.com",65000,85000,"full-time","mid"

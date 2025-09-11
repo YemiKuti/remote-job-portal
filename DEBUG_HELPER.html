@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E2E Testing Debug Helper</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .checklist {
+            background: white;
+            border: 2px solid #28a745;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .checklist li {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        .test-data {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Job Board & CV Tailoring - E2E Testing Helper</h1>
+    
+    <div class="info status">
+        <strong>📋 Testing Status:</strong> Use this page to track your end-to-end testing progress
+    </div>
+
+    <div class="test-section">
+        <h2>📁 Test Data Files Created</h2>
+        <div class="test-data">
+            <p><strong>📄 E2E_TEST_DATA.csv</strong> - Contains 3 sample jobs with different emails</p>
+            <p><strong>📄 SAMPLE_RESUME.txt</strong> - Professional resume for CV tailoring test</p>
+            <p><strong>📄 CORRUPTED_TEST.txt</strong> - Empty file for error handling test</p>
+            <p><strong>📋 E2E_TEST_INSTRUCTIONS.md</strong> - Complete step-by-step guide</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Testing Checklist</h2>
+        <div class="checklist">
+            <ul style="list-style: none; padding: 0;">
+                <li><input type="checkbox" id="csv-upload"> <label for="csv-upload">CSV uploads jobs to "pending" status</label></li>
+                <li><input type="checkbox" id="admin-approval"> <label for="admin-approval">Admin can approve jobs (moves to active)</label></li>
+                <li><input type="checkbox" id="job-formatting"> <label for="job-formatting">Job descriptions show proper line breaks</label></li>
+                <li><input type="checkbox" id="email-mapping"> <label for="email-mapping">Correct emails mapped from CSV fields</label></li>
+                <li><input type="checkbox" id="cv-upload"> <label for="cv-upload">CV upload works (PDF/DOCX/TXT)</label></li>
+                <li><input type="checkbox" id="cv-tailoring"> <label for="cv-tailoring">CV tailoring generates output successfully</label></li>
+                <li><input type="checkbox" id="error-handling"> <label for="error-handling">Error messages clear for invalid files</label></li>
+                <li><input type="checkbox" id="ui-polish"> <label for="ui-polish">Loading states and progress indicators work</label></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Quick System Checks</h2>
+        <button onclick="checkAdminDashboard()">Check Admin Dashboard</button>
+        <button onclick="checkCVTailoring()">Check CV Tailoring</button>
+        <button onclick="checkConsoleErrors()">Check Console Errors</button>
+        
+        <div id="check-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📸 Required Screenshots</h2>
+        <div class="warning status">
+            Take screenshots of these key areas for proof:
+        </div>
+        <ol>
+            <li><strong>Admin Approval Queue</strong> - showing pending jobs</li>
+            <li><strong>Live Job Listing</strong> - approved job with formatting</li>
+            <li><strong>Apply Email</strong> - correct job-specific email</li>
+            <li><strong>CV Tailoring Success</strong> - generated tailored resume</li>
+            <li><strong>Error Handling</strong> - clear error message</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 Troubleshooting Guide</h2>
+        <div class="error status">
+            <strong>If tests fail:</strong>
+        </div>
+        <ul>
+            <li>Clear browser cache (Ctrl+F5 or Cmd+Shift+R)</li>
+            <li>Check browser console for errors (F12)</li>
+            <li>Verify admin user permissions</li>
+            <li>Try different browsers (Chrome, Firefox, Safari)</li>
+            <li>Check network requests in DevTools</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Success Criteria</h2>
+        <div class="success status">
+            <strong>System is production ready when:</strong>
+        </div>
+        <ul>
+            <li>✅ All 8 checklist items pass</li>
+            <li>✅ 5 screenshots captured successfully</li>
+            <li>✅ No console errors during normal operation</li>
+            <li>✅ Complete workflow works end-to-end</li>
+        </ul>
+    </div>
+
+    <script>
+        function checkAdminDashboard() {
+            const results = document.getElementById('check-results');
+            results.innerHTML = `
+                <div class="info status">
+                    <strong>🔍 Admin Dashboard Check:</strong><br>
+                    1. Navigate to <code>/admin/jobs</code><br>
+                    2. Look for tabbed interface: "Approval Queue" and "All Jobs"<br>
+                    3. Upload CSV should create pending jobs<br>
+                    4. Approve button should move jobs to active status
+                </div>
+            `;
+        }
+
+        function checkCVTailoring() {
+            const results = document.getElementById('check-results');
+            results.innerHTML = `
+                <div class="info status">
+                    <strong>🔍 CV Tailoring Check:</strong><br>
+                    1. Navigate to candidate dashboard<br>
+                    2. Upload SAMPLE_RESUME.txt file<br>
+                    3. Select job for tailoring<br>
+                    4. Generate tailored CV successfully
+                </div>
+            `;
+        }
+
+        function checkConsoleErrors() {
+            const results = document.getElementById('check-results');
+            results.innerHTML = `
+                <div class="warning status">
+                    <strong>🔍 Console Check:</strong><br>
+                    1. Press F12 to open DevTools<br>
+                    2. Go to Console tab<br>
+                    3. Look for red error messages<br>
+                    4. Note any 400/500 HTTP errors in Network tab
+                </div>
+            `;
+        }
+
+        // Auto-save checklist progress
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                localStorage.setItem(this.id, this.checked);
+                updateProgress();
+            });
+            
+            // Load saved state
+            const saved = localStorage.getItem(checkbox.id);
+            if (saved === 'true') {
+                checkbox.checked = true;
+            }
+        });
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const completed = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const total = checkboxes.length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+                progressBar.textContent = `${completed}/${total} (${percentage}%)`;
+            }
+        }
+
+        // Initialize progress on load
+        updateProgress();
+    </script>
+</body>
+</html>

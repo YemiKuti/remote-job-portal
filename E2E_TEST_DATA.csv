@@ -1,0 +1,69 @@
+job_title,company,location,description,requirements,application_email,salary_min,salary_max,employment_type,experience_level
+"Senior React Developer","TechFlow Solutions","San Francisco, CA","Join our innovative team as a Senior React Developer!
+
+🚀 What You'll Do:
+• Build cutting-edge web applications using React and TypeScript
+• Collaborate with designers and product managers
+• Lead technical architecture decisions
+• Mentor junior developers and conduct code reviews
+• Optimize application performance and user experience
+
+🎯 Our Tech Stack:
+• Frontend: React, TypeScript, Next.js, Tailwind CSS
+• Backend: Node.js, PostgreSQL, Redis
+• Cloud: AWS, Docker, Kubernetes
+• Tools: GitHub, Jira, Figma
+
+💼 What We Offer:
+• Competitive salary and equity package
+• Flexible work arrangements (hybrid/remote)
+• Professional development budget ($3,000/year)
+• Health, dental, and vision insurance
+• Unlimited PTO policy","sarah.johnson@techflow.com",130000,170000,"full-time","senior"
+"Marketing Manager","BrandForge Inc","New York, NY","Lead our marketing efforts as a Marketing Manager!
+
+🎨 Your Mission:
+• Develop and execute comprehensive marketing campaigns
+• Analyze market trends and customer insights
+• Manage our social media presence across all platforms
+• Create compelling content for blogs, emails, and ads
+• Coordinate with sales teams to generate qualified leads
+• Track ROI and optimize campaign performance
+
+🔥 What You Bring:
+• 3-5 years of digital marketing experience
+• Expertise in Google Analytics, Facebook Ads, LinkedIn
+• Strong copywriting and content creation skills
+• Experience with marketing automation tools (HubSpot, Mailchimp)
+• Data-driven mindset with analytical skills
+• Creative problem-solving abilities
+
+🌟 Why Join Us:
+• Dynamic startup environment with growth opportunities
+• Work with industry-leading brands
+• Flexible schedule and work-life balance
+• Comprehensive benefits package","alex.martinez@brandforge.com",75000,95000,"full-time","mid"
+"Data Scientist","InsightTech Analytics","Remote (US)","Transform data into actionable insights as our Data Scientist!
+
+🔍 Key Responsibilities:
+• Build predictive models and machine learning algorithms
+• Analyze large datasets to identify business opportunities  
+• Create interactive dashboards and data visualizations
+• Collaborate with engineering teams on data infrastructure
+• Present findings to stakeholders and executive leadership
+• Stay current with latest ML techniques and tools
+
+🧠 Required Skills:
+• Advanced degree in Data Science, Statistics, or related field
+• 4+ years of experience in data science or analytics
+• Proficiency in Python, R, SQL, and statistical modeling
+• Experience with machine learning libraries (scikit-learn, TensorFlow)
+• Strong knowledge of data visualization tools (Tableau, Power BI)
+• Excellent communication and presentation skills
+
+🏡 Remote Benefits:
+• Work from anywhere in the US
+• Flexible hours with core collaboration time
+• Home office setup allowance ($2,000)
+• Annual company retreats and team building
+• Top-tier health and wellness benefits","dr.chen@insighttech.com",110000,140000,"full-time","senior"

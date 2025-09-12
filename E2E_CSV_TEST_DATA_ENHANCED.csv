@@ -1,0 +1,89 @@
+Job Title,Company,Location,Description,Requirements,Employment Type,Experience Level,Tech Stack,Remote,Salary Min,Salary Max,Currency,Application Email,Visa Sponsorship,Sponsored
+Senior Software Engineer,TechCorp Inc,San Francisco, CA,"## About the Role
+
+Join our innovative team as a Senior Software Engineer! You'll be working on cutting-edge projects that impact millions of users worldwide.
+
+### Key Responsibilities
+- Lead development of scalable web applications
+- Mentor junior developers and conduct code reviews  
+- Collaborate with product and design teams
+- Drive technical architecture decisions
+
+### What We Offer
+- Competitive salary and equity
+- Comprehensive health benefits
+- Flexible work arrangements
+- Professional development budget","### Required Skills
+- **5+ years** of experience with React and TypeScript
+- Experience with Node.js and Express
+- Knowledge of PostgreSQL and Redis
+- Understanding of microservices architecture
+
+### Preferred Skills  
+- Experience with AWS or GCP
+- Knowledge of Docker and Kubernetes
+- Previous startup experience
+- Open source contributions",Full-time,Senior,"React,TypeScript,Node.js,PostgreSQL,AWS",true,120000,180000,USD,careers@techcorp.com,true,true
+Product Manager,StartupXYZ,Remote,"We're seeking a dynamic Product Manager to drive our product vision and strategy.
+
+**About the Role:**
+You will work closely with engineering, design, and business teams to deliver exceptional user experiences.
+
+**Responsibilities:**
+• Define product roadmap and priorities
+• Conduct user research and market analysis  
+• Write detailed product specifications
+• Analyze metrics and user feedback
+
+**Why Join Us:**
+• Fast-growing startup environment
+• Direct impact on product direction
+• Competitive compensation package
+• Remote-first culture","**Essential:**
+• 3+ years product management experience
+• Strong analytical and communication skills
+• Experience with agile development
+• BA/BS in relevant field
+
+**Nice to have:**
+• Technical background preferred
+• SaaS product experience  
+• SQL knowledge
+• Previous startup experience",Full-time,Mid,"SQL,Analytics,Agile",true,90000,130000,USD,https://startupxyz.com/apply,false,true
+Data Scientist,DataCorp,New York, NY,"# Join Our Data Science Team
+
+## Position Overview  
+We are looking for a passionate Data Scientist to help us unlock insights from our vast datasets and drive data-informed decision making.
+
+## What You'll Do
+- Build and deploy machine learning models
+- Perform statistical analysis and A/B testing
+- Create data visualizations and reports
+- Collaborate with cross-functional teams
+
+## Our Data Stack
+We work with cutting-edge tools and technologies including:
+- Python and R for analysis
+- TensorFlow and PyTorch for ML
+- Spark for big data processing  
+- Tableau for visualization
+
+## Growth Opportunities
+- Work on diverse business problems
+- Present findings to executive leadership
+- Contribute to our data science blog
+- Attend conferences and training","### Education & Experience
+- MS/PhD in Statistics, Computer Science, or related field
+- 2+ years of data science experience
+- Strong programming skills in Python or R
+
+### Technical Skills
+- Machine learning algorithms and frameworks
+- Statistical analysis and hypothesis testing
+- SQL and database management
+- Experience with cloud platforms (AWS/GCP/Azure)
+
+### Soft Skills  
+- Excellent communication abilities
+- Strong problem-solving mindset
+- Ability to work in fast-paced environment",Full-time,Mid,"Python,R,SQL,TensorFlow,AWS,Tableau",false,100000,140000,USD,recruiting@datacorp.com,true,false

@@ -229,6 +229,25 @@ const parseJobRow = (row: any): ParsedJobData => {
                           getField('application_email') || getField('recruiter_email') || getField('contact_email') ||
                           getField('apply_email') || getField('hr_email') || getField('hiring_email');
 
+  // Determine application type based on the application value
+  let application_type: string = 'internal';
+  if (application_value) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const urlRegex = /^https?:\/\/.+/;
+    
+    if (emailRegex.test(application_value.trim())) {
+      application_type = 'email';
+    } else if (urlRegex.test(application_value.trim())) {
+      application_type = 'external';
+    } else if (application_value.includes('@')) {
+      // Likely an email with minor formatting issues
+      application_type = 'email';
+    } else {
+      // Default to external for other values (URLs, etc.)
+      application_type = 'external';
+    }
+  }
+
   return {
     title,
     company,
@@ -247,7 +266,7 @@ const parseJobRow = (row: any): ParsedJobData => {
     application_deadline: undefined,
     logo: getField('logo') || getField('company_logo') || undefined,
     status: 'pending', // All uploaded jobs start as pending approval
-    application_type: application_value ? 'external' : 'internal',
+    application_type,
     application_value: application_value || undefined,
     sponsored: parseBoolean(getField('sponsored') || getField('featured')) || true
   };

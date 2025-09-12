@@ -657,12 +657,12 @@ export const convertToJobData = (
         company_size: getField('company_size') || undefined,
         application_deadline: undefined,
         logo: undefined,
-        status: 'active',
+        status: 'pending',
         application_type: getField('application_value') ? 'email' : 'internal',
         application_value: getField('application_value') || undefined,
         sponsored: true
       } as ParsedJobData;
-    } catch (error: any) {
+  } catch (error: any) {
       console.warn(`Error parsing row ${rowIndex + 1}:`, error.message, { row });
       // Return minimal valid job data if parsing fails
       return {
@@ -677,7 +677,7 @@ export const convertToJobData = (
         tech_stack: [],
         visa_sponsorship: false,
         remote: false,
-        status: 'active',
+        status: 'pending',
         application_type: 'internal',
         sponsored: true
       } as ParsedJobData;

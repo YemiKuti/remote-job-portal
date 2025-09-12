@@ -38,7 +38,7 @@ export const ResumeUploadZone = ({ userId, onResumeUploaded }: ResumeUploadZoneP
       const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
       
       if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-        throw new Error('Please upload a valid resume (PDF or DOCX).');
+        throw new Error('Please upload a valid resume (PDF, DOCX, or TXT).');
       }
 
       // Validate file size (max 10MB)
@@ -48,7 +48,7 @@ export const ResumeUploadZone = ({ userId, onResumeUploaded }: ResumeUploadZoneP
       }
 
       if (file.size === 0) {
-        throw new Error('Please upload a valid resume (PDF or DOCX).');
+        throw new Error('Please upload a valid resume (PDF, DOCX, or TXT).');
       }
 
       setUploadProgress(20);

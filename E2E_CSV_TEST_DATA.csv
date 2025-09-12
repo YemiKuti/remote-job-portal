@@ -1,0 +1,28 @@
+Job Title,Company,Location,Description,Requirements,Employment Type,Experience Level,Salary Min,Salary Max,Tech Stack,Remote,Application Email
+Software Engineer,TechCorp Inc,San Francisco CA,"We are seeking a talented Software Engineer to join our dynamic team. 
+
+Key Responsibilities:
+• Develop and maintain web applications
+• Collaborate with cross-functional teams
+• Write clean and efficient code
+• Participate in code reviews
+
+Join us and make an impact!","JavaScript, React, Node.js, 3+ years experience",Full-time,Mid,90000,130000,"React, Node.js, PostgreSQL, AWS",true,careers@techcorp.com
+Marketing Manager,GrowthCo LLC,New York NY,"Join our marketing team as a Marketing Manager!
+
+You will be responsible for:
+• Leading digital marketing campaigns
+• Managing social media presence  
+• Analyzing marketing performance
+• Working with creative teams
+
+Great opportunity for career growth.","Marketing degree, 4+ years experience, Google Analytics, Social Media",Full-time,Senior,75000,105000,"Google Analytics, HubSpot, Salesforce",false,jobs@growthco.com
+Data Analyst,DataInsights Corp,Remote,"We're looking for a Data Analyst to help drive business decisions.
+
+Your role will include:
+• Analyzing large datasets
+• Creating data visualizations
+• Preparing reports for stakeholders
+• Working with SQL databases
+
+Remote-first company with flexible hours!","SQL, Python, Excel, Statistics background, 2+ years experience",Full-time,Mid,65000,85000,"Python, SQL, Tableau, Excel",true,hiring@datainsights.com

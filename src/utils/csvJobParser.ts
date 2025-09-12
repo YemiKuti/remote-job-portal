@@ -534,7 +534,7 @@ export const createJobsBatch = async (
             salary_currency: job.salary_currency || 'USD',
             visa_sponsorship: job.visa_sponsorship || false,
             remote: job.remote || false,
-            status: 'active',
+            status: job.status || 'pending', // Keep pending status for admin approval
             sponsored: true
           };
           

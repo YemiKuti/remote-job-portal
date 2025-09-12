@@ -868,7 +868,7 @@ export const createJobsBatch = async (jobs: any[]): Promise<{ success: boolean; 
           tech_stack: jobData.tech_stack || [],
           employment_type: jobData.employment_type || 'full-time',
           experience_level: jobData.experience_level || 'mid-level',
-          status: jobData.status || 'draft', // Default to draft for approval workflow
+          status: jobData.status || 'pending', // Default to pending for admin approval workflow
           salary_currency: jobData.salary_currency || 'USD',
           visa_sponsorship: jobData.visa_sponsorship || false,
           remote: jobData.remote || false,

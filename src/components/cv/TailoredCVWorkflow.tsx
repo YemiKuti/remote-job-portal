@@ -99,7 +99,11 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     }
 
     // Enhanced input validation before calling the function
-    let resumeContent = selectedResume.content?.text || selectedResume.resume_text || selectedResume.parsed_content || '';
+    let resumeContent = selectedResume.content?.text ||
+      selectedResume.resume_text ||
+      selectedResume.parsed_content ||
+      selectedResume.extracted_content ||
+      '';
     
     console.log('🔍 Resume content validation:', {
       hasContent: !!resumeContent,
@@ -110,7 +114,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     
     if (!resumeContent || resumeContent.trim().length === 0) {
       // Try to extract content from different possible fields
-      const fallbackContent = selectedResume.text || selectedResume.content || selectedResume.raw_content;
+      const fallbackContent = selectedResume.text || selectedResume.content || selectedResume.raw_content || selectedResume.extracted_content;
       if (fallbackContent && fallbackContent.trim().length > 0) {
         console.log('📄 Using fallback resume content');
         resumeContent = fallbackContent;

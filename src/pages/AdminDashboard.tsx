@@ -15,7 +15,6 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { fetchAdminStats, fetchRecentUsers, fetchRecentJobs } from '@/utils/api';
-import { TestSuiteRunner } from '@/components/admin/TestSuiteRunner';
 
 const AdminDashboard = () => {
   const { toast } = useToast();
@@ -153,7 +152,7 @@ const AdminDashboard = () => {
         </Card>
         
         {/* System Test Suite */}
-        <TestSuiteRunner />
+        
         
         <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
           <Card className="bg-white border-l-4 border-green-500">

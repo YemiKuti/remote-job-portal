@@ -1,0 +1,26 @@
+Senior Full Stack Developer - TechNova Solutions
+
+We are seeking an experienced Senior Full Stack Developer to join our innovative team building next-generation enterprise software solutions.
+
+REQUIREMENTS:
+• Bachelor's degree in Computer Science or equivalent experience
+• 5+ years of full-stack development experience  
+• Proficiency in React, Node.js, and TypeScript
+• Experience with cloud platforms (AWS/Azure)
+• Strong database design skills (PostgreSQL preferred)
+• Excellent communication and leadership abilities
+
+RESPONSIBILITIES:
+• Design and develop scalable web applications
+• Lead technical discussions and architectural decisions
+• Mentor junior developers and conduct code reviews
+• Collaborate with product managers and designers
+• Implement CI/CD pipelines and DevOps practices
+
+TECHNICAL STACK:
+React, Node.js, TypeScript, AWS, PostgreSQL, Docker, Kubernetes
+
+COMPENSATION:
+$130,000 - $180,000 + equity + comprehensive benefits
+
+Apply at: careers@technova.com

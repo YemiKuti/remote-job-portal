@@ -1,43 +1,10 @@
-title,company,location,description,requirements,employment_type,experience_level,salary_min,salary_max,salary_currency,tech_stack,application_type,email,visa_sponsorship,remote,company_size
-"Senior React Developer","TechCorp Inc","San Francisco, CA","We are seeking a Senior React Developer to join our dynamic team.
-
-Key Responsibilities:
-• Lead frontend development projects
-• Mentor junior developers
-• Collaborate with design and backend teams
-• Implement responsive web applications
-• Optimize application performance
-
-Benefits:
-• Competitive salary and equity
-• Health insurance coverage
-• Flexible work arrangements
-• Professional development budget","React,TypeScript,JavaScript,HTML,CSS,Git,Jest,Node.js","Full-time","Senior",120000,160000,"USD","React,TypeScript,JavaScript,Node.js","email","careers@techcorp.com","true","true","Medium"
-"Marketing Manager","GrowthLab","New York, NY","Join our marketing team to drive brand awareness and customer acquisition.
-
-What you'll do:
-• Develop and execute marketing strategies
-• Manage social media campaigns
-• Analyze marketing metrics and ROI
-• Coordinate with sales team
-• Create compelling content
-
-We offer:
-• Comprehensive benefits package
-• Career growth opportunities
-• Creative work environment
-• Team building events","Marketing Strategy,Content Creation,Social Media,Analytics,SEO,Google Ads","Full-time","Mid",70000,95000,"USD","Google Analytics,HubSpot,Adobe Creative Suite","external","https://growthlab.com/careers","false","false","Startup"
-"Junior Data Scientist","DataFlow Analytics","Austin, TX","Looking for a passionate Junior Data Scientist to help us unlock insights from data.
-
-Your role:
-• Build predictive models using machine learning
-• Clean and analyze large datasets
-• Create data visualizations
-• Present findings to stakeholders
-• Collaborate with engineering teams
-
-Growth opportunities:
-• Work with cutting-edge technologies
-• Learn from senior data scientists
-• Access to online learning platforms
-• Conference attendance support","Python,SQL,Machine Learning,Statistics,Data Visualization,R","Full-time","Entry",85000,110000,"USD","Python,SQL,TensorFlow,Pandas,Jupyter","internal","hr@dataflow.com","true","true","Large"
+title,description,company,location,email
+"Frontend Developer","Develop UI features
+Collaborate with backend team
+Ensure responsive design","TechSoft","London","hr@techsoft.com"
+"Marketing Manager","Create marketing campaigns
+Manage budgets
+Oversee social media","MarketPro","Lagos","jobs@marketpro.com"
+"Data Analyst","Analyze datasets
+Build reports
+Present insights to stakeholders","DataWorks","New York","recruitment@dataworks.com"

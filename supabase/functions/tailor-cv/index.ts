@@ -1,11 +1,176 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Initialize Supabase client for storage and database operations
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+// Enhanced PDF/DOCX content extraction functions
+const extractPdfText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+  try {
+    // Simple PDF text extraction - look for text objects
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const textDecoder = new TextDecoder('utf-8', { fatal: false });
+    let pdfText = textDecoder.decode(uint8Array);
+    
+    // Extract text between common PDF text markers
+    const textMatches = pdfText.match(/\((.*?)\)/g) || [];
+    const extractedText = textMatches
+      .map(match => match.slice(1, -1))
+      .filter(text => text.length > 2 && /[a-zA-Z]/.test(text))
+      .join(' ');
+    
+    if (extractedText.length < 50) {
+      // Fallback: try to decode entire content and clean it
+      const cleanedText = pdfText
+        .replace(/[^\x20-\x7E\n\r]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      const words = cleanedText.split(' ').filter(word => 
+        word.length > 1 && /^[a-zA-Z0-9@.-]+$/.test(word)
+      );
+      
+      if (words.length < 10) {
+        throw new Error('Could not extract sufficient text from PDF');
+      }
+      
+      return words.join(' ');
+    }
+    
+    return extractedText;
+  } catch (error) {
+    throw new Error('PDF format not supported or file is corrupted. Please upload a text-based PDF or DOCX file.');
+  }
+};
+
+const extractDocxText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+  try {
+    // Simple DOCX text extraction by looking for XML content
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const textDecoder = new TextDecoder('utf-8', { fatal: false });
+    const docxContent = textDecoder.decode(uint8Array);
+    
+    // Look for word/document.xml content patterns
+    const textMatches = docxContent.match(/<w:t[^>]*>(.*?)<\/w:t>/g) || [];
+    const extractedText = textMatches
+      .map(match => match.replace(/<[^>]*>/g, '').trim())
+      .filter(text => text.length > 0)
+      .join(' ');
+    
+    if (extractedText.length < 50) {
+      // Fallback: extract any readable text
+      const cleanedText = docxContent
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/[^\x20-\x7E\n\r]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      const words = cleanedText.split(' ').filter(word => 
+        word.length > 1 && /^[a-zA-Z0-9@.-]+$/.test(word)
+      );
+      
+      if (words.length < 10) {
+        throw new Error('Could not extract sufficient text from DOCX');
+      }
+      
+      return words.join(' ');
+    }
+    
+    return extractedText;
+  } catch (error) {
+    throw new Error('DOCX format not supported or file is corrupted. Please upload a valid DOCX file.');
+  }
+};
+
+// Generate PDF from text content
+const generatePdf = async (content: string, title: string): Promise<Uint8Array> => {
+  // Simple PDF generation - create basic PDF structure
+  const pdfHeader = '%PDF-1.4\n';
+  const pdfBody = `1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length ${content.length + 100}
+>>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+`;
+
+  const pdfContent = content
+    .split('\n')
+    .map(line => `(${line.replace(/[()\\]/g, '\\$&')}) Tj\n0 -15 Td\n`)
+    .join('');
+
+  const pdfFooter = `ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+0000000${(pdfBody.length + pdfContent.length + 50).toString().padStart(6, '0')} 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+${(pdfBody.length + pdfContent.length + 150)}
+%%EOF`;
+
+  const fullPdf = pdfHeader + pdfBody + pdfContent + pdfFooter;
+  return new TextEncoder().encode(fullPdf);
+};
 
 // Enhanced function to extract and analyze job requirements intelligently
 const analyzeJobRequirements = (jobDescription: string, jobTitle: string): {
@@ -332,15 +497,108 @@ serve(async (req) => {
   try {
     // Add timeout for the entire request
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), 90000); // 90 seconds
+      setTimeout(() => reject(new Error('Request timeout')), 120000); // 120 seconds
     });
 
     const processRequest = async () => {
-      let requestBody;
+      let requestData: any = {};
+      
       try {
-        requestBody = await req.json();
-      } catch (error) {
-        console.error(`❌ [${requestId}] Invalid JSON in request body:`, error);
+        // Check if request contains file upload (multipart/form-data)
+        const contentType = req.headers.get('content-type') || '';
+        
+        if (contentType.includes('multipart/form-data')) {
+          console.log(`📁 [${requestId}] Processing file upload`);
+          
+          const formData = await req.formData();
+          const file = formData.get('file') as File;
+          const jobDescription = formData.get('jobDescription') as string;
+          const jobTitle = formData.get('jobTitle') as string;
+          const companyName = formData.get('companyName') as string;
+          const userId = formData.get('userId') as string;
+          
+          if (!file) {
+            throw new Error('No file uploaded. Please select a resume file.');
+          }
+          
+          console.log(`📄 [${requestId}] File uploaded: ${file.name} (${file.size} bytes)`);
+          
+          // Validate file format
+          const fileName = file.name.toLowerCase();
+          const supportedFormats = ['.pdf', '.docx', '.doc', '.txt'];
+          const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+          
+          if (!isSupported) {
+            throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
+          }
+          
+          // Validate file size
+          if (file.size > 15 * 1024 * 1024) { // 15MB limit
+            throw new Error('File too large. Please upload a file smaller than 15MB.');
+          }
+          
+          if (file.size < 100) {
+            throw new Error('File too small. Please upload a valid resume file.');
+          }
+          
+          // Extract content from uploaded file
+          const arrayBuffer = await file.arrayBuffer();
+          let resumeContent = '';
+          
+          try {
+            if (fileName.endsWith('.pdf')) {
+              resumeContent = await extractPdfText(arrayBuffer);
+            } else if (fileName.endsWith('.docx')) {
+              resumeContent = await extractDocxText(arrayBuffer);
+            } else if (fileName.endsWith('.txt')) {
+              resumeContent = new TextDecoder().decode(arrayBuffer);
+            } else {
+              // Try different extraction methods as fallback
+              try {
+                resumeContent = await extractDocxText(arrayBuffer);
+              } catch {
+                try {
+                  resumeContent = await extractPdfText(arrayBuffer);
+                } catch {
+                  resumeContent = new TextDecoder().decode(arrayBuffer);
+                }
+              }
+            }
+            
+            console.log(`✅ [${requestId}] Content extracted: ${resumeContent.length} characters`);
+            
+          } catch (extractError: any) {
+            console.error(`❌ [${requestId}] Content extraction failed:`, extractError);
+            throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
+          }
+          
+          // Validate extracted content
+          if (!resumeContent || resumeContent.trim().length < 30) {
+            throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
+          }
+          
+          requestData = {
+            resumeContent: resumeContent.trim(),
+            jobDescription: jobDescription || '',
+            jobTitle: jobTitle || 'Position',
+            companyName: companyName || 'Company',
+            userId,
+            fileName: file.name,
+            candidateData: null // File upload doesn't include structured candidate data
+          };
+          
+        } else {
+          // Handle JSON request (existing flow)
+          requestData = await req.json();
+        }
+        
+      } catch (error: any) {
+        console.error(`❌ [${requestId}] Request parsing error:`, error);
+        
+        if (error.message.includes('upload') || error.message.includes('file')) {
+          throw error; // Re-throw file-specific errors
+        }
+        
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -354,7 +612,7 @@ serve(async (req) => {
         );
       }
 
-      const { resumeContent, jobDescription, jobTitle, companyName, candidateData } = requestBody;
+      const { resumeContent, jobDescription, jobTitle, companyName, candidateData, userId, fileName } = requestData;
 
       console.log(`🔄 [${requestId}] Processing request for: ${jobTitle || 'Unknown Job'} at ${companyName || 'Unknown Company'}`);
       console.log(`📊 [${requestId}] Input sizes - Resume: ${resumeContent?.length || 0} chars, Job Desc: ${jobDescription?.length || 0} chars`);
@@ -791,11 +1049,87 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
       const duration = Date.now() - startTime;
       console.log(`🎉 [${requestId}] Request completed successfully in ${duration}ms`);
 
+      // Save tailored CV to Supabase storage and database
+      let downloadUrl = null;
+      let tailoredResumeId = null;
+      
+      if (userId) {
+        try {
+          console.log(`💾 [${requestId}] Saving tailored CV to storage...`);
+          
+          // Generate PDF from tailored resume
+          const pdfContent = await generatePdf(tailoredResume, `${jobTitle}_${companyName}_Resume`);
+          const pdfFileName = `tailored-cv-${requestId}.pdf`;
+          const storagePath = `tailored-resumes/${userId}/${pdfFileName}`;
+          
+          // Upload PDF to storage
+          const { error: storageError } = await supabase.storage
+            .from('tailored-resumes')
+            .upload(storagePath, pdfContent, {
+              contentType: 'application/pdf',
+              upsert: true
+            });
+          
+          if (storageError) {
+            console.error(`❌ [${requestId}] Storage error:`, storageError);
+          } else {
+            // Get public URL for download
+            const { data } = supabase.storage
+              .from('tailored-resumes')
+              .getPublicUrl(storagePath);
+            
+            downloadUrl = data.publicUrl;
+            console.log(`✅ [${requestId}] PDF saved to storage: ${storagePath}`);
+          }
+          
+          // Save record to database
+          const { data: savedResume, error: dbError } = await supabase
+            .from('tailored_resumes')
+            .insert({
+              user_id: userId,
+              original_resume_id: null, // Will be updated from frontend if available
+              job_id: null, // Will be updated from frontend if available
+              tailored_content: tailoredResume,
+              ai_suggestions: {
+                qualityScore: `${finalScore}% professional resume quality`,
+                recommendations,
+                improvementAreas: finalScore < 85 ? [
+                  !hasProfessionalSummary ? 'Consider strengthening the professional summary' : null,
+                  !hasQuantifiedAchievements ? 'Add more quantified achievements and metrics' : null,
+                  essentialSkillMatches < jobAnalysis.essentialSkills.length * 0.7 ? 'Highlight more essential skills from the job requirements' : null,
+                  !hasActionVerbs ? 'Use stronger action verbs to demonstrate impact' : null
+                ].filter(Boolean) : []
+              },
+              tailoring_score: finalScore,
+              job_title: jobTitle,
+              company_name: companyName,
+              job_description: jobDescription.substring(0, 5000), // Limit length for DB
+              tailored_file_path: storagePath,
+              file_format: 'pdf'
+            })
+            .select()
+            .single();
+          
+          if (dbError) {
+            console.error(`❌ [${requestId}] Database error:`, dbError);
+          } else {
+            tailoredResumeId = savedResume.id;
+            console.log(`✅ [${requestId}] Record saved with ID: ${tailoredResumeId}`);
+          }
+          
+        } catch (storageError: any) {
+          console.error(`❌ [${requestId}] Error saving to storage:`, storageError);
+          // Continue without storage - user still gets the tailored resume text
+        }
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
           tailoredResume,
           score: finalScore,
+          downloadUrl,
+          tailoredResumeId,
           analysis: {
             skillAlignment: {
               essentialSkillsMatched: essentialSkillMatches,

@@ -16,12 +16,14 @@ import {
   Loader2,
   Brain,
   Target,
-  Trophy
+  Trophy,
+  Upload
 } from "lucide-react";
 import { JobSelectionStep } from "./workflow/JobSelectionStep";
 import { ResumeUploadStep } from "./workflow/ResumeUploadStep";
 import { AIAnalysisStep } from "./workflow/AIAnalysisStep";
 import { DownloadStep } from "./workflow/DownloadStep";
+import { DirectCVTailoringDialog } from "./DirectCVTailoringDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { extractResumeContent } from "@/utils/enhancedResumeProcessor";
 import { extractSection, generateProfessionalSummary, generateKeyCompetencies, calculateMatchScore } from "@/utils/resumeHelpers";
@@ -381,11 +383,21 @@ This resume has been tailored for the ${jobTitle || 'position'} role at ${compan
                 Create a targeted resume with a compelling 3-sentence career profile
               </CardDescription>
             </div>
-            {currentStep !== 'resume-upload' && (
-              <Button variant="outline" onClick={resetWorkflow}>
-                Start Over
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              <DirectCVTailoringDialog
+                trigger={
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Quick Upload
+                  </Button>
+                }
+              />
+              {currentStep !== 'resume-upload' && (
+                <Button variant="outline" onClick={resetWorkflow}>
+                  Start Over
+                </Button>
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">

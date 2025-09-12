@@ -756,7 +756,7 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
 
     // Generate quality recommendations
     const recommendations: string[] = [
-      `✅ Professional ${candidateAnalysis.careerLevel}-level resume structure`,
+      `✅ Professional ${resumeAnalysis.careerLevel}-level resume structure`,
       `✅ ${essentialSkillMatches} essential skills from job requirements showcased`,
       `✅ ${preferredSkillMatches} preferred qualifications highlighted`,
     ];
@@ -804,9 +804,9 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
               properSections: hasProperSections
             },
             candidateProfile: {
-              careerLevel: candidateAnalysis.careerLevel,
-              currentSkills: candidateAnalysis.currentSkills.slice(0, 10),
-              achievements: candidateAnalysis.achievements.slice(0, 5)
+              careerLevel: resumeAnalysis.careerLevel,
+              currentSkills: resumeAnalysis.currentSkills.slice(0, 10),
+              achievements: resumeAnalysis.achievements.slice(0, 5)
             },
             jobAlignment: {
               targetLevel: jobAnalysis.experienceLevel,

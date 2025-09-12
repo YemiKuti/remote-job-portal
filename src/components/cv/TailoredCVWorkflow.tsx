@@ -23,7 +23,7 @@ import { ResumeUploadStep } from "./workflow/ResumeUploadStep";
 import { AIAnalysisStep } from "./workflow/AIAnalysisStep";
 import { DownloadStep } from "./workflow/DownloadStep";
 import { supabase } from "@/integrations/supabase/client";
-import { extractResumeContent } from "@/utils/resumeProcessor";
+import { extractResumeContent } from "@/utils/enhancedResumeProcessor";
 import { extractSection, generateProfessionalSummary, generateKeyCompetencies, calculateMatchScore } from "@/utils/resumeHelpers";
 import { toast } from "sonner";
 

@@ -11,6 +11,7 @@ const corsHeaders = {
 // Initialize Supabase client for storage and database operations
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const openAiApiKey = Deno.env.get('OPENAI_API_KEY')!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Enhanced PDF/DOCX content extraction functions
@@ -483,6 +484,41 @@ const formatCandidateInfo = (candidateData: any, resumeContent: string): string 
   return candidateSection;
 };
 
+// Calculate match score between candidate skills and job requirements
+const calculateMatchScore = (candidateSkills: string[], essentialSkills: string[], preferredSkills: string[]): number => {
+  const normalizeSkill = (skill: string) => skill.toLowerCase().trim();
+  const normalizedCandidateSkills = candidateSkills.map(normalizeSkill);
+  
+  let score = 0;
+  let totalPossible = 0;
+  
+  // Essential skills are worth more (60% of total score)
+  const essentialMatches = essentialSkills.filter(skill => 
+    normalizedCandidateSkills.some(candidateSkill => 
+      candidateSkill.includes(normalizeSkill(skill)) || normalizeSkill(skill).includes(candidateSkill)
+    )
+  ).length;
+  
+  const essentialWeight = 60;
+  const essentialScore = essentialSkills.length > 0 ? (essentialMatches / essentialSkills.length) * essentialWeight : 0;
+  score += essentialScore;
+  totalPossible += essentialWeight;
+  
+  // Preferred skills are worth less (40% of total score)
+  const preferredMatches = preferredSkills.filter(skill => 
+    normalizedCandidateSkills.some(candidateSkill => 
+      candidateSkill.includes(normalizeSkill(skill)) || normalizeSkill(skill).includes(candidateSkill)
+    )
+  ).length;
+  
+  const preferredWeight = 40;
+  const preferredScore = preferredSkills.length > 0 ? (preferredMatches / preferredSkills.length) * preferredWeight : 0;
+  score += preferredScore;
+  totalPossible += preferredWeight;
+  
+  return Math.round((score / totalPossible) * 100);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -495,9 +531,185 @@ serve(async (req) => {
   console.log(`🔄 [${requestId}] Starting CV tailoring request`);
 
   try {
-    // Add timeout for the entire request
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), 120000); // 120 seconds
+    const requestData = await req.json();
+    const { fileUrl, fileName, jobId, jobDescription, candidateData } = requestData;
+
+    console.log(`📁 Processing file: ${fileName}`);
+    console.log(`💼 Job ID: ${jobId}`);
+
+    // Validate required fields
+    if (!fileUrl || !fileName || !jobDescription) {
+      throw new Error('Missing required fields: fileUrl, fileName, or jobDescription');
+    }
+
+    // Download file from storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('cvs')
+      .download(fileUrl);
+
+    if (downloadError || !fileData) {
+      console.error('❌ Error downloading file:', downloadError);
+      throw new Error('Unable to download CV file. Please try again.');
+    }
+
+    console.log(`📄 File downloaded successfully: ${fileData.size} bytes`);
+
+    // Extract text based on file type
+    let resumeContent = '';
+    const fileExtension = fileName.toLowerCase().split('.').pop();
+    const arrayBuffer = await fileData.arrayBuffer();
+
+    console.log(`🔍 Extracting text from ${fileExtension?.toUpperCase()} file...`);
+
+    try {
+      if (fileExtension === 'pdf') {
+        resumeContent = await extractPdfText(arrayBuffer);
+      } else if (fileExtension === 'docx') {
+        resumeContent = await extractDocxText(arrayBuffer);
+      } else if (fileExtension === 'txt') {
+        const decoder = new TextDecoder();
+        resumeContent = decoder.decode(arrayBuffer);
+      } else {
+        throw new Error(`Unsupported file format: ${fileExtension}. Please upload PDF, DOCX, or TXT files only.`);
+      }
+
+      if (!resumeContent || resumeContent.trim().length < 50) {
+        throw new Error('Please upload a valid CV in PDF, DOCX, or TXT format.');
+      }
+    } catch (error: any) {
+      console.error('❌ Text extraction failed:', error.message);
+      return new Response(JSON.stringify({ 
+        error: error.message.includes('format') || error.message.includes('corrupted') 
+          ? error.message 
+          : 'Please upload a valid CV in PDF, DOCX, or TXT format.' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log(`✅ Text extracted successfully: ${resumeContent.length} characters`);
+
+    // Analyze job requirements
+    const jobAnalysis = analyzeJobRequirements(jobDescription, jobId);
+    const candidateAnalysis = analyzeResumeContent(resumeContent, candidateData);
+
+    console.log(`🎯 Job analysis complete - Essential skills: ${jobAnalysis.essentialSkills.length}, Experience level: ${jobAnalysis.experienceLevel}`);
+    console.log(`👤 Candidate analysis complete - Current skills: ${candidateAnalysis.currentSkills.length}, Career level: ${candidateAnalysis.careerLevel}`);
+
+    // Generate AI-tailored CV using OpenAI
+    const aiPrompt = `As an expert career coach and resume writer, tailor this resume for the specific job position.
+
+JOB DETAILS:
+- Title: ${jobId}
+- Experience Level Required: ${jobAnalysis.experienceLevel}
+- Essential Skills: ${jobAnalysis.essentialSkills.join(', ')}
+- Preferred Skills: ${jobAnalysis.preferredSkills.join(', ')}
+- Key Responsibilities: ${jobAnalysis.responsibilities.join(', ')}
+
+CANDIDATE PROFILE:
+- Current Career Level: ${candidateAnalysis.careerLevel}
+- Current Skills: ${candidateAnalysis.currentSkills.join(', ')}
+- Education Level: ${candidateAnalysis.educationLevel}
+${formatCandidateInfo(candidateData, resumeContent)}
+
+ORIGINAL RESUME:
+${resumeContent}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+INSTRUCTIONS:
+1. Rewrite the resume to maximize alignment with this specific job
+2. Emphasize relevant skills and experience that match job requirements
+3. Use keywords from the job description naturally throughout
+4. Quantify achievements where possible
+5. Adjust the professional summary to target this role specifically
+6. Reorganize sections to highlight most relevant information first
+7. Maintain professional formatting and readability
+8. Keep the same factual information but present it strategically
+
+Please return a well-formatted, tailored resume that significantly improves the candidate's chances for this specific position.`;
+
+    console.log(`🤖 Sending request to OpenAI...`);
+
+    const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-5-2025-08-07',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert career coach and resume writer. Create compelling, ATS-optimized resumes that maximize job match scores.'
+          },
+          {
+            role: 'user',
+            content: aiPrompt
+          }
+        ],
+        max_completion_tokens: 4000,
+        temperature: 0.7
+      })
+    });
+
+    if (!openAiResponse.ok) {
+      const errorData = await openAiResponse.json();
+      console.error('❌ OpenAI API error:', errorData);
+      throw new Error('Unable to generate tailored CV. Please try again.');
+    }
+
+    const aiResult = await openAiResponse.json();
+    const tailoredContent = aiResult.choices[0]?.message?.content;
+    
+    if (!tailoredContent) {
+      throw new Error('Unable to generate tailored CV. Please try again.');
+    }
+
+    console.log(`✅ AI tailoring complete: ${tailoredContent.length} characters`);
+
+    // Calculate match score
+    const matchScore = calculateMatchScore(candidateAnalysis.currentSkills, jobAnalysis.essentialSkills, jobAnalysis.preferredSkills);
+
+    const processingTime = Date.now() - startTime;
+    console.log(`🎉 [${requestId}] CV tailoring completed in ${processingTime}ms`);
+
+    return new Response(JSON.stringify({
+      success: true,
+      tailoredContent,
+      analysis: {
+        matchScore,
+        jobAnalysis,
+        candidateAnalysis,
+        processingTime: `${processingTime}ms`
+      },
+      metadata: {
+        originalLength: resumeContent.length,
+        tailoredLength: tailoredContent.length,
+        fileName,
+        fileType: fileExtension?.toUpperCase(),
+        requestId
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error(`❌ [${requestId}] CV tailoring failed after ${processingTime}ms:`, error.message);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Unable to generate tailored CV. Please try again.',
+      requestId,
+      processingTime: `${processingTime}ms`
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
     });
 
     const processRequest = async () => {

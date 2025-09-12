@@ -3,6 +3,7 @@ import React from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { TailoredCVWorkflow } from "@/components/cv/TailoredCVWorkflow";
 import { TailoredResumesList } from "@/components/cv/TailoredResumesList";
+import { MyResumesDashboard } from "@/components/cv/MyResumesDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, History, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,10 +49,14 @@ const TailoredResumes = () => {
       </div>
       
       <Tabs defaultValue="create" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="create" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             Create Tailored Resume
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            My Resumes
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="h-4 w-4" />
@@ -61,6 +66,10 @@ const TailoredResumes = () => {
         
         <TabsContent value="create" className="mt-6">
           <TailoredCVWorkflow userId={userId} />
+        </TabsContent>
+        
+        <TabsContent value="dashboard" className="mt-6">
+          <MyResumesDashboard userId={userId} />
         </TabsContent>
         
         <TabsContent value="history" className="mt-6">

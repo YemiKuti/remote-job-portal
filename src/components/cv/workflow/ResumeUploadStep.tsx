@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, CheckCircle, User, Mail, Phone, Trash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ResumeUploadZone } from './ResumeUploadZone';
+import { ResumeUploadZone } from "../ResumeUploadZone";
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -36,17 +36,40 @@ export function ResumeUploadStep({ userId, onComplete }: ResumeUploadStepProps) 
 
   const fetchResumes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('candidate_resumes')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Fetch from both tables to maintain compatibility
+      const [candidateResumesResult, resumesResult] = await Promise.all([
+        supabase
+          .from('candidate_resumes')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('resumes')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      setResumes(data || []);
+      const candidateResumes = candidateResumesResult.data || [];
+      const newResumes = resumesResult.data || [];
+      
+      // Transform new resumes to match expected format
+      const transformedNewResumes = newResumes.map(resume => ({
+        ...resume,
+        name: resume.file_name,
+        file_path: resume.file_url,
+        content: { text: resume.tailored_text || 'Content will be extracted' },
+        resume_text: resume.tailored_text || 'Content will be extracted',
+        parsed_content: resume.tailored_text || 'Content will be extracted',
+        original_filename: resume.file_name,
+        is_default: false // New resumes are not default by default
+      }));
+
+      const allResumes = [...transformedNewResumes, ...candidateResumes];
+      setResumes(allResumes);
       
       // Auto-select the default resume if available
-      const defaultResume = data?.find(resume => resume.is_default);
+      const defaultResume = allResumes.find(resume => resume.is_default);
       if (defaultResume) {
         setSelectedResume(defaultResume);
       }
@@ -59,8 +82,15 @@ export function ResumeUploadStep({ userId, onComplete }: ResumeUploadStepProps) 
   };
 
   const handleResumeUploaded = (newResume: any) => {
-    setResumes(prev => [newResume, ...prev]);
-    setSelectedResume(newResume);
+    // Transform the new resume format to match expected format
+    const transformedResume = {
+      ...newResume,
+      name: newResume.file_name || newResume.name,
+      file_path: newResume.file_url || newResume.file_path,
+    };
+    
+    setResumes(prev => [transformedResume, ...prev]);
+    setSelectedResume(transformedResume);
   };
 
   const handleDeleteResume = async (resumeId: string) => {
@@ -72,23 +102,42 @@ export function ResumeUploadStep({ userId, onComplete }: ResumeUploadStepProps) 
         throw new Error('Resume not found');
       }
 
-      // Delete the file from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([resumeToDelete.file_path]);
+      // Delete the file from storage - handle both old and new storage buckets
+      const bucketName = resumeToDelete.file_url?.includes('resumes/') ? 'resumes' : 'documents';
+      const filePath = resumeToDelete.file_path || resumeToDelete.file_url;
+      
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from(bucketName)
+          .remove([filePath]);
 
-      if (storageError) {
-        console.error('Storage deletion error:', storageError);
-        // Continue with database deletion even if storage deletion fails
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+          // Continue with database deletion even if storage deletion fails
+        }
       }
 
-      // Delete the resume record from database
-      const { error: dbError } = await supabase
-        .from('candidate_resumes')
-        .delete()
-        .eq('id', resumeId);
+      // Delete from both tables to handle legacy and new resumes
+      const deleteOperations = [];
+      
+      if (resumeToDelete.file_name) {
+        // New resumes table
+        deleteOperations.push(
+          supabase.from('resumes').delete().eq('id', resumeId)
+        );
+      } else {
+        // Old candidate_resumes table
+        deleteOperations.push(
+          supabase.from('candidate_resumes').delete().eq('id', resumeId)
+        );
+      }
 
-      if (dbError) throw dbError;
+      const results = await Promise.all(deleteOperations);
+      const hasError = results.some(result => result.error);
+      
+      if (hasError) {
+        throw new Error('Failed to delete resume from database');
+      }
 
       // Update local state
       setResumes(prev => prev.filter(resume => resume.id !== resumeId));

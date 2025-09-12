@@ -20,6 +20,7 @@ import {
   Upload
 } from "lucide-react";
 import { JobSelectionStep } from "./workflow/JobSelectionStep";
+import { EnhancedJobSelection } from "./EnhancedJobSelection";
 import { ResumeUploadStep } from "./workflow/ResumeUploadStep";
 import { AIAnalysisStep } from "./workflow/AIAnalysisStep";
 import { DownloadStep } from "./workflow/DownloadStep";
@@ -429,8 +430,8 @@ This resume has been tailored for the ${jobTitle || 'position'} role at ${compan
         )}
 
         {currentStep === 'job-selection' && (
-          <JobSelectionStep 
-            onComplete={handleJobSelection}
+          <EnhancedJobSelection 
+            onJobSelected={handleJobSelection}
             onBack={() => setCurrentStep('resume-upload')}
           />
         )}

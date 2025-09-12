@@ -12,40 +12,64 @@ export interface ResumeContent {
   };
 }
 
-// Enhanced PDF parsing utility
+// Enhanced PDF parsing utility with multiple fallback methods
 const extractPDFContentBrowser = async (file: File): Promise<string> => {
   try {
-    console.log('📄 Processing PDF file with browser-based parser:', file.name);
+    console.log('📄 Processing PDF file with enhanced browser parser:', file.name);
     
     const fileBuffer = await file.arrayBuffer();
-    
-    // For now, we'll implement a basic text extraction approach
-    // In a production environment, you'd use PDF.js or send to a server
-    
-    // Try to extract text using basic methods
     const uint8Array = new Uint8Array(fileBuffer);
+    
+    // Method 1: Try PDF.js-style text extraction patterns
     const textDecoder = new TextDecoder('utf-8', { fatal: false });
     let rawText = textDecoder.decode(uint8Array);
     
-    // Clean up PDF metadata and extract readable text
-    const textRegex = /BT\s*(.*?)\s*ET/g;
-    const textMatches = [];
-    let match;
+    // Look for text content patterns in PDF structure
+    const textPatterns = [
+      /BT\s*([^E]*?)ET/g,
+      /Tj\s*\[(.*?)\]/g,
+      /\(\s*([^)]+)\s*\)\s*Tj/g,
+      /stream\s*(.*?)\s*endstream/gs
+    ];
     
-    while ((match = textRegex.exec(rawText)) !== null) {
-      textMatches.push(match[1]);
+    let extractedText = '';
+    
+    for (const pattern of textPatterns) {
+      const matches = [...rawText.matchAll(pattern)];
+      if (matches.length > 0) {
+        const text = matches.map(match => match[1]).join(' ')
+          .replace(/[()]/g, '')
+          .replace(/\\[rnt]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        if (text.length > extractedText.length) {
+          extractedText = text;
+        }
+      }
     }
     
-    if (textMatches.length > 0) {
-      const extractedText = textMatches.join(' ')
-        .replace(/[()]/g, '')
+    // Method 2: Look for readable text in the raw content
+    if (extractedText.length < 100) {
+      const cleanText = rawText
+        .replace(/[^\x20-\x7E\n\r]/g, ' ') // Keep only printable ASCII + newlines
         .replace(/\s+/g, ' ')
         .trim();
       
-      if (extractedText.length > 50) {
-        console.log('✅ PDF text extracted successfully');
-        return extractedText;
+      // Find text that looks like resume content
+      const resumeKeywords = ['experience', 'education', 'skills', 'work', 'employment', 'position', 'role', 'university', 'degree', 'contact', 'email', 'phone'];
+      const keywordMatches = resumeKeywords.filter(keyword => 
+        cleanText.toLowerCase().includes(keyword)
+      ).length;
+      
+      if (keywordMatches >= 3 && cleanText.length > 200) {
+        extractedText = cleanText.substring(0, 3000);
       }
+    }
+    
+    if (extractedText.length > 100) {
+      console.log('✅ PDF text extracted successfully using pattern matching');
+      return extractedText;
     }
     
     // Fallback: try to find readable text patterns
@@ -275,9 +299,20 @@ You may continue with the current file, and our AI will provide job-specific rec
       throw new Error(error.message || 'Unable to read resume content. Please check the file format.');
     }
 
-    // Validate extracted content
+    // Validate extracted content with better error messages
     if (!text || text.trim().length < 30) {
-      throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+      if (fileName.endsWith('.pdf')) {
+        throw new Error('This PDF file format is not supported. Please try converting it to a Word document (.docx) or plain text (.txt) for best results.');
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        throw new Error('This Word document format is not supported. Please try saving it as a different format or converting to plain text (.txt).');
+      } else {
+        throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+      }
+    }
+    
+    // Check for minimum viable content
+    if (text.trim().length < 100) {
+      throw new Error('Resume content appears incomplete. Please ensure your file contains your full resume with work experience, education, and skills.');
     }
 
     console.log('✅ Content extracted successfully:', {

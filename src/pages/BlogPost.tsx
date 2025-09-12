@@ -15,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import RichTextRenderer from "@/components/RichTextRenderer";
+import { RichTextRenderer } from "@/components/RichTextRenderer";
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -241,7 +241,6 @@ const BlogPost = () => {
             <div className="mb-12">
               <RichTextRenderer 
                 content={post.content} 
-                variant="blog"
                 className="max-w-none"
               />
             </div>

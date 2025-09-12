@@ -1,47 +1,55 @@
-
-import React from "react";
-import { processMarkdown, sanitizeHtml } from "@/utils/markdownProcessor";
-import { cn } from "@/lib/utils";
+import React from 'react';
 
 interface RichTextRendererProps {
-  content: string | string[] | null | undefined;
+  content: string;
   className?: string;
-  variant?: 'default' | 'compact' | 'blog' | 'job';
 }
 
-export const RichTextRenderer: React.FC<RichTextRendererProps> = ({ 
-  content, 
-  className,
-  variant = 'default'
-}) => {
-  // Safely process the content with type checking
-  const processedHtml = processMarkdown(content);
-  const sanitizedHtml = sanitizeHtml(processedHtml);
-
-  const baseClasses = "rich-text-content";
+export const RichTextRenderer = ({ content, className = '' }: RichTextRendererProps) => {
+  if (!content) return null;
   
-  const variantClasses = {
-    default: "prose max-w-none text-gray-700",
-    compact: "prose prose-sm max-w-none text-gray-700 [&>p]:mb-2 [&>h1]:mb-2 [&>h2]:mb-2 [&>h3]:mb-2 [&>h4]:mb-2 [&>h5]:mb-2 [&>h6]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2",
-    blog: "prose prose-lg max-w-none text-gray-800 prose-headings:text-gray-900 prose-a:text-primary prose-strong:text-gray-900 prose-p:leading-relaxed prose-li:leading-relaxed",
-    job: "prose max-w-none text-gray-700 prose-headings:text-gray-800 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-p:my-3 prose-h2:mt-6 prose-h2:mb-4 prose-h3:mt-5 prose-h3:mb-3 prose-strong:font-semibold prose-em:italic"
-  };
+  // Enhanced text processing for better formatting
+  const processedContent = content
+    // Preserve existing line breaks and paragraphs
+    .replace(/\n\n+/g, '\n\n') // Normalize multiple line breaks to double
+    .replace(/\n/g, '<br>') // Convert single line breaks to HTML breaks
+    .replace(/<br><br>/g, '</p><p>') // Convert double breaks to paragraphs
+    // Process bullet points
+    .replace(/^[•\-\*]\s*/gm, '• ') // Normalize bullet points
+    .replace(/<br>•\s*/g, '<br>• ') // Ensure bullets after line breaks
+    // Process numbered lists
+    .replace(/^(\d+)[\.\)]\s*/gm, '$1. ') // Normalize numbered lists
+    // Process bold text patterns
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
+    .replace(/__(.*?)__/g, '<strong>$1</strong>') // __bold__
+    // Process italic text patterns  
+    .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
+    .replace(/_(.*?)_/g, '<em>$1</em>') // _italic_
+    // Clean up any stray HTML
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Restore our intentional HTML
+    .replace(/&lt;br&gt;/g, '<br>')
+    .replace(/&lt;\/p&gt;&lt;p&gt;/g, '</p><p>')
+    .replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/g, '<strong>$1</strong>')
+    .replace(/&lt;em&gt;(.*?)&lt;\/em&gt;/g, '<em>$1</em>');
 
-  // Handle empty content
-  if (!content || (typeof content === 'string' && content.trim() === '') || (Array.isArray(content) && content.length === 0)) {
-    return (
-      <div className={cn(baseClasses, variantClasses[variant], className)}>
-        <p className="text-gray-500 italic">No content provided</p>
-      </div>
-    );
-  }
+  // Wrap in paragraphs if not already wrapped
+  const finalContent = processedContent.includes('<p>') 
+    ? processedContent 
+    : `<p>${processedContent}</p>`;
 
   return (
-    <div
-      className={cn(baseClasses, variantClasses[variant], className)}
-      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+    <div 
+      className={`prose prose-sm max-w-none ${className}`}
+      dangerouslySetInnerHTML={{ 
+        __html: finalContent
+      }}
+      style={{
+        lineHeight: '1.6',
+        whiteSpace: 'pre-wrap'
+      }}
     />
   );
 };
-
-export default RichTextRenderer;

@@ -63,7 +63,6 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
         <div className="mb-4">
           <RichTextRenderer 
             content={job.description} 
-            variant="compact"
             className="line-clamp-3 text-sm"
           />
         </div>

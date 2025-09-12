@@ -198,12 +198,17 @@ const parseJobRow = (row: any): ParsedJobData => {
 
   const getFormattedField = (field: string): string => {
     const value = row[field]?.toString() || '';
-    // Preserve line breaks and paragraph structure for descriptions
+    // Enhanced formatting preservation for job descriptions and requirements
     return value
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-      .replace(/\n\s*\n/g, '\n\n') // Preserve paragraph breaks
+      .replace(/\\n/g, '\n') // Convert escaped newlines
+      .replace(/\r\n/g, '\n') // Windows line endings
+      .replace(/\r/g, '\n') // Mac line endings
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Reduce excessive line breaks
+      .replace(/•/g, '• ') // Ensure space after bullet points
+      .replace(/\*\s*/g, '• ') // Convert asterisks to bullet points
+      .replace(/-\s+/g, '• ') // Convert dashes to bullet points
       .replace(/[ \t]+/g, ' ') // Normalize spaces but keep line breaks
+      .replace(/\n\s+/g, '\n') // Remove leading spaces after line breaks
       .trim();
   };
 

@@ -1,0 +1,5 @@
+This is an intentionally corrupted file for testing error handling.
+
+Only minimal content here - not a real resume.
+
+X

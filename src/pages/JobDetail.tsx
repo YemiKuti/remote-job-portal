@@ -16,7 +16,7 @@ import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
 import { checkExistingApplication } from "@/utils/api/candidateApi";
 import { useAuth } from "@/components/AuthProvider";
-import RichTextRenderer from "@/components/RichTextRenderer";
+import { RichTextRenderer } from "@/components/RichTextRenderer";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -301,7 +301,6 @@ const JobDetail = () => {
               <CardContent className="prose max-w-none">
                 <RichTextRenderer 
                   content={job.description} 
-                  variant="job"
                   className="text-gray-700 leading-relaxed"
                 />
               </CardContent>
@@ -325,7 +324,6 @@ const JobDetail = () => {
                           <div className="flex-1">
                             <RichTextRenderer 
                               content={req} 
-                              variant="compact"
                               className="text-gray-700"
                             />
                           </div>
@@ -335,7 +333,6 @@ const JobDetail = () => {
                   ) : (
                     <RichTextRenderer 
                       content={job.requirements} 
-                      variant="job"
                       className="text-gray-700 leading-relaxed"
                     />
                   )}

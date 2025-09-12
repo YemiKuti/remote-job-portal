@@ -1,0 +1,78 @@
+ALEX JOHNSON
+Full Stack Software Engineer
+Email: alex.johnson@email.com
+Phone: (555) 987-6543
+Location: Seattle, WA
+LinkedIn: linkedin.com/in/alexjohnson
+
+PROFESSIONAL SUMMARY
+Experienced Full Stack Software Engineer with 6+ years of expertise in building scalable web applications using modern technologies. Proven track record of delivering high-quality solutions, leading technical initiatives, and mentoring development teams. Passionate about clean code, system architecture, and continuous learning.
+
+TECHNICAL SKILLS
+• Programming Languages: JavaScript, TypeScript, Python, Java, C#
+• Frontend Technologies: React, Vue.js, Angular, HTML5, CSS3, Tailwind CSS, SASS
+• Backend Technologies: Node.js, Express.js, Django, Spring Boot, .NET Core
+• Databases: PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch
+• Cloud Platforms: AWS (EC2, S3, Lambda, RDS), Azure, Google Cloud Platform
+• DevOps & Tools: Docker, Kubernetes, Jenkins, GitHub Actions, Terraform
+• Testing: Jest, Cypress, Selenium, Unit Testing, Integration Testing
+
+PROFESSIONAL EXPERIENCE
+
+Senior Full Stack Engineer | CloudTech Solutions | March 2021 - Present
+• Lead development of enterprise-grade SaaS platform serving 100,000+ active users
+• Architected and implemented microservices architecture reducing system downtime by 60%
+• Built responsive frontend applications using React and TypeScript with 99.9% uptime
+• Designed RESTful APIs and GraphQL endpoints handling 1M+ requests daily
+• Mentored 4 junior developers and established coding standards and best practices
+• Implemented CI/CD pipelines reducing deployment time from 2 hours to 15 minutes
+• Collaborated with product managers and UX designers on feature planning and execution
+
+Full Stack Developer | InnovateLabs | June 2019 - February 2021
+• Developed and maintained 5+ web applications using React, Node.js, and PostgreSQL
+• Created automated testing suites increasing code coverage from 45% to 95%
+• Optimized database queries and application performance improving load times by 40%
+• Integrated third-party APIs including Stripe, Twilio, and SendGrid
+• Participated in agile development process with 2-week sprints and daily standups
+• Built responsive mobile-first interfaces supporting 10+ different screen sizes
+
+Software Developer | WebSolutions Inc | August 2018 - May 2019
+• Built customer-facing web applications using JavaScript, HTML, and CSS
+• Worked with senior developers on code reviews and pair programming sessions
+• Implemented user authentication systems and role-based access control
+• Created documentation and user guides for internal tools and applications
+• Participated in requirements gathering sessions with clients and stakeholders
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of Washington, Seattle | September 2014 - June 2018
+• Magna Cum Laude, GPA: 3.8/4.0
+• Relevant Coursework: Data Structures & Algorithms, Software Engineering, Database Systems, Computer Networks, Machine Learning
+• Senior Capstone: Built a real-time collaboration tool using WebRTC and Node.js
+
+CERTIFICATIONS & ACHIEVEMENTS
+• AWS Certified Solutions Architect Associate (2023)
+• Google Cloud Professional Developer (2022)
+• React Developer Certification by Meta (2021)
+• Winner, Best Technical Innovation - CloudTech Hackathon 2022
+• Speaker at Seattle JS Meetup - "Building Scalable React Applications" (2023)
+
+PROJECTS
+
+E-Commerce Platform | Personal Project
+• Built full-stack e-commerce application with React, Node.js, and PostgreSQL
+• Implemented features: user authentication, product catalog, shopping cart, payment processing
+• Deployed on AWS with auto-scaling and load balancing
+• Technologies: React, Node.js, Express, PostgreSQL, Stripe API, AWS
+
+Real-Time Chat Application | Open Source Contribution
+• Developed real-time messaging application with Socket.io and React
+• Implemented features: group chats, file sharing, message encryption
+• 500+ GitHub stars and 50+ contributors
+• Technologies: React, Node.js, Socket.io, MongoDB, JWT
+
+VOLUNTEER EXPERIENCE
+• Code Mentor at CoderDojo Seattle (2020 - Present)
+• Teaching Assistant for "Intro to Programming" - University of Washington (2017-2018)
+• Volunteer Web Developer for Local Non-Profit Organizations (2019-2021)

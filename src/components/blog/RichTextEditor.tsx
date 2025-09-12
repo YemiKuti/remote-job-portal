@@ -347,7 +347,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
           <div className="min-h-[300px] p-3">
             <RichTextRenderer 
               content={safeValue} 
-              variant="blog"
               className="prose-headings:mt-0 prose-p:mb-2"
             />
           </div>

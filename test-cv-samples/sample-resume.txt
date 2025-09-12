@@ -1,0 +1,55 @@
+JOHN DOE
+Software Engineer
+Email: john.doe@email.com
+Phone: (555) 123-4567
+Location: San Francisco, CA
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 5+ years developing scalable web applications using React, Node.js, and cloud technologies. Proven track record of delivering high-quality solutions and leading technical teams.
+
+TECHNICAL SKILLS
+Programming Languages: JavaScript, TypeScript, Python, Java
+Frontend: React, Vue.js, HTML5, CSS3, Tailwind CSS
+Backend: Node.js, Express, REST APIs, GraphQL
+Databases: PostgreSQL, MongoDB, Redis
+Cloud: AWS, Docker, Kubernetes
+Tools: Git, Jenkins, JIRA, Figma
+
+WORK EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | 2021 - Present
+• Led development of customer-facing web application serving 50,000+ users
+• Improved application performance by 40% through code optimization and caching strategies
+• Mentored junior developers and conducted code reviews
+• Collaborated with product managers to define technical requirements
+
+Software Engineer | StartupXYZ | 2019 - 2021
+• Built responsive web applications using React and Node.js
+• Integrated third-party APIs and payment processing systems
+• Participated in agile development processes and sprint planning
+• Reduced bug reports by 30% through comprehensive testing
+
+Junior Developer | DevCompany | 2018 - 2019
+• Developed and maintained company website and internal tools
+• Learned modern web development practices and version control
+• Assisted senior developers with debugging and feature implementation
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of California, Berkeley | 2018
+Relevant Coursework: Data Structures, Algorithms, Software Engineering, Database Systems
+
+PROJECTS
+
+E-commerce Platform
+• Full-stack web application with user authentication and payment processing
+• Technologies: React, Node.js, PostgreSQL, Stripe API
+
+Task Management App
+• Collaborative productivity application with real-time updates
+• Technologies: Vue.js, Express, Socket.io, MongoDB
+
+CERTIFICATIONS
+AWS Certified Developer Associate (2022)
+Google Analytics Certified (2021)

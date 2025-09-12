@@ -11,8 +11,10 @@ import { CheckCircle, Circle, FileText, Sparkles, Download, Loader2, AlertTriang
 import { Job } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { extractResumeContent, uploadResumeToStorage, downloadTailoredResume } from "@/utils/resumeProcessor";
+import { extractResumeContent, uploadResumeToStorage, downloadTailoredResume } from "@/utils/enhancedResumeProcessor";
 import { validateOpenAISetup } from "@/utils/openaiConfig";
+import { CVTailoringErrorHandler, categorizeError } from "./CVTailoringErrorHandler";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface EnhancedCVTailoringDialogProps {
   job: Job;
@@ -54,6 +56,7 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [aiSetupValid, setAiSetupValid] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
+  const { error, handleError, clearError } = useErrorHandler();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -94,16 +97,29 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
+    clearError(); // Clear any previous errors
+
+    // Enhanced file validation
+    const fileName = file.name.toLowerCase();
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Please upload a PDF, DOC, DOCX, or TXT file');
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
+    
+    const isValidType = allowedTypes.includes(file.type) || allowedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isValidType) {
+      handleError(new Error('This file format is not supported. Please upload a PDF or DOCX resume.'));
       return;
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
+      handleError(new Error('File is too large. Please upload a file smaller than 10MB.'));
+      return;
+    }
+
+    // Validate minimum file size
+    if (file.size < 100) {
+      handleError(new Error('File is too small. Please upload a resume with more content.'));
       return;
     }
 
@@ -152,9 +168,9 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
       await fetchResumes();
       setStep('analyzing');
       handleAnalyze();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing uploaded file:', error);
-      toast.error('Failed to process resume file');
+      handleError(error, 'Failed to process resume file');
       setStep('select');
     } finally {
       setLoading(false);
@@ -198,9 +214,10 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
       setProgress(100);
       setAnalysis(data);
       setStep('review');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing CV:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to analyze CV. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to analyze CV. Please try again.';
+      handleError(new Error(errorMessage));
       setStep('select');
     } finally {
       setLoading(false);
@@ -289,6 +306,28 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
               AI features are not properly configured. Please contact support to set up OpenAI integration.
             </AlertDescription>
           </Alert>
+        )}
+
+        {error && (
+          <div className="mb-4">
+            <CVTailoringErrorHandler
+              error={categorizeError(error)}
+              onRetry={() => {
+                clearError();
+                if (step === 'select' && selectedResume) {
+                  setStep('analyzing');
+                  handleAnalyze();
+                }
+              }}
+              onUploadNew={() => {
+                clearError();
+                setStep('select');
+                setSelectedResume(null);
+                setUploadedFile(null);
+              }}
+              onDismiss={clearError}
+            />
+          </div>
         )}
 
         {loading && progress > 0 && (

@@ -5,7 +5,7 @@ import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-reac
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { extractResumeContent } from '@/utils/resumeProcessor';
+import { extractResumeContent } from '@/utils/enhancedResumeProcessor';
 
 interface ResumeUploadZoneProps {
   userId: string;
@@ -29,10 +29,11 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
       // Enhanced file validation
       const fileName = file.name.toLowerCase();
       const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
-      const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+      const isSupported = supportedFormats.some(format => fileName.endsWith(format)) || 
+                          ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type);
       
       if (!isSupported) {
-        throw new Error('Please upload a PDF, DOC, DOCX, or TXT file.');
+        throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
       }
 
       // Validate file size (max 10MB)
@@ -51,9 +52,32 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
       let resumeContent;
       try {
         resumeContent = await extractResumeContent(file);
+        
+        // Additional validation for extracted content
+        if (!resumeContent.text || resumeContent.text.trim().length < 30) {
+          throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+        }
+        
+        console.log('✅ Resume content validated:', {
+          textLength: resumeContent.text.length,
+          hasPersonalInfo: !!resumeContent.candidateData.personalInfo,
+          sectionsFound: Object.keys(resumeContent.sections).length
+        });
+        
       } catch (extractError: any) {
         console.error('Content extraction error:', extractError);
-        throw new Error(extractError.message || 'Unable to read resume content.');
+        const errorMessage = extractError.message || 'Unable to read resume content';
+        
+        // Provide specific error messages based on error type
+        if (errorMessage.includes('format') || errorMessage.includes('supported')) {
+          throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+        } else if (errorMessage.includes('empty') || errorMessage.includes('short')) {
+          throw new Error('Resume file appears to be empty or corrupted. Please upload a valid resume file.');
+        } else if (errorMessage.includes('large')) {
+          throw new Error('File is too large. Please upload a file smaller than 10MB.');
+        } else {
+          throw new Error('Unable to process resume file. Please ensure the file is valid and not corrupted.');
+        }
       }
 
       setUploadProgress('Uploading to storage...');

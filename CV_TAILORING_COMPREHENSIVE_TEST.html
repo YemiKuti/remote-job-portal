@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring Tool - Comprehensive Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .test-step {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .success { border-left-color: #28a745; }
+        .warning { border-left-color: #ffc107; }
+        .error { border-left-color: #dc3545; }
+        .code-block {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover { background-color: #0056b3; }
+        .results { margin-top: 20px; }
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <h1>CV Tailoring Tool - Comprehensive Testing Protocol</h1>
+    
+    <div class="test-section">
+        <h2>🧪 Test Overview</h2>
+        <p>This comprehensive test validates the CV Tailoring Tool's ability to:</p>
+        <ul>
+            <li>✅ Parse PDF and DOCX resume files correctly</li>
+            <li>✅ Handle various file formats with proper error messages</li>
+            <li>✅ Generate tailored CVs with valid input combinations</li>
+            <li>✅ Provide clear feedback for invalid or corrupted files</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Test Protocol</h2>
+        
+        <div class="test-step">
+            <h3>Test 1: Valid Resume Processing</h3>
+            <p><strong>Objective:</strong> Confirm the tool can read and process valid resume files</p>
+            <ol>
+                <li>Navigate to the CV Tailoring Tool</li>
+                <li>Upload <code>ENHANCED_TEST_RESUME.txt</code></li>
+                <li>Enter job description from <code>CV_TAILORING_FINAL_TEST.csv</code> (React Developer position)</li>
+                <li>Verify the tool generates a tailored CV successfully</li>
+            </ol>
+            <p><strong>Expected Result:</strong> ✅ Tailored CV generated with no errors</p>
+        </div>
+
+        <div class="test-step">
+            <h3>Test 2: Multiple Format Support</h3>
+            <p><strong>Objective:</strong> Test PDF and DOCX parsing capabilities</p>
+            <ol>
+                <li>Create a PDF version of the test resume</li>
+                <li>Upload the PDF and test with Digital Marketing Manager job</li>
+                <li>Create a DOCX version and test with Data Scientist job</li>
+                <li>Verify all formats are processed correctly</li>
+            </ol>
+            <p><strong>Expected Result:</strong> ✅ All file formats processed without errors</p>
+        </div>
+
+        <div class="test-step warning">
+            <h3>Test 3: Error Handling</h3>
+            <p><strong>Objective:</strong> Validate proper error messages for invalid files</p>
+            <ol>
+                <li>Upload <code>test-cv-samples/corrupted-sample.txt</code></li>
+                <li>Verify error message: "This file format is not supported. Please upload a PDF or DOCX resume."</li>
+                <li>Test with empty file</li>
+                <li>Test with file that's too large (>10MB)</li>
+            </ol>
+            <p><strong>Expected Result:</strong> ⚠️ Clear, user-friendly error messages displayed</p>
+        </div>
+
+        <div class="test-step">
+            <h3>Test 4: End-to-End Workflow</h3>
+            <p><strong>Objective:</strong> Complete workflow validation</p>
+            <ol>
+                <li>Start with resume upload</li>
+                <li>Select a job from the database or enter custom job description</li>
+                <li>Wait for AI analysis to complete</li>
+                <li>Review generated tailored CV</li>
+                <li>Download the final result</li>
+            </ol>
+            <p><strong>Expected Result:</strong> 🎯 Complete workflow functions smoothly</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Test Data Files</h2>
+        <div class="code-block">
+Files Available for Testing:
+
+✅ Valid Resume Files:
+- test-cv-samples/sample-resume.txt (Software Engineer)
+- test-cv-samples/marketing-resume.txt (Marketing Professional)  
+- ENHANCED_TEST_RESUME.txt (Senior Developer)
+
+📝 Job Description Data:
+- CV_TAILORING_FINAL_TEST.csv (3 different roles)
+
+❌ Error Testing Files:
+- test-cv-samples/corrupted-sample.txt (Invalid content)
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Technical Validation Points</h2>
+        <ul>
+            <li><strong>PDF Processing:</strong> Confirm text extraction from PDF files</li>
+            <li><strong>DOCX Processing:</strong> Verify Word document parsing</li>
+            <li><strong>Content Validation:</strong> Check minimum content requirements (100+ chars)</li>
+            <li><strong>Error Messages:</strong> Validate user-friendly error text</li>
+            <li><strong>File Size Limits:</strong> Test 10MB limit enforcement</li>
+            <li><strong>AI Integration:</strong> Confirm OpenAI API communication</li>
+            <li><strong>Database Storage:</strong> Verify tailored CV storage</li>
+        </ul>
+    </div>
+
+    <div class="test-section success">
+        <h2>✅ Success Criteria</h2>
+        <p>The CV Tailoring Tool passes testing when:</p>
+        <ol>
+            <li>✅ All valid resume formats (TXT, PDF, DOCX) are processed successfully</li>
+            <li>✅ Invalid files show clear error messages without system crashes</li>
+            <li>✅ At least 2 different resume + job combinations generate tailored CVs</li>
+            <li>✅ Error handling prevents user confusion with helpful guidance</li>
+            <li>✅ Complete workflow from upload to download functions properly</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 Common Issues & Solutions</h2>
+        <div class="result-item">
+            <strong>Issue:</strong> "ReferenceError: criticalGaps is not defined"<br>
+            <strong>Solution:</strong> ✅ FIXED - Added criticalGaps calculation to edge function
+        </div>
+        <div class="result-item">
+            <strong>Issue:</strong> PDF files not reading correctly<br>
+            <strong>Solution:</strong> ✅ Enhanced PDF parsing with multiple fallback methods
+        </div>
+        <div class="result-item">
+            <strong>Issue:</strong> Generic "invalid resume" errors<br>
+            <strong>Solution:</strong> ✅ Implemented specific error messages by file type
+        </div>
+        <div class="result-item">
+            <strong>Issue:</strong> DOCX files showing as unsupported<br>
+            <strong>Solution:</strong> ✅ Improved DOCX parsing with XML content extraction
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Quick Test Commands</h2>
+        <p>For rapid validation, test these scenarios in order:</p>
+        <div class="code-block">
+1. Upload ENHANCED_TEST_RESUME.txt + React Developer job → Should succeed
+2. Upload corrupted-sample.txt → Should show clear error message  
+3. Upload empty file → Should show "file too short" error
+4. Complete full workflow → Should generate downloadable CV
+
+Expected Timeline: 5-10 minutes for complete test suite
+        </div>
+    </div>
+
+    <div class="results">
+        <h2>🏆 Test Results Log</h2>
+        <p><em>Use this section to record your test results:</em></p>
+        <div class="result-item">
+            <strong>Test Date:</strong> _______________<br>
+            <strong>Tester:</strong> _______________<br>
+            <strong>Overall Status:</strong> ⭕ Pass / ⭕ Fail<br>
+            <strong>Notes:</strong> ________________________________
+        </div>
+    </div>
+</body>
+</html>

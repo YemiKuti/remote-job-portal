@@ -495,6 +495,14 @@ serve(async (req) => {
         )
       );
       
+      // Calculate critical gaps - essential skills missing from candidate's resume
+      const criticalGaps = jobAnalysis.essentialSkills.filter(essentialSkill =>
+        !resumeAnalysis.currentSkills.some(skill =>
+          skill.toLowerCase().includes(essentialSkill.toLowerCase()) || 
+          essentialSkill.toLowerCase().includes(skill.toLowerCase())
+        )
+      );
+      
       // Calculate initial match score
       const skillsMatched = skillAlignment.length;
       const matchScore = jobAnalysis.essentialSkills.length > 0 
@@ -505,7 +513,8 @@ serve(async (req) => {
         skillsMatched,
         totalEssentialSkills: jobAnalysis.essentialSkills.length,
         matchScore,
-        alignedSkills: skillAlignment.slice(0, 5)
+        alignedSkills: skillAlignment.slice(0, 5),
+        criticalGaps: criticalGaps.slice(0, 3)
       });
       
       // Format candidate information

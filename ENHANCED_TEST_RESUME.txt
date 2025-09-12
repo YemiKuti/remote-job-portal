@@ -1,0 +1,74 @@
+ALEXANDRA CHEN
+Senior Software Engineer
+Email: alexandra.chen@email.com
+Phone: (555) 234-5678
+Location: San Francisco, CA
+LinkedIn: linkedin.com/in/alexandra-chen
+
+PROFESSIONAL SUMMARY
+Experienced Senior Software Engineer with 6+ years of expertise in full-stack web development, specializing in React, Node.js, and cloud technologies. Proven track record of leading cross-functional teams, delivering scalable applications serving 100,000+ users, and improving system performance by 40%. Passionate about mentoring junior developers and implementing best practices for code quality and maintainability.
+
+TECHNICAL SKILLS
+Frontend Development: React, TypeScript, JavaScript, Vue.js, HTML5, CSS3, Sass, Tailwind CSS
+Backend Development: Node.js, Express.js, Python, REST APIs, GraphQL, Microservices
+Databases: PostgreSQL, MongoDB, Redis, MySQL, ElasticSearch
+Cloud & DevOps: AWS (EC2, S3, Lambda, RDS), Docker, Kubernetes, Jenkins, CI/CD
+Tools & Platforms: Git, GitHub, Jira, Figma, Postman, Jest, Cypress
+
+WORK EXPERIENCE
+
+Senior Software Engineer | TechFlow Solutions | 2021 - Present
+• Led development of customer-facing web application serving 150,000+ users with 99.9% uptime
+• Improved application performance by 45% through code optimization, lazy loading, and caching strategies
+• Mentored team of 4 junior developers, conducting code reviews and establishing best practices
+• Collaborated with product managers and designers to deliver 12 major features ahead of schedule
+• Implemented comprehensive testing strategy reducing production bugs by 60%
+• Architected microservices infrastructure supporting 10x traffic growth
+
+Software Engineer | InnovateHub | 2019 - 2021
+• Developed responsive web applications using React, TypeScript, and modern JavaScript frameworks
+• Built RESTful APIs and integrated third-party services including Stripe payment processing
+• Participated in agile development processes with daily standups and sprint planning
+• Reduced API response times by 35% through database optimization and query improvements
+• Collaborated with QA team to implement automated testing protocols
+• Contributed to open-source projects and maintained 95%+ code coverage
+
+Junior Software Developer | StartupLab | 2018 - 2019
+• Developed and maintained company website and internal management tools
+• Learned modern web development practices and version control with Git
+• Assisted senior developers with debugging complex issues and feature implementation
+• Built customer dashboard with real-time analytics and reporting features
+• Participated in code reviews and adopted industry best practices
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of California, Berkeley | 2018
+Relevant Coursework: Data Structures, Algorithms, Software Engineering, Database Systems, Web Development
+
+PROJECTS
+
+E-commerce Platform (2023)
+• Built full-stack e-commerce application using React, Node.js, and PostgreSQL
+• Implemented user authentication, shopping cart, and secure payment processing with Stripe
+• Deployed on AWS with auto-scaling capabilities and load balancing
+• Technologies: React, TypeScript, Node.js, PostgreSQL, AWS, Docker
+
+Real-time Collaboration Tool (2022)
+• Developed collaborative productivity application with real-time updates using WebSockets
+• Implemented role-based permissions and team management features
+• Integrated video conferencing and file sharing capabilities
+• Technologies: React, Node.js, Socket.io, MongoDB, WebRTC
+
+CERTIFICATIONS & ACHIEVEMENTS
+• AWS Certified Developer Associate (2023)
+• React Developer Certification (2022)
+• Google Analytics Certified (2021)
+• Contributor to React open-source community with 500+ GitHub stars
+• Speaker at React San Francisco Meetup (2023)
+• Dean's List, UC Berkeley (2016-2018)
+
+LANGUAGES
+• English (Native)
+• Mandarin Chinese (Fluent)
+• Spanish (Conversational)

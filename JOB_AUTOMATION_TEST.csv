@@ -1,0 +1,57 @@
+Title,Company,Location,Description,Requirements,Application Email,Employment Type,Experience Level,Salary Min,Salary Max,Currency
+"Senior React Developer","TechFlow Solutions","San Francisco, CA","We are seeking an experienced Senior React Developer to join our growing engineering team.
+
+Key Responsibilities:
+• Lead development of complex React applications
+• Mentor junior developers and conduct code reviews
+• Collaborate with product managers and designers
+• Implement responsive web designs and user interfaces
+• Optimize applications for maximum speed and scalability
+
+What We Offer:
+• Competitive salary and equity package
+• Comprehensive health, dental, and vision insurance
+• Flexible work arrangements and remote options
+• Professional development opportunities
+• Modern tech stack and collaborative environment","React, TypeScript, JavaScript, Redux, HTML5, CSS3, Node.js, Git","sarah.chen@techflow.com","full-time","senior",120000,160000,"USD"
+"Digital Marketing Manager","GrowthCorp Inc","New York, NY","Join our dynamic marketing team as a Digital Marketing Manager and drive our online presence to new heights.
+
+Your Role Will Include:
+• Develop and execute comprehensive digital marketing strategies
+• Manage social media campaigns across multiple platforms
+• Analyze campaign performance and optimize for better ROI
+• Collaborate with sales team to generate qualified leads
+• Create engaging content for various digital channels
+• Oversee email marketing campaigns and automation workflows
+
+Requirements:
+• 3+ years of digital marketing experience
+• Proven track record with Google Ads and Facebook advertising
+• Strong analytical skills and data-driven mindset
+• Experience with marketing automation tools (HubSpot preferred)
+• Excellent written and verbal communication skills
+• Bachelor's degree in Marketing or related field","Google Analytics, Google Ads, Facebook Ads, HubSpot, Content Marketing, SEO, Email Marketing","recruiting@growthcorp.com","full-time","mid",65000,85000,"USD"
+"Product Manager","InnovateLab","Remote","We're looking for a passionate Product Manager to drive product strategy and execution for our SaaS platform.
+
+What You'll Do:
+• Define product roadmap and prioritize features based on user feedback
+• Conduct market research and competitive analysis
+• Work closely with engineering team to deliver high-quality products
+• Gather and analyze user requirements and feedback
+• Create detailed product specifications and user stories
+• Monitor product metrics and KPIs for continuous improvement
+
+About You:
+• 2-4 years of product management experience
+• Strong analytical and problem-solving skills
+• Experience with agile development methodologies
+• Excellent stakeholder management abilities
+• Data-driven decision making approach
+• Technical background preferred but not required
+
+Why Join Us:
+• 100% remote work opportunity
+• Equity participation in growing startup
+• Unlimited PTO policy
+• Annual learning and development budget
+• Collaborative and inclusive team culture","Product Management, User Research, Data Analysis, Agile, JIRA, Figma, SQL","jobs@innovatelab.io","full-time","mid",80000,110000,"USD"

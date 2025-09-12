@@ -4,7 +4,10 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { TailoredCVWorkflow } from "@/components/cv/TailoredCVWorkflow";
 import { TailoredResumesList } from "@/components/cv/TailoredResumesList";
 import { MyResumesDashboard } from "@/components/cv/MyResumesDashboard";
+import { CVTailoringTestPanel } from '@/components/cv/CVTailoringTestPanel';
+import { EnhancedCVTailoringDialog } from '@/components/cv/EnhancedCVTailoringDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Brain, History, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -66,6 +69,27 @@ const TailoredResumes = () => {
         
         <TabsContent value="create" className="mt-6">
           <TailoredCVWorkflow userId={userId} />
+          
+          {/* Enhanced CV Tailoring Dialog */}
+          <div className="mt-8 p-6 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
+            <h3 className="text-lg font-semibold mb-4">🚀 Enhanced AI CV Tailoring</h3>
+            <p className="text-muted-foreground mb-4">
+              Try our new enhanced CV tailoring tool with improved file support and better AI processing.
+            </p>
+            <EnhancedCVTailoringDialog 
+              trigger={
+                <Button className="w-full">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Try Enhanced CV Tailoring
+                </Button>
+              } 
+            />
+          </div>
+
+          {/* System Testing Panel */}
+          <div className="mt-8">
+            <CVTailoringTestPanel />
+          </div>
         </TabsContent>
         
         <TabsContent value="dashboard" className="mt-6">

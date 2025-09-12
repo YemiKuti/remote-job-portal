@@ -46,6 +46,7 @@ export interface Job {
   description: string;
   requirements: string[];
   created_at: string;
+  updated_at?: string;
   employment_type: string;
   experience_level: string;
   visa_sponsorship?: boolean;
@@ -57,9 +58,22 @@ export interface Job {
   application_deadline?: string;
   status: string;
   is_featured?: boolean;
+  sponsored?: boolean;
   views?: number;
   applications?: number;
   employer_id?: string;
+  // Database-specific fields that need mapping
+  approval_date?: string;
+  approved_by?: string;
+  rejected_by?: string;
+  rejection_date?: string;
+  rejection_reason?: string;
+  review_notes?: string;
+  last_reviewed_at?: string;
+  posted_at?: string;
+  expires_at?: string;
+  days_valid?: number;
+  is_verified?: boolean;
 }
 
 export interface Conversation {

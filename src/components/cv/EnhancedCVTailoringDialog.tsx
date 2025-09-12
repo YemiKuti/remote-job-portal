@@ -19,7 +19,7 @@ import {
   Eye,
   RotateCcw 
 } from "lucide-react";
-import { Job } from "@/types";
+import { Job } from "@/types/api";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { saveAs } from "file-saver";
@@ -167,11 +167,16 @@ export const EnhancedCVTailoringDialog = ({ job, trigger }: EnhancedCVTailoringD
 
       // Get candidate data from profile
       const { data: user } = await supabase.auth.getUser();
-      const { data: profile } = await user.user ? supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.user.id)
-        .single() : { data: null };
+      let profile = null;
+      
+      if (user.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.user.id)
+          .single();
+        profile = profileData;
+      }
 
       setUploadProgress(50);
 

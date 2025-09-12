@@ -109,21 +109,37 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       hasContent: !!resumeContent,
       contentLength: resumeContent?.length || 0,
       resumeKeys: Object.keys(selectedResume),
-      selectedResumeType: typeof selectedResume
+      selectedResumeType: typeof selectedResume,
+      selectedResumeId: selectedResume.id,
+      selectedResumeName: selectedResume.name || selectedResume.file_name
     });
     
     if (!resumeContent || resumeContent.trim().length === 0) {
-      // Try to extract content from different possible fields
-      const fallbackContent = selectedResume.text || selectedResume.content || selectedResume.raw_content || selectedResume.extracted_content;
-      if (fallbackContent && fallbackContent.trim().length > 0) {
+      // Try to extract content from different possible fields with more aggressive fallbacks
+      const fallbackContent = selectedResume.text || 
+                              selectedResume.content || 
+                              selectedResume.raw_content || 
+                              selectedResume.extracted_content ||
+                              selectedResume.candidateData?.text ||
+                              (typeof selectedResume.candidate_data === 'object' && selectedResume.candidate_data?.text);
+      
+      if (fallbackContent && typeof fallbackContent === 'string' && fallbackContent.trim().length > 0) {
         console.log('📄 Using fallback resume content');
         resumeContent = fallbackContent;
       } else {
-        console.error('❌ No resume content found in any field');
-        setError('Please upload a valid resume with readable content. The resume file may be corrupted or in an unsupported format.');
-        toast.error('Resume content is missing. Please upload a valid resume file (PDF, DOC, DOCX, or TXT).');
+        console.error('❌ No valid resume content found in any field');
+        setError('Resume content could not be extracted. Please try uploading a new resume file with text content.');
+        toast.error('Unable to read resume content. Please upload a resume with readable text (PDF or DOCX recommended).');
         return;
       }
+    }
+
+    // Final validation - ensure we have sufficient content
+    if (resumeContent.trim().length < 50) {
+      console.error('❌ Resume content too short:', resumeContent.length);
+      setError('Resume content is too short for effective tailoring.');
+      toast.error('Resume content is too brief. Please upload a resume with more detailed information.');
+      return;
     }
 
     // Check file format if available

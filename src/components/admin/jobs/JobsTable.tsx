@@ -63,15 +63,15 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
           <TableRow key={job.id} className="hover:bg-muted/50">
             <TableCell className="font-medium">
               <div className="max-w-md">
-                <div className="font-semibold text-foreground mb-1">{job.title}</div>
+                <div className="font-semibold text-foreground mb-2">{job.title}</div>
                 {job.description && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground leading-relaxed">
                     <RichTextRenderer 
-                      content={job.description.length > 200 
-                        ? job.description.substring(0, 200) + '...'
+                      content={job.description.length > 300 
+                        ? job.description.substring(0, 300) + '...'
                         : job.description
                       }
-                      className="prose-sm"
+                      className="prose-sm max-w-none"
                     />
                   </div>
                 )}

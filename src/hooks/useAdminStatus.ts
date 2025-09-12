@@ -17,17 +17,21 @@ export const useAdminStatus = () => {
       }
 
       try {
-        // Use the same database function as AdminRoute
         const { data, error } = await supabase.rpc('is_admin');
-        
         if (error) {
-          console.error('Error checking admin status:', error);
+          const msg = error?.message || 'Unknown error';
+          let hint = 'Check Supabase URL and anon key; verify internet connectivity.';
+          if (/Failed to fetch|NetworkError|TypeError/i.test(msg)) hint = 'Network error: Could not reach Supabase (check internet/CORS).';
+          if (/401|invalid token|JWT/i.test(msg)) hint = 'Auth error: Invalid anon key or expired session token.';
+          if (/permission|rls|policy/i.test(msg)) hint = 'RLS/permission error: User not permitted to call is_admin.';
+          console.error('Error checking admin status:', { message: msg, hint, code: (error as any)?.code || '' });
           setIsAdmin(false);
         } else {
           setIsAdmin(data === true);
         }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.error('Error checking admin status:', { message: msg, hint: 'Unexpected error calling Supabase.' });
         setIsAdmin(false);
       } finally {
         setLoading(false);

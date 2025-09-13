@@ -753,51 +753,95 @@ Please return a well-formatted, tailored resume that significantly improves the 
             throw new Error('File too small. Please upload a valid resume file.');
           }
           
-          // Extract content from uploaded file
-          const arrayBuffer = await file.arrayBuffer();
-          let resumeContent = '';
-          
-          try {
-            if (fileName.endsWith('.pdf')) {
-              resumeContent = await extractPdfText(arrayBuffer);
-            } else if (fileName.endsWith('.docx')) {
-              resumeContent = await extractDocxText(arrayBuffer);
-            } else if (fileName.endsWith('.txt')) {
-              resumeContent = new TextDecoder().decode(arrayBuffer);
-            } else {
-              // Try different extraction methods as fallback
-              try {
-                resumeContent = await extractDocxText(arrayBuffer);
-              } catch {
-                try {
-                  resumeContent = await extractPdfText(arrayBuffer);
-                } catch {
-                  resumeContent = new TextDecoder().decode(arrayBuffer);
-                }
-              }
-            }
-            
-            console.log(`✅ [${requestId}] Content extracted: ${resumeContent.length} characters`);
-            
-          } catch (extractError: any) {
-            console.error(`❌ [${requestId}] Content extraction failed:`, extractError);
-            throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
-          }
-          
-          // Validate extracted content
-          if (!resumeContent || resumeContent.trim().length < 30) {
-            throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
-          }
-          
-          requestData = {
-            resumeContent: resumeContent.trim(),
-            jobDescription: jobDescription || '',
-            jobTitle: jobTitle || 'Position',
-            companyName: companyName || 'Company',
-            userId,
-            fileName: file.name,
-            candidateData: null // File upload doesn't include structured candidate data
-          };
+           // Extract content from uploaded file
+           const arrayBuffer = await file.arrayBuffer();
+           let resumeContent = '';
+           
+           try {
+             if (fileName.endsWith('.pdf')) {
+               resumeContent = await extractPdfText(arrayBuffer);
+             } else if (fileName.endsWith('.docx')) {
+               resumeContent = await extractDocxText(arrayBuffer);
+             } else if (fileName.endsWith('.txt')) {
+               resumeContent = new TextDecoder().decode(arrayBuffer);
+             } else {
+               // Try different extraction methods as fallback
+               try {
+                 resumeContent = await extractDocxText(arrayBuffer);
+               } catch {
+                 try {
+                   resumeContent = await extractPdfText(arrayBuffer);
+                 } catch {
+                   resumeContent = new TextDecoder().decode(arrayBuffer);
+                 }
+               }
+             }
+             
+             console.log(`✅ [${requestId}] Content extracted: ${resumeContent.length} characters`);
+             
+           } catch (extractError: any) {
+             console.error(`❌ [${requestId}] Content extraction failed:`, extractError);
+             throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
+           }
+           
+           // Validate extracted content
+           if (!resumeContent || resumeContent.trim().length < 30) {
+             throw new Error('Unsupported or corrupted file. Please upload a valid PDF or DOCX.');
+           }
+
+           // Upload original file to private resumes bucket and create resume record (processing)
+           let resumeRecordId: string | null = null;
+           let resumesStoragePath: string | null = null;
+           try {
+             const originalFileName = `${requestId}-${file.name}`;
+             resumesStoragePath = `resumes/${userId}/${originalFileName}`;
+             const contentType = file.type || (fileName.endsWith('.pdf') ? 'application/pdf' : fileName.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/plain');
+
+             const { error: uploadOriginalError } = await supabase.storage
+               .from('resumes')
+               .upload(resumesStoragePath, arrayBuffer, {
+                 contentType,
+                 upsert: true
+               });
+
+             if (uploadOriginalError) {
+               console.error(`❌ [${requestId}] Error uploading original resume:`, uploadOriginalError);
+             } else {
+               // Insert resume DB record with processing status
+               const { data: resumeInsert, error: resumeDbError } = await supabase
+                 .from('resumes')
+                 .insert({
+                   user_id: userId,
+                   file_url: resumesStoragePath,
+                   file_name: file.name,
+                   file_size: file.size,
+                   status: 'processing'
+                 })
+                 .select('id')
+                 .single();
+
+               if (resumeDbError) {
+                 console.error(`❌ [${requestId}] Error inserting resume record:`, resumeDbError);
+               } else {
+                 resumeRecordId = resumeInsert.id;
+                 console.log(`✅ [${requestId}] Resume record created: ${resumeRecordId}`);
+               }
+             }
+           } catch (resUploadErr) {
+             console.error(`❌ [${requestId}] Failed to store original resume:`, resUploadErr);
+           }
+           
+           requestData = {
+             resumeContent: resumeContent.trim(),
+             jobDescription: jobDescription || '',
+             jobTitle: jobTitle || 'Position',
+             companyName: companyName || 'Company',
+             userId,
+             fileName: file.name,
+             candidateData: null, // File upload doesn't include structured candidate data
+             resumeRecordId,
+             resumesStoragePath
+           };
           
         } else {
           // Handle JSON request (existing flow)
@@ -1262,11 +1306,12 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
       console.log(`🎉 [${requestId}] Request completed successfully in ${duration}ms`);
 
       // Save tailored CV to Supabase storage and database
-      let downloadUrl = null;
-      let tailoredResumeId = null;
-      
-      if (userId) {
-        try {
+       let downloadUrl = null;
+       let tailoredResumeId = null;
+       const resumeRecordId = (requestData && requestData.resumeRecordId) || null;
+       
+       if (userId) {
+         try {
           console.log(`💾 [${requestId}] Saving tailored CV to storage...`);
           
           // Generate PDF from tailored resume
@@ -1323,13 +1368,31 @@ CRITICAL: Create a complete, professionally structured resume that reads natural
             .single();
           
           if (dbError) {
-            console.error(`❌ [${requestId}] Database error:`, dbError);
-          } else {
-            tailoredResumeId = savedResume.id;
-            console.log(`✅ [${requestId}] Record saved with ID: ${tailoredResumeId}`);
-          }
-          
-        } catch (storageError: any) {
+             console.error(`❌ [${requestId}] Database error:`, dbError);
+           } else {
+             tailoredResumeId = savedResume.id;
+             console.log(`✅ [${requestId}] Record saved with ID: ${tailoredResumeId}`);
+           }
+
+           // Update resumes table record with tailored text and completion status
+           if (resumeRecordId) {
+             const { error: resumeUpdateError } = await supabase
+               .from('resumes')
+               .update({
+                 tailored_text: tailoredResume,
+                 status: 'complete',
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', resumeRecordId);
+
+             if (resumeUpdateError) {
+               console.error(`❌ [${requestId}] Failed updating resume record:`, resumeUpdateError);
+             } else {
+               console.log(`✅ [${requestId}] Resume record updated to complete`);
+             }
+           }
+           
+         } catch (storageError: any) {
           console.error(`❌ [${requestId}] Error saving to storage:`, storageError);
           // Continue without storage - user still gets the tailored resume text
         }

@@ -80,11 +80,15 @@ const HEADER_MAPPINGS: Record<string, string[]> = {
   'application_value': [
     'application email', 'email', 'contact email', 'apply email', 'application link',
     'apply link', 'url', 'contact', 'how to apply', 'apply', 'application url',
-    'website', 'portal', 'application method', 'apply via'
+    'website', 'portal', 'application method', 'apply via', 'apply online'
   ],
   'apply_email': [
     'email', 'contact email', 'apply email', 'application email', 'hr email', 
     'contact', 'recruiter email', 'hiring email', 'job email'
+  ],
+  'apply_url': [
+    'apply url', 'application url', 'apply link', 'application link', 'job url',
+    'job link', 'posting url', 'posting link', 'company site', 'careers page', 'website'
   ]
 };
 
@@ -644,6 +648,32 @@ export const convertToJobData = (
     };
     
     try {
+      // Determine application mapping robustly (email vs URL)
+      const isEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      const isUrl = (val: string) => /^https?:\/\/.+/.test(val);
+      const rawApp = getField('application_value');
+      const rawEmail = getField('apply_email');
+      const rawUrl = getField('apply_url') || getField('application_url');
+
+      let application_type: 'email' | 'external' | 'internal' = 'internal';
+      let application_value: string | undefined = undefined;
+
+      if (rawEmail && isEmail(rawEmail)) {
+        application_type = 'email';
+        application_value = rawEmail;
+      } else if (rawUrl && isUrl(rawUrl)) {
+        application_type = 'external';
+        application_value = rawUrl;
+      } else if (rawApp) {
+        if (isEmail(rawApp) || rawApp.includes('@')) {
+          application_type = 'email';
+          application_value = rawApp;
+        } else if (isUrl(rawApp)) {
+          application_type = 'external';
+          application_value = rawApp;
+        }
+      }
+
       return {
         title,
         company,
@@ -662,8 +692,8 @@ export const convertToJobData = (
         application_deadline: undefined,
         logo: undefined,
         status: 'pending',
-        application_type: getField('application_value') ? 'email' : 'internal',
-        application_value: getField('application_value') || undefined,
+        application_type,
+        application_value,
         sponsored: true
       } as ParsedJobData;
   } catch (error: any) {

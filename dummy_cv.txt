@@ -1,0 +1,48 @@
+JOHN SMITH
+Senior Software Engineer
+Email: john.smith@email.com | Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/johnsmith | Location: San Francisco, CA
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 8+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of building scalable applications and leading development teams.
+
+TECHNICAL SKILLS
+• Programming Languages: JavaScript, TypeScript, Python, Java
+• Frontend: React, Vue.js, HTML5, CSS3, Tailwind CSS
+• Backend: Node.js, Express, Django, REST APIs, GraphQL
+• Databases: PostgreSQL, MongoDB, MySQL, Redis
+• Cloud: AWS, Azure, Docker, Kubernetes
+• Tools: Git, Jenkins, Jest, Cypress, Jira
+
+WORK EXPERIENCE
+
+Senior Software Engineer | TechStartup Inc. | 2020 - Present
+• Led development of core product features serving 100K+ users
+• Implemented microservices architecture improving system performance by 40%
+• Mentored junior developers and conducted code reviews
+• Collaborated with product and design teams on feature planning
+
+Software Engineer | WebSolutions Corp | 2018 - 2020
+• Developed responsive web applications using React and Node.js
+• Built RESTful APIs and integrated third-party services
+• Optimized database queries reducing load times by 25%
+• Participated in agile development process and daily standups
+
+Junior Developer | StartupLab | 2016 - 2018
+• Built frontend components and user interfaces
+• Assisted with testing and debugging applications
+• Learned modern development practices and frameworks
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of California, Berkeley | 2016
+
+PROJECTS
+• E-commerce Platform: Built full-stack React/Node.js application with payment integration
+• Task Management App: Developed productivity tool using Vue.js and Firebase
+• Open Source Contributions: Contributed to popular JavaScript libraries on GitHub
+
+CERTIFICATIONS
+• AWS Certified Solutions Architect
+• Google Cloud Professional Developer
+• Certified Scrum Master

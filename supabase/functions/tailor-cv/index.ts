@@ -286,17 +286,14 @@ serve(async (req) => {
              }
 
              // Create resume record in processing state
-             const { data: resumeRecord, error: resumeError } = await supabase
+              const { data: resumeRecord, error: resumeError } = await supabase
                .from('resumes')
                .insert({
                  user_id: userId,
                  file_name: file.name,
-                 file_path: resumesStoragePath,
+                 file_url: resumesStoragePath,
                  file_size: file.size,
-                 content_type: contentType,
-                 original_text: resumeContent,
-                 status: 'processing',
-                 upload_source: 'cv_tailoring'
+                 status: 'uploaded'
                })
                .select()
                .single();
@@ -306,6 +303,20 @@ serve(async (req) => {
              } else {
                resumeRecordId = resumeRecord.id;
                console.log(`✅ [${requestId}] Resume record created with ID: ${resumeRecordId}`);
+               // Update status to processing as we begin AI tailoring
+               try {
+                 const { error: processingUpdateError } = await supabase
+                   .from('resumes')
+                   .update({ status: 'processing', updated_at: new Date().toISOString() })
+                   .eq('id', resumeRecordId);
+                 if (processingUpdateError) {
+                   console.warn(`⚠️ [${requestId}] Failed to set resume status to processing:`, processingUpdateError);
+                 } else {
+                   console.log(`🔄 [${requestId}] Resume status set to processing`);
+                 }
+               } catch (e) {
+                 console.warn(`⚠️ [${requestId}] Error updating resume status to processing:`, e);
+               }
              }
            } catch (resumeUploadError: any) {
              console.error(`⚠️ [${requestId}] Resume upload process failed:`, resumeUploadError);
@@ -560,7 +571,7 @@ Focus on creating genuine enthusiasm for this candidate while staying true to th
                  .from('resumes')
                  .update({
                    tailored_text: tailoredResume,
-                   status: 'complete',
+                   status: 'tailored',
                    updated_at: new Date().toISOString()
                  })
                  .eq('id', resumeRecordId);

@@ -239,21 +239,18 @@ const parseJobRow = (row: any): ParsedJobData => {
                  getField('posting url') || getField('posting link') || getField('company site') ||
                  getField('careers page') || getField('website') || getField('portal') || getField('application method');
 
-  // Determine application type and value based on detected fields
+  // Determine application type and value based on detected fields (strict rules)
   let application_type: string = 'internal';
   let application_value: string | undefined = undefined;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const urlRegex = /^https?:\/\/.+/;
 
-  if (rawEmail && emailRegex.test(rawEmail.trim())) {
-    application_type = 'email';
-    application_value = rawEmail.trim();
-  } else if (rawUrl && urlRegex.test(rawUrl.trim())) {
+  // Prefer URL when present and valid
+  if (rawUrl && urlRegex.test(rawUrl.trim())) {
     application_type = 'external';
     application_value = rawUrl.trim();
-  } else if (rawEmail && rawEmail.includes('@')) {
-    // Likely an email with minor formatting issues
+  } else if (rawEmail && emailRegex.test(rawEmail.trim())) {
     application_type = 'email';
     application_value = rawEmail.trim();
   } else if (rawUrl) {

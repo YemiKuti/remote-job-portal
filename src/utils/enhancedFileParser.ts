@@ -658,18 +658,19 @@ export const convertToJobData = (
       let application_type: 'email' | 'external' | 'internal' = 'internal';
       let application_value: string | undefined = undefined;
 
-      if (rawEmail && isEmail(rawEmail)) {
-        application_type = 'email';
-        application_value = rawEmail;
-      } else if (rawUrl && isUrl(rawUrl)) {
+      // Prefer URL when present and valid
+      if (rawUrl && isUrl(rawUrl)) {
         application_type = 'external';
         application_value = rawUrl;
+      } else if (rawEmail && isEmail(rawEmail)) {
+        application_type = 'email';
+        application_value = rawEmail;
       } else if (rawApp) {
-        if (isEmail(rawApp) || rawApp.includes('@')) {
-          application_type = 'email';
-          application_value = rawApp;
-        } else if (isUrl(rawApp)) {
+        if (isUrl(rawApp)) {
           application_type = 'external';
+          application_value = rawApp;
+        } else if (isEmail(rawApp)) {
+          application_type = 'email';
           application_value = rawApp;
         }
       }

@@ -451,7 +451,7 @@ export const updateJobStatus = async (jobId: string, status: string): Promise<{ 
   }
 };
 
-// Create admin job
+// Create admin job with email support
 export const createAdminJob = async (jobData: any): Promise<string> => {
   console.log('Creating admin job:', jobData);
   
@@ -460,22 +460,24 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
       title: jobData.title,
       company: jobData.company,
       location: jobData.location,
-      status: jobData.status
+      status: jobData.status,
+      apply_email: jobData.apply_email
     });
     
     const { data, error } = await supabase
-      .rpc('admin_create_job', {
+      .rpc('admin_create_job_with_email', {
         job_title: jobData.title,
         job_company: jobData.company,
         job_location: jobData.location,
         job_description: jobData.description,
-        job_requirements: jobData.requirements,
+        job_requirements: jobData.requirements || [],
         job_employment_type: jobData.employment_type,
         job_experience_level: jobData.experience_level,
+        job_apply_email: jobData.apply_email || null, // New email field
         job_salary_min: jobData.salary_min,
         job_salary_max: jobData.salary_max,
         job_salary_currency: jobData.salary_currency,
-        job_tech_stack: jobData.tech_stack,
+        job_tech_stack: jobData.tech_stack || [],
         job_visa_sponsorship: jobData.visa_sponsorship,
         job_remote: jobData.remote,
         job_company_size: jobData.company_size,
@@ -483,7 +485,7 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
         job_logo: jobData.logo,
         job_status: jobData.status,
         job_application_type: jobData.application_type,
-        job_application_value: jobData.application_value,
+        job_application_value: jobData.application_value || jobData.apply_email,
         job_employer_id: jobData.employer_id,
         job_sponsored: jobData.sponsored
       });
@@ -506,6 +508,9 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
     throw new Error(error.message || 'Failed to create job');
   }
 };
+
+// Alias for backward compatibility
+export const createAdminJobWithEmail = createAdminJob;
 
 // Update admin job
 export const updateAdminJob = async (jobId: string, jobData: any): Promise<string> => {
@@ -874,6 +879,7 @@ export const createJobsBatch = async (jobs: any[]): Promise<{ success: boolean; 
           remote: jobData.remote || false,
           sponsored: jobData.sponsored !== undefined ? jobData.sponsored : true,
           application_type: jobData.application_type || 'external',
+          apply_email: jobData.apply_email || null, // Map CSV email column to apply_email
           employer_id: null // Admin creates jobs without specific employer
         };
         

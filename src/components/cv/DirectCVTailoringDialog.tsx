@@ -79,6 +79,24 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
       return;
     }
 
+    // Role check - only candidates can use CV tailoring
+    try {
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      const isAdmin = userRoles?.some(r => r.role === 'admin');
+      const isEmployer = userRoles?.some(r => r.role === 'employer');
+      
+      if (isAdmin || isEmployer) {
+        setError('CV tailoring is only available for candidates.');
+        return;
+      }
+    } catch (roleError) {
+      console.error('Role check failed:', roleError);
+    }
+
     if (jobDescription.length < 50) {
       setError('Job description is too short. Please provide more details.');
       return;

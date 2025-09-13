@@ -8,7 +8,7 @@ export const fetchActiveJobs = async () => {
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .eq('status', 'active')
+      .eq('status', 'live') // Only show approved/live jobs
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -28,7 +28,7 @@ export const fetchRecommendedJobs = async (userId: string, limit = 3) => {
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .eq('status', 'active')
+      .eq('status', 'live')
       .limit(limit);
 
     if (error) throw error;

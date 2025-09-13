@@ -81,6 +81,10 @@ const HEADER_MAPPINGS: Record<string, string[]> = {
     'application email', 'email', 'contact email', 'apply email', 'application link',
     'apply link', 'url', 'contact', 'how to apply', 'apply', 'application url',
     'website', 'portal', 'application method', 'apply via'
+  ],
+  'apply_email': [
+    'email', 'contact email', 'apply email', 'application email', 'hr email', 
+    'contact', 'recruiter email', 'hiring email', 'job email'
   ]
 };
 

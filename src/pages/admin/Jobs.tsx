@@ -1,10 +1,10 @@
 
 import React, { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { JobsHeader } from "@/components/admin/jobs/JobsHeader";
-import { JobsFilter } from "@/components/admin/jobs/JobsFilter";
-import { JobsTable } from "@/components/admin/jobs/JobsTable";
-import { AdminApprovalPanel } from "@/components/admin/jobs/AdminApprovalPanel";
+import { JobsTable } from '@/components/admin/jobs/JobsTable';
+import { JobsFilter } from '@/components/admin/jobs/JobsFilter';
+import { JobsHeader } from '@/components/admin/jobs/JobsHeader';
+import { JobApprovalPanel } from '@/components/admin/jobs/JobApprovalPanel';
 import { useJobsManagement } from "@/hooks/admin/useJobsManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -43,11 +43,7 @@ const JobsAdmin = () => {
           </TabsList>
           
           <TabsContent value="approval" className="space-y-4">
-            <AdminApprovalPanel
-              pendingJobs={pendingJobs}
-              onJobAction={handleJobAction}
-              loading={loading}
-            />
+            <JobApprovalPanel onJobsUpdated={reloadJobs} />
           </TabsContent>
           
           <TabsContent value="all" className="space-y-4">

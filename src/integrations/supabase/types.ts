@@ -595,6 +595,7 @@ export type Database = {
           application_type: string
           application_value: string | null
           applications: number | null
+          apply_email: string | null
           approval_date: string | null
           approved_by: string | null
           company: string
@@ -635,6 +636,7 @@ export type Database = {
           application_type?: string
           application_value?: string | null
           applications?: number | null
+          apply_email?: string | null
           approval_date?: string | null
           approved_by?: string | null
           company: string
@@ -675,6 +677,7 @@ export type Database = {
           application_type?: string
           application_value?: string | null
           applications?: number | null
+          apply_email?: string | null
           approval_date?: string | null
           approved_by?: string | null
           company?: string
@@ -1302,6 +1305,33 @@ export type Database = {
           job_application_deadline?: string
           job_application_type?: string
           job_application_value?: string
+          job_company: string
+          job_company_size?: string
+          job_description: string
+          job_employer_id?: string
+          job_employment_type: string
+          job_experience_level: string
+          job_location: string
+          job_logo?: string
+          job_remote?: boolean
+          job_requirements: string[]
+          job_salary_currency?: string
+          job_salary_max?: number
+          job_salary_min?: number
+          job_sponsored?: boolean
+          job_status?: string
+          job_tech_stack?: string[]
+          job_title: string
+          job_visa_sponsorship?: boolean
+        }
+        Returns: string
+      }
+      admin_create_job_with_email: {
+        Args: {
+          job_application_deadline?: string
+          job_application_type?: string
+          job_application_value?: string
+          job_apply_email?: string
           job_company: string
           job_company_size?: string
           job_description: string

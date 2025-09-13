@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connectivity Test</title>
+    <script type="module">
+        // Import the connectivity test
+        import { testSupabaseConnectivity } from './src/utils/supabaseHealth.ts';
+        
+        async function runConnectivityTest() {
+            console.log('🚀 Starting Supabase connectivity test...');
+            
+            try {
+                const result = await testSupabaseConnectivity();
+                
+                console.log('📊 Connectivity Test Results:');
+                console.log('Overall Success:', result.success);
+                
+                result.steps.forEach((step, index) => {
+                    const icon = step.success ? '✅' : '❌';
+                    console.log(`${icon} Step ${index + 1}: ${step.name}`);
+                    console.log(`   Message: ${step.message}`);
+                    if (step.details) {
+                        console.log('   Details:', step.details);
+                    }
+                });
+                
+                if (result.success) {
+                    document.body.innerHTML = `
+                        <h1 style="color: green;">✅ SUCCESS</h1>
+                        <p>Supabase connectivity test passed!</p>
+                        <ul>
+                            ${result.steps.map(step => `
+                                <li style="color: ${step.success ? 'green' : 'red'};">
+                                    ${step.name}: ${step.message}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    const failedStep = result.steps.find(step => !step.success);
+                    document.body.innerHTML = `
+                        <h1 style="color: red;">❌ FAILED</h1>
+                        <p>Error: ${failedStep?.message || 'Unknown error'}</p>
+                        <ul>
+                            ${result.steps.map(step => `
+                                <li style="color: ${step.success ? 'green' : 'red'};">
+                                    ${step.name}: ${step.message}
+                                </li>
+                            `).join('')}
+                        </ul>
+                        ${failedStep?.details ? `<pre>${JSON.stringify(failedStep.details, null, 2)}</pre>` : ''}
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('💥 Test execution failed:', error);
+                document.body.innerHTML = `
+                    <h1 style="color: red;">💥 TEST EXECUTION FAILED</h1>
+                    <p>Error: ${error.message}</p>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                `;
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', runConnectivityTest);
+    </script>
+</head>
+<body>
+    <h1>Running Supabase Connectivity Test...</h1>
+    <p>Please check the console for detailed logs.</p>
+</body>
+</html>

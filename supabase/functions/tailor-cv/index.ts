@@ -464,14 +464,32 @@ Focus on creating genuine enthusiasm for this candidate while staying true to th
 
            console.log(`✅ [${requestId}] AI response received, length: ${tailoredResume.length} chars`);
 
-         } catch (fetchError) {
-           clearTimeout(timeoutId);
-           if (fetchError.name === 'AbortError') {
-             console.error(`❌ [${requestId}] OpenAI request timed out after ${openAITimeout}ms`);
-             throw new Error('AI service request timed out. Please try again with a shorter resume or job description.');
-           }
-           throw fetchError;
-         }
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            // Queue a retry request for later processing
+            try {
+              if (userId) {
+                await supabase.rpc('queue_cv_tailoring_retry', {
+                  p_user_id: userId,
+                  p_request_id: requestId,
+                  p_resume_content: (resumeContent || '').substring(0, 10000),
+                  p_job_description: (jobDescription || '').substring(0, 10000),
+                  p_job_title: jobTitle || null,
+                  p_company_name: companyName || null,
+                  p_candidate_data: null,
+                  p_error_message: (fetchError as any)?.message || 'AI service error'
+                });
+                console.log(`🕒 [${requestId}] Retry queued due to AI error`);
+              }
+            } catch (queueError) {
+              console.warn(`⚠️ [${requestId}] Failed to queue retry:`, queueError);
+            }
+            if ((fetchError as any).name === 'AbortError') {
+              console.error(`❌ [${requestId}] OpenAI request timed out after ${openAITimeout}ms`);
+              throw new Error('AI service request timed out. Please try again with a shorter resume or job description.');
+            }
+            throw fetchError as any;
+          }
 
          // Validate generated resume
          if (!tailoredResume || tailoredResume.trim().length === 0) {

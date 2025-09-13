@@ -228,28 +228,40 @@ const parseJobRow = (row: any): ParsedJobData => {
   const experience_level = validateExperienceLevel(getField('experience level') || getField('level') || 
                                                  getField('experience_level') || getField('seniority'));
   
-  // Enhanced email field mapping
-  const application_value = getField('application email') || getField('email') || getField('contact') || 
-                          getField('recruiter email') || getField('apply email') || getField('contact email') ||
-                          getField('application_email') || getField('recruiter_email') || getField('contact_email') ||
-                          getField('apply_email') || getField('hr_email') || getField('hiring_email');
+  // Enhanced application mapping: support both email and URL columns
+  // Extract possible sources for application contact
+  const rawEmail = getField('application email') || getField('email') || getField('contact') || 
+                  getField('recruiter email') || getField('apply email') || getField('contact email') ||
+                  getField('application_email') || getField('recruiter_email') || getField('contact_email') ||
+                  getField('apply_email') || getField('hr_email') || getField('hiring_email');
+  const rawUrl = getField('apply url') || getField('application url') || getField('apply link') ||
+                 getField('application link') || getField('job url') || getField('job link') ||
+                 getField('posting url') || getField('posting link') || getField('company site') ||
+                 getField('careers page') || getField('website') || getField('portal') || getField('application method');
 
-  // Determine application type based on the application value
+  // Determine application type and value based on detected fields
   let application_type: string = 'internal';
-  if (application_value) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const urlRegex = /^https?:\/\/.+/;
-    
-    if (emailRegex.test(application_value.trim())) {
-      application_type = 'email';
-    } else if (urlRegex.test(application_value.trim())) {
+  let application_value: string | undefined = undefined;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const urlRegex = /^https?:\/\/.+/;
+
+  if (rawEmail && emailRegex.test(rawEmail.trim())) {
+    application_type = 'email';
+    application_value = rawEmail.trim();
+  } else if (rawUrl && urlRegex.test(rawUrl.trim())) {
+    application_type = 'external';
+    application_value = rawUrl.trim();
+  } else if (rawEmail && rawEmail.includes('@')) {
+    // Likely an email with minor formatting issues
+    application_type = 'email';
+    application_value = rawEmail.trim();
+  } else if (rawUrl) {
+    // Try to normalize missing protocol
+    const normalizedUrl = rawUrl.trim().startsWith('http') ? rawUrl.trim() : `https://${rawUrl.trim()}`;
+    if (urlRegex.test(normalizedUrl)) {
       application_type = 'external';
-    } else if (application_value.includes('@')) {
-      // Likely an email with minor formatting issues
-      application_type = 'email';
-    } else {
-      // Default to external for other values (URLs, etc.)
-      application_type = 'external';
+      application_value = normalizedUrl;
     }
   }
 

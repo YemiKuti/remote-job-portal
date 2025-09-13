@@ -464,6 +464,14 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
       apply_email: jobData.apply_email
     });
     
+    // Derive apply email if application_type is email
+    const effectiveApplyEmail = (jobData.apply_email?.trim()) 
+      || (jobData.application_type === 'email' && typeof jobData.application_value === 'string' 
+          ? jobData.application_value.trim() 
+          : null);
+
+    const effectiveApplicationValue = (jobData.application_value?.trim()) || effectiveApplyEmail || null;
+
     const { data, error } = await supabase
       .rpc('admin_create_job_with_email', {
         job_title: jobData.title,
@@ -473,7 +481,7 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
         job_requirements: jobData.requirements || [],
         job_employment_type: jobData.employment_type,
         job_experience_level: jobData.experience_level,
-        job_apply_email: jobData.apply_email || null, // New email field
+        job_apply_email: effectiveApplyEmail, // ensure email is saved when type=email
         job_salary_min: jobData.salary_min,
         job_salary_max: jobData.salary_max,
         job_salary_currency: jobData.salary_currency,
@@ -485,20 +493,50 @@ export const createAdminJob = async (jobData: any): Promise<string> => {
         job_logo: jobData.logo,
         job_status: jobData.status,
         job_application_type: jobData.application_type,
-        job_application_value: jobData.application_value || jobData.apply_email,
+        job_application_value: effectiveApplicationValue,
         job_employer_id: jobData.employer_id,
         job_sponsored: jobData.sponsored
       });
-    
+
     if (error) {
-      console.error('❌ Admin job creation error:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
-      throw new Error(`Failed to create job: ${error.message}`);
+      console.error('❌ Admin job creation RPC error, attempting direct insert as fallback:', error);
+      // Fallback for admin users: direct insert (RLS policy allows admins ALL)
+      const { data: directInsert, error: directError } = await supabase
+        .from('jobs')
+        .insert({
+          title: jobData.title,
+          company: jobData.company,
+          location: jobData.location,
+          description: jobData.description,
+          requirements: jobData.requirements || [],
+          employment_type: jobData.employment_type,
+          experience_level: jobData.experience_level,
+          salary_min: jobData.salary_min,
+          salary_max: jobData.salary_max,
+          salary_currency: jobData.salary_currency || 'USD',
+          tech_stack: jobData.tech_stack || [],
+          visa_sponsorship: !!jobData.visa_sponsorship,
+          remote: !!jobData.remote,
+          company_size: jobData.company_size || null,
+          application_deadline: jobData.application_deadline || null,
+          logo: jobData.logo || null,
+          status: jobData.status || 'pending',
+          application_type: jobData.application_type || 'external',
+          application_value: effectiveApplicationValue,
+          apply_email: effectiveApplyEmail,
+          employer_id: jobData.employer_id || null,
+          sponsored: jobData.sponsored !== undefined ? jobData.sponsored : true
+        })
+        .select('id')
+        .single();
+
+      if (directError) {
+        console.error('❌ Direct insert failed as well:', directError);
+        throw new Error(`Failed to create job: ${error.message}`);
+      }
+
+      console.log('✅ Job created via direct insert fallback:', directInsert?.id);
+      return directInsert!.id;
     }
     
     console.log('Admin job created successfully:', data);

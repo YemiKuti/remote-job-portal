@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring Validation Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 6px;
+        }
+        .success {
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .failure {
+            background-color: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        .status {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .pass {
+            background-color: #10b981;
+            color: white;
+        }
+        .fail {
+            background-color: #ef4444;
+            color: white;
+        }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            color: #6b7280;
+        }
+        pre {
+            background-color: #f3f4f6;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 CV Tailoring Tool Validation</h1>
+        <p>This test validates that the rebuilt CV tailoring system produces professional, enhanced resumes instead of generic templates.</p>
+        
+        <div id="test-controls">
+            <button onclick="runValidationTest()" id="runTest">Run Validation Test</button>
+            <button onclick="clearResults()" id="clearBtn">Clear Results</button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>🚀 Running CV tailoring test...</p>
+            <p>This may take 30-60 seconds as we process the resume with AI...</p>
+        </div>
+
+        <div id="results" style="display: none;">
+            <h2>Validation Results</h2>
+            <div id="overall-score" class="score"></div>
+            <div id="test-summary" class="test-results">
+                <h3>Test Summary</h3>
+                <div id="test-items"></div>
+            </div>
+            <div id="issues" style="margin-top: 16px;"></div>
+            <div id="raw-response" style="margin-top: 20px;">
+                <h3>Raw Response Analysis</h3>
+                <pre id="response-content"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+    <script>
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(
+            'https://mmbrvcndxhipaoxysvwr.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tYnJ2Y25keGhpcGFveHlzdndyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNzE2NDcsImV4cCI6MjA2MTg0NzY0N30.VWBmdbI7lMzHaaXl6ASJnc2116YnHm0WLHE0bkfW870'
+        );
+
+        async function runValidationTest() {
+            const runBtn = document.getElementById('runTest');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            // Show loading state
+            runBtn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            const testResumeContent = \`YEMI OKUNOLA KUTI
+yemi.kuti@email.com | (555) 123-4567 | LinkedIn: linkedin.com/in/yemikuti | San Francisco, CA
+
+PROFESSIONAL SUMMARY
+Creative UX Designer with 4+ years of experience designing user-centered digital products. Specialized in conducting user research, creating wireframes, and building interactive prototypes. Proven track record of improving user engagement by 35% through data-driven design solutions.
+
+EDUCATION
+Bachelor of Fine Arts in Design - University of California, San Francisco | 2019
+Relevant Coursework: Human-Computer Interaction, Visual Communication, Typography, Design Psychology
+
+PROFESSIONAL EXPERIENCE
+
+UX Designer | TechStartup Inc. | 2021 - Present
+• Designed mobile and web interfaces for fintech application serving 50,000+ users
+• Conducted 25+ user interviews and usability tests to inform design decisions
+• Created design systems and component libraries reducing development time by 30%
+• Collaborated with product managers and engineers in agile development cycles
+• Increased user retention by 40% through onboarding flow redesign
+
+Junior UX Designer | DesignStudio Agency | 2020 - 2021
+• Assisted in designing websites and mobile apps for 15+ client projects
+• Created wireframes, mockups, and interactive prototypes using Figma and Sketch
+• Participated in client presentations and design review meetings
+• Developed style guides and design documentation for development teams
+
+Design Intern | Creative Lab | Summer 2019
+• Supported senior designers on branding and digital design projects
+• Created social media graphics and marketing materials
+• Assisted with user research and competitive analysis
+
+SKILLS
+Design Tools: Figma, Sketch, Adobe Creative Suite, InVision, Principle, Framer
+Research Methods: User interviews, Usability testing, A/B testing, Surveys, Card sorting
+Technical: HTML, CSS, Basic JavaScript, Responsive design, Design systems
+Soft Skills: Communication, Collaboration, Problem-solving, Analytical thinking
+
+CERTIFICATIONS
+• Google UX Design Certificate - 2020
+• Nielsen Norman Group UX Certification - 2021
+
+PROJECTS
+EcoTracker Mobile App (Personal Project)
+• Designed sustainability tracking app with 95% user satisfaction in beta testing
+• Conducted user research with 50+ participants to validate concept
+• Created complete design system and high-fidelity prototypes\`;
+
+            const testJobDescription = \`UX Designer - Creative Studio Pro
+
+We are looking for a talented UX Designer to create amazing user experiences for our digital products. The ideal candidate should have a strong portfolio demonstrating user-centered design principles.
+
+KEY RESPONSIBILITIES:
+• Design intuitive user interfaces for web and mobile applications
+• Conduct user research including interviews, surveys, and usability testing
+• Create wireframes, prototypes, and high-fidelity mockups
+• Collaborate with product managers, developers, and stakeholders
+• Develop and maintain design systems and style guides
+• Analyze user behavior data to inform design decisions
+• Present design concepts and rationale to clients and team members
+• Stay current with industry trends and best practices
+
+REQUIRED QUALIFICATIONS:
+• 3+ years of UX design experience
+• Bachelor's degree in Design, HCI, or related field
+• Proficiency in Figma, Sketch, Adobe Creative Suite
+• Experience with prototyping tools (InVision, Principle, Framer)
+• Strong understanding of user research methodologies
+• Knowledge of HTML, CSS, and responsive design principles
+• Excellent communication and presentation skills
+• Portfolio showcasing end-to-end design process\`;
+
+            try {
+                console.log('🚀 Starting CV tailoring test...');
+                
+                // Call the edge function
+                const { data, error } = await supabase.functions.invoke('tailor-cv', {
+                    body: {
+                        resumeContent: testResumeContent,
+                        jobDescription: testJobDescription,
+                        jobTitle: "UX Designer",
+                        companyName: "Creative Studio Pro"
+                    }
+                });
+
+                console.log('📤 Function response:', { data, error });
+
+                loading.style.display = 'none';
+                results.style.display = 'block';
+
+                if (error) {
+                    displayError(error);
+                    return;
+                }
+
+                // Validate the results
+                const validation = validateTailoredCV(data, testResumeContent);
+                displayResults(validation, data);
+
+            } catch (err) {
+                console.error('❌ Test error:', err);
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                displayError(err);
+            } finally {
+                runBtn.disabled = false;
+            }
+        }
+
+        function validateTailoredCV(response, originalResume) {
+            const results = {
+                success: false,
+                tests: {},
+                score: 0,
+                issues: []
+            };
+
+            // Check response structure
+            if (!response || (!response.tailoredContent && !response.tailoredResume)) {
+                results.issues.push('No tailored content in response');
+                return results;
+            }
+
+            const tailoredContent = response.tailoredContent || response.tailoredResume || '';
+            const lowerContent = tailoredContent.toLowerCase();
+
+            // Test 1: Structure Preservation
+            results.tests['Name Preserved'] = !lowerContent.includes('contact information available upon request');
+            results.tests['Real Content'] = !lowerContent.includes('experienced professional with a demonstrated history');
+            results.tests['No Generic Template'] = !lowerContent.includes('relevant to the industry.');
+            
+            // Test 2: Enhancement Quality  
+            results.tests['UX Keywords Present'] = lowerContent.includes('ux') || lowerContent.includes('user experience') || lowerContent.includes('design');
+            results.tests['Design Tools Mentioned'] = lowerContent.includes('figma') || lowerContent.includes('sketch') || lowerContent.includes('adobe');
+            results.tests['Quantified Achievements'] = /\d+%|\d+\+?\s+(users|projects|increase|improvement|years)/.test(lowerContent);
+
+            // Test 3: Completeness
+            results.tests['Adequate Length'] = tailoredContent.length >= 800;
+            results.tests['Education Section'] = lowerContent.includes('education') || lowerContent.includes('bachelor') || lowerContent.includes('university');
+            results.tests['Experience Section'] = lowerContent.includes('experience') && (lowerContent.includes('designer') || lowerContent.includes('ux'));
+            results.tests['Skills Section'] = lowerContent.includes('skills') || lowerContent.includes('figma') || lowerContent.includes('research');
+
+            // Test 4: Quality Score
+            const qualityScore = response.tailoring_score || response.score || response.matchScore || 0;
+            results.tests['Quality Score ≥80'] = qualityScore >= 80;
+
+            // Calculate overall success
+            const passedTests = Object.values(results.tests).filter(Boolean).length;
+            const totalTests = Object.keys(results.tests).length;
+            results.score = Math.round((passedTests / totalTests) * 100);
+            results.success = results.score >= 80;
+
+            // Identify specific issues
+            Object.entries(results.tests).forEach(([test, passed]) => {
+                if (!passed) {
+                    results.issues.push(\`Failed: \${test}\`);
+                }
+            });
+
+            return results;
+        }
+
+        function displayResults(validation, rawResponse) {
+            // Overall score
+            const scoreEl = document.getElementById('overall-score');
+            scoreEl.textContent = \`Overall Score: \${validation.score}%\`;
+            scoreEl.style.color = validation.success ? '#10b981' : '#ef4444';
+
+            // Test summary
+            const summaryEl = document.getElementById('test-summary');
+            summaryEl.className = \`test-results \${validation.success ? 'success' : 'failure'}\`;
+            
+            const testItemsEl = document.getElementById('test-items');
+            testItemsEl.innerHTML = '';
+            
+            Object.entries(validation.tests).forEach(([test, passed]) => {
+                const div = document.createElement('div');
+                div.className = 'test-item';
+                div.innerHTML = \`
+                    <span>\${test}</span>
+                    <span class="status \${passed ? 'pass' : 'fail'}">\${passed ? 'PASS' : 'FAIL'}</span>
+                \`;
+                testItemsEl.appendChild(div);
+            });
+
+            // Issues
+            const issuesEl = document.getElementById('issues');
+            if (validation.issues.length > 0) {
+                issuesEl.innerHTML = \`
+                    <h3>Issues Identified:</h3>
+                    <ul>
+                        \${validation.issues.map(issue => \`<li>\${issue}</li>\`).join('')}
+                    </ul>
+                \`;
+            } else {
+                issuesEl.innerHTML = '<h3 style="color: #10b981;">✅ All validation tests passed!</h3>';
+            }
+
+            // Raw response
+            const responseEl = document.getElementById('response-content');
+            responseEl.textContent = JSON.stringify(rawResponse, null, 2);
+        }
+
+        function displayError(error) {
+            const scoreEl = document.getElementById('overall-score');
+            scoreEl.textContent = 'Test Failed';
+            scoreEl.style.color = '#ef4444';
+
+            const summaryEl = document.getElementById('test-summary');
+            summaryEl.className = 'test-results failure';
+            summaryEl.innerHTML = \`<h3>Error: \${error.message || error}</h3>\`;
+
+            const responseEl = document.getElementById('response-content');
+            responseEl.textContent = JSON.stringify(error, null, 2);
+        }
+
+        function clearResults() {
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

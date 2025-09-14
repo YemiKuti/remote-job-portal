@@ -368,35 +368,7 @@ Job Description: ${jobDescription}
 - Professional formatting with clear sections
 - No placeholder text or generic templates
 
-Generate the enhanced resume now:
-
-**TARGET POSITION**:
-- Job Title: ${jobTitle}
-- Company: ${companyName || 'Target Company'}
-- Job Description: ${jobDescription.substring(0, 2500)}
-
-**ORIGINAL RESUME TO ENHANCE**:
-${resumeContent}
-
-
-**ENHANCEMENT STRATEGIES**:
-- **Keyword Integration**: Naturally incorporate 15-20 key terms from job description
-- **Achievement Focus**: Transform duties into measurable accomplishments
-- **Relevance Prioritization**: Lead with most relevant experiences
-- **Professional Language**: Use industry-appropriate terminology
-- **Impact Quantification**: Add metrics, percentages, timelines where logical
-
-**QUALITY REQUIREMENTS**:
-- **Completeness**: Full resume, not abbreviated version
-- **Professional Format**: Clean structure with clear section headers
-- **ATS-Friendly**: Standard formatting, no graphics or tables
-- **Length**: Appropriate for candidate's experience level (1-2 pages content)
-- **Consistency**: Uniform formatting throughout
-- **Error-Free**: Perfect grammar, spelling, punctuation
-
-**OUTPUT FORMAT**: Provide the complete resume text formatted professionally with clear section headers, consistent bullet points, and proper spacing. This should be a document ready for PDF export and job applications.
-
-**REMEMBER**: Create a FULL, COMPREHENSIVE resume that enhances the candidate's original content - not a short summary or incomplete version. Every section should be complete and professional.`;
+Generate the enhanced resume now:`;
 
          console.log(`🤖 [${requestId}] Sending request to OpenAI API...`);
 

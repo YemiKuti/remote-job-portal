@@ -337,7 +337,7 @@ serve(async (req) => {
           // Create comprehensive prompt for AI tailoring
           const prompt = `You are a senior professional resume writer and career strategist with 20+ years of experience helping candidates secure interviews at top companies. Your expertise is creating complete, professional resumes that genuinely enhance a candidate's presentation while maintaining absolute truthfulness.
 
-**CRITICAL OBJECTIVE**: Transform this candidate's resume into a polished, comprehensive document that positions them as the ideal candidate for this specific role. The output must be a COMPLETE, PROFESSIONAL RESUME - not a summary, not bullet points, but a full resume document.
+**CRITICAL OBJECTIVE**: Enhance and improve this candidate's EXISTING resume for the specific job role. You MUST preserve all their original content, experiences, and qualifications. DO NOT create a generic template. DO NOT replace their information with placeholders. ENHANCE what they already have.
 
 **TARGET POSITION**:
 - Job Title: ${jobTitle}
@@ -347,45 +347,39 @@ serve(async (req) => {
 **ORIGINAL RESUME TO ENHANCE**:
 ${resumeContent}
 
-**MANDATORY STRUCTURE - Create a COMPLETE resume with ALL sections**:
+**ENHANCEMENT REQUIREMENTS - Preserve and improve the candidate's ACTUAL content**:
 
-1. **CONTACT INFORMATION** (Essential - always include):
-   - Full name (from original resume)
-   - Professional email address
-   - Phone number
-   - LinkedIn profile (if available)
-   - Location (City, State)
+1. **CONTACT INFORMATION**: 
+   - Keep the candidate's actual name, email, phone from the original resume
+   - Do NOT use "Contact Information Available Upon Request"
+   - Include their LinkedIn, location, and other contact details AS PROVIDED
 
-2. **PROFESSIONAL SUMMARY** (3-4 compelling sentences):
-   - Position candidate as perfect fit for target role
-   - Highlight 2-3 key qualifications that match job requirements
-   - Include years of experience and core expertise
-   - End with value proposition specific to target company
+2. **PROFESSIONAL SUMMARY**: 
+   - Rewrite their existing summary/objective to align with the target job
+   - If no summary exists, create one using their actual experience and background
+   - Position their real experience as perfect fit for target role
 
-3. **CORE SKILLS/TECHNICAL SKILLS** (Comprehensive section):
-   - Extract and organize all relevant skills from original resume
-   - Add skills mentioned in job description that candidate likely has
-   - Organize by category (Technical Skills, Leadership, Languages, etc.)
-   - Include both hard and soft skills
+3. **SKILLS SECTION**:
+   - Keep ALL their existing skills that are relevant
+   - Add job-specific keywords naturally where they align with their background
+   - Organize their skills by relevance to the target role
+   - Do NOT add skills they don't possess
 
-4. **PROFESSIONAL EXPERIENCE** (Complete work history):
-   - Keep ALL relevant positions from original resume
-   - Rewrite each role with 3-5 achievement-focused bullet points
-   - Use strong action verbs and quantify results
-   - Tailor descriptions to emphasize relevant experience
-   - Maintain chronological order
+4. **WORK EXPERIENCE**: 
+   - Keep ALL their actual job titles, companies, and dates
+   - Rewrite their job descriptions to emphasize relevant achievements
+   - Use stronger action verbs for their existing accomplishments
+   - Quantify their actual results where possible
+   - Highlight experiences that match job requirements
 
-5. **EDUCATION** (Complete section):
-   - Include all degrees, certifications, relevant training
-   - Add graduation dates if provided
-   - Include relevant coursework if appropriate
-   - List professional certifications and licenses
+5. **EDUCATION & CERTIFICATIONS**:
+   - Include their actual degrees, schools, and dates
+   - Keep their real certifications and training
+   - Highlight education relevant to target role
 
-6. **ADDITIONAL SECTIONS** (As applicable):
-   - Projects (if relevant to target role)
-   - Publications/Awards (if mentioned in original)
-   - Volunteer Experience (if adds value)
-   - Languages (if mentioned)
+6. **ADDITIONAL SECTIONS**:
+   - Preserve any projects, awards, or volunteer work they mentioned
+   - Only include sections that exist in their original resume
 
 **ENHANCEMENT STRATEGIES**:
 - **Keyword Integration**: Naturally incorporate 15-20 key terms from job description
@@ -702,22 +696,26 @@ ${resumeContent}
             throw new Error('Job description must be at least 50 characters long.');
           }
 
-          // Create simplified prompt for JSON requests
-          const prompt = `You are a professional resume writer. Tailor this resume for the specified job:
+          // Create enhanced prompt for JSON requests
+          const prompt = `You are a professional resume writer. Your job is to ENHANCE and IMPROVE the candidate's existing resume for this specific job. You must preserve all their actual information, experience, and qualifications.
 
-**JOB**: ${jobTitle} at ${companyName}
-**DESCRIPTION**: ${jobDescription}
+**TARGET JOB**: ${jobTitle} at ${companyName}
+**JOB DESCRIPTION**: ${jobDescription}
 
-**ORIGINAL RESUME**:
+**CANDIDATE'S ACTUAL RESUME TO ENHANCE**:
 ${resumeContent}
 
-**INSTRUCTIONS**:
-- Rewrite the resume to match the job requirements
-- Keep all factual information accurate
-- Optimize for ATS systems
-- Return only the tailored resume text, no additional commentary
+**ENHANCEMENT INSTRUCTIONS**:
+- Keep ALL the candidate's actual job titles, company names, dates, education, and contact information
+- Do NOT create generic templates or use placeholders like "Contact Information Available Upon Request"
+- Rewrite their existing job descriptions to better align with the target role requirements
+- Enhance their professional summary to position them for this specific job
+- Organize their skills to prioritize those most relevant to the job
+- Keep their authentic voice while making it more compelling
+- Ensure all factual information remains accurate and truthful
+- Make it ATS-friendly while preserving the candidate's actual background
 
-**TAILORED RESUME**:`;
+ENHANCED RESUME:`;
 
           // Call OpenAI API
           console.log(`🤖 [${requestId}] Calling OpenAI API for JSON request...`);

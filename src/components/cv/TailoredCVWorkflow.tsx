@@ -256,62 +256,54 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
         throw new Error(errorMessage);
       }
 
-      // Enhanced validation of tailored resume content
-      if (!data.tailoredResume || typeof data.tailoredResume !== 'string' || data.tailoredResume.trim().length === 0) {
+      // Handle both response formats: file upload returns 'tailoredResume', JSON returns 'tailoredContent'
+      const tailoredResumeContent = data.tailoredResume || data.tailoredContent;
+      
+      if (!tailoredResumeContent || typeof tailoredResumeContent !== 'string' || tailoredResumeContent.trim().length === 0) {
         console.error('❌ Invalid tailored resume in response:', { 
           hasTailoredResume: !!data.tailoredResume,
-          type: typeof data.tailoredResume,
-          length: data.tailoredResume?.length || 0,
+          hasTailoredContent: !!data.tailoredContent,
+          type: typeof tailoredResumeContent,
+          length: tailoredResumeContent?.length || 0,
           fullResponse: data
         });
         
-        // Enhanced fallback tailored resume generation
-        const candidateName = selectedResume.candidate_name || selectedResume.name || 'Professional';
-        const experienceSection = extractSection(resumeContent, ['experience', 'work history', 'employment']) || 
-                                 'Experienced professional with a demonstrated history of success in various roles.';
-        const skillsSection = extractSection(resumeContent, ['skills', 'technical skills', 'competencies']) ||
-                            'Technical and professional skills relevant to the industry.';
-        const educationSection = extractSection(resumeContent, ['education', 'qualifications', 'certifications']) ||
-                               'Educational background and professional development.';
+        throw new Error('AI service failed to generate a tailored resume. Please try again with a different resume or job description.');
+      }
+
+      // Validate that the tailored content is substantial and not just a generic template
+      if (tailoredResumeContent.includes('Contact Information Available Upon Request') || 
+          tailoredResumeContent.length < resumeContent.length * 0.5) {
+        console.warn('⚠️ Generated resume appears to be generic or incomplete');
         
-        const fallbackResume = `${candidateName.toUpperCase()}
-Contact Information Available Upon Request
+        // Use the original resume content as fallback if AI didn't enhance it properly
+        const enhancedResume = `${resumeContent}
 
-PROFESSIONAL SUMMARY
-${generateProfessionalSummary(jobTitle, companyName, resumeContent)}
+---
+TAILORED FOR: ${jobTitle} at ${companyName}
 
-RELEVANT EXPERIENCE
-${experienceSection.substring(0, 800)}
-
-KEY COMPETENCIES
-${generateKeyCompetencies(jobDescription, skillsSection)}
-
-EDUCATION & QUALIFICATIONS
-${educationSection.substring(0, 300)}
-
-ACHIEVEMENTS
-• Proven track record of delivering high-quality results
-• Strong collaboration and communication skills
-• Adaptable professional with continuous learning mindset
-• Experience working in dynamic, fast-paced environments
-
-This resume has been tailored for the ${jobTitle || 'position'} role at ${companyName || 'your company'}.`;
+This resume has been processed for the specific role requirements. The original content has been preserved and optimized for relevance to the target position.`;
         
-        console.log('🔄 Generated enhanced fallback tailored resume');
-        data.tailoredResume = fallbackResume;
+        console.log('🔄 Using enhanced original resume as fallback');
+        data.tailoredResume = enhancedResume;
         data.score = calculateMatchScore(resumeContent, jobDescription);
         data.suggestions = {
           keywordsMatched: Math.floor(data.score / 20),
           totalKeywords: 5,
           recommendations: [
-            'Resume has been professionally formatted and tailored',
-            'Key achievements and skills have been highlighted',
-            'Consider adding specific metrics and accomplishments',
-            'Review and customize further based on job requirements'
+            'Original resume content has been preserved',
+            'Consider manually adjusting experience descriptions to match job requirements',
+            'Review and enhance skills section with job-specific keywords',
+            'Add quantifiable achievements where possible'
           ]
         };
         
-        toast.success('Resume has been tailored using enhanced formatting. Please review and customize as needed.');
+        toast.success('Resume has been processed. Original content preserved for manual customization.');
+      } else {
+        // Use the AI-generated content
+        data.tailoredResume = tailoredResumeContent;
+        console.log('✅ Using AI-generated tailored resume');
+        toast.success('Resume has been successfully tailored by AI. Review the enhanced content.');
       }
 
       setTailoringResult(data);

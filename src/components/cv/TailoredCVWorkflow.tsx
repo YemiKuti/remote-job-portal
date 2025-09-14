@@ -271,39 +271,40 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
         throw new Error('AI service failed to generate a tailored resume. Please try again with a different resume or job description.');
       }
 
-      // Validate that the tailored content is substantial and not just a generic template
-      if (tailoredResumeContent.includes('Contact Information Available Upon Request') || 
-          tailoredResumeContent.length < resumeContent.length * 0.5) {
-        console.warn('⚠️ Generated resume appears to be generic or incomplete');
+      // Enhanced validation for content quality and preservation
+      const hasPlaceholderText = tailoredResumeContent.includes('Contact Information Available Upon Request');
+      const hasGenericContent = tailoredResumeContent.includes('Experienced professional with a demonstrated history');
+      const hasBrokenSentences = /\b(proven expertise in\s*\.|relevant to the industry\.\s*$)/i.test(tailoredResumeContent);
+      const isTooShort = tailoredResumeContent.length < 300;
+      
+      // Check if AI preserved original content structure
+      const qualityScore = data.score || data.tailoring_score || 0;
+      const isLowQuality = qualityScore < 60;
+      
+      if (hasPlaceholderText || hasGenericContent || hasBrokenSentences || isTooShort || isLowQuality) {
+        console.warn('⚠️ AI-generated resume failed quality checks:', {
+          hasPlaceholderText,
+          hasGenericContent,
+          hasBrokenSentences,
+          isTooShort,
+          qualityScore,
+          contentLength: tailoredResumeContent.length
+        });
         
-        // Use the original resume content as fallback if AI didn't enhance it properly
-        const enhancedResume = `${resumeContent}
+        throw new Error('The AI-generated resume did not meet quality standards. The system is being improved to better preserve your original resume content while adding enhancements. Please try again shortly.');
+      }
 
----
-TAILORED FOR: ${jobTitle} at ${companyName}
-
-This resume has been processed for the specific role requirements. The original content has been preserved and optimized for relevance to the target position.`;
-        
-        console.log('🔄 Using enhanced original resume as fallback');
-        data.tailoredResume = enhancedResume;
-        data.score = calculateMatchScore(resumeContent, jobDescription);
-        data.suggestions = {
-          keywordsMatched: Math.floor(data.score / 20),
-          totalKeywords: 5,
-          recommendations: [
-            'Original resume content has been preserved',
-            'Consider manually adjusting experience descriptions to match job requirements',
-            'Review and enhance skills section with job-specific keywords',
-            'Add quantifiable achievements where possible'
-          ]
-        };
-        
-        toast.success('Resume has been processed. Original content preserved for manual customization.');
+      // Use the AI-generated content if it passes quality checks
+      data.tailoredResume = tailoredResumeContent;
+      console.log('✅ AI-generated resume passed quality validation');
+      
+      // Enhanced success message based on quality score
+      if (qualityScore >= 90) {
+        toast.success(`Excellent! Resume tailored with ${qualityScore}% quality score. Your original content has been preserved and enhanced.`);
+      } else if (qualityScore >= 80) {
+        toast.success(`Resume successfully tailored with ${qualityScore}% quality score. Original details preserved with job-relevant enhancements.`);
       } else {
-        // Use the AI-generated content
-        data.tailoredResume = tailoredResumeContent;
-        console.log('✅ Using AI-generated tailored resume');
-        toast.success('Resume has been successfully tailored by AI. Review the enhanced content.');
+        toast.success(`Resume tailored with ${qualityScore}% quality score. Review the enhanced content for further improvements.`);
       }
 
       setTailoringResult(data);

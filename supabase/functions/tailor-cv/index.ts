@@ -334,10 +334,41 @@ serve(async (req) => {
 
          console.log(`🎯 [${requestId}] Tailoring for role: ${jobTitle} at ${companyName || 'Company'}`);
 
-          // Create comprehensive prompt for AI tailoring
-          const prompt = `You are a senior professional resume writer and career strategist with 20+ years of experience helping candidates secure interviews at top companies. Your expertise is creating complete, professional resumes that genuinely enhance a candidate's presentation while maintaining absolute truthfulness.
+          // Create comprehensive prompt for AI tailoring focused on preservation and enhancement
+          const prompt = `You are a professional resume enhancement specialist. Your job is to IMPROVE and OPTIMIZE the candidate's existing resume content while preserving ALL original information.
 
-**CRITICAL OBJECTIVE**: Enhance and improve this candidate's EXISTING resume for the specific job role. You MUST preserve all their original content, experiences, and qualifications. DO NOT create a generic template. DO NOT replace their information with placeholders. ENHANCE what they already have.
+**CRITICAL RULES:**
+1. PRESERVE ALL candidate information: name, contact details, job titles, companies, dates, education
+2. DO NOT create generic templates or use placeholder text like "Contact Information Available Upon Request"
+3. ENHANCE existing content, don't replace it
+4. Keep the candidate's authentic voice and experiences
+5. Add relevant keywords naturally without fabricating experience
+
+**CANDIDATE'S ACTUAL RESUME:**
+${resumeContent}
+
+**TARGET JOB DETAILS:**
+Position: ${jobTitle} at ${companyName}
+Job Description: ${jobDescription}
+
+**ENHANCEMENT INSTRUCTIONS:**
+- Parse and preserve ALL sections from the original resume (Contact, Summary, Experience, Education, Skills)
+- Keep exact job titles, company names, dates, and educational qualifications
+- Enhance job descriptions by emphasizing achievements and impact using stronger action verbs
+- Integrate relevant keywords from the job description naturally into existing experience bullets
+- Improve professional summary to highlight relevant experience for this specific role
+- Organize skills to prioritize those most relevant to the target position
+- Maintain professional formatting and structure
+- Ensure output is ATS-friendly with clear section headers
+
+**OUTPUT REQUIREMENTS:**
+- Complete, professional resume ready for job applications
+- All candidate's original information preserved and enhanced
+- Relevant job keywords integrated naturally
+- Professional formatting with clear sections
+- No placeholder text or generic templates
+
+Generate the enhanced resume now:
 
 **TARGET POSITION**:
 - Job Title: ${jobTitle}
@@ -347,39 +378,6 @@ serve(async (req) => {
 **ORIGINAL RESUME TO ENHANCE**:
 ${resumeContent}
 
-**ENHANCEMENT REQUIREMENTS - Preserve and improve the candidate's ACTUAL content**:
-
-1. **CONTACT INFORMATION**: 
-   - Keep the candidate's actual name, email, phone from the original resume
-   - Do NOT use "Contact Information Available Upon Request"
-   - Include their LinkedIn, location, and other contact details AS PROVIDED
-
-2. **PROFESSIONAL SUMMARY**: 
-   - Rewrite their existing summary/objective to align with the target job
-   - If no summary exists, create one using their actual experience and background
-   - Position their real experience as perfect fit for target role
-
-3. **SKILLS SECTION**:
-   - Keep ALL their existing skills that are relevant
-   - Add job-specific keywords naturally where they align with their background
-   - Organize their skills by relevance to the target role
-   - Do NOT add skills they don't possess
-
-4. **WORK EXPERIENCE**: 
-   - Keep ALL their actual job titles, companies, and dates
-   - Rewrite their job descriptions to emphasize relevant achievements
-   - Use stronger action verbs for their existing accomplishments
-   - Quantify their actual results where possible
-   - Highlight experiences that match job requirements
-
-5. **EDUCATION & CERTIFICATIONS**:
-   - Include their actual degrees, schools, and dates
-   - Keep their real certifications and training
-   - Highlight education relevant to target role
-
-6. **ADDITIONAL SECTIONS**:
-   - Preserve any projects, awards, or volunteer work they mentioned
-   - Only include sections that exist in their original resume
 
 **ENHANCEMENT STRATEGIES**:
 - **Keyword Integration**: Naturally incorporate 15-20 key terms from job description
@@ -499,22 +497,39 @@ ${resumeContent}
            throw new Error('AI service generated empty resume. Please try again.');
          }
 
-         // Calculate quality score
-         const resumeText = tailoredResume.toLowerCase();
-         const hasContactInfo = resumeText.includes('email') && (resumeText.includes('phone') || resumeText.includes('555'));
-         const hasProfessionalSummary = resumeText.includes('summary') || resumeText.includes('profile') || resumeText.includes('professional summary');
-         const hasQuantifiedAchievements = /\d+%|\$[\d,]+|\d+\+?\s+(years|users|customers|projects|team|increase|improvement|reduction)/g.test(resumeText);
-         const hasActionVerbs = /(led|developed|implemented|achieved|managed|created|improved|delivered|built|designed|optimized|executed|coordinated)/g.test(resumeText);
-         const hasEducation = resumeText.includes('education') || resumeText.includes('degree');
-         
-         const qualityScore = [
-           hasContactInfo ? 20 : 0,
-           hasProfessionalSummary ? 20 : 0,
-           hasQuantifiedAchievements ? 20 : 0,
-           hasActionVerbs ? 20 : 0,
-           hasEducation ? 10 : 0,
-           10 // Base score
-         ].reduce((sum, score) => sum + score, 0);
+          // Calculate comprehensive quality score
+          const resumeText = tailoredResume.toLowerCase();
+          
+          // Check for preserved original content (critical)
+          const hasRealName = !resumeText.includes('contact information available upon request');
+          const hasRealEmail = /[\w.-]+@[\w.-]+\.\w+/.test(resumeText);
+          const hasRealPhone = /\(?[\d\s\-\.\(\)]{10,}/.test(resumeText);
+          const hasSpecificExperience = !resumeText.includes('experienced professional with a demonstrated history');
+          const hasDetailedSkills = !resumeText.includes('relevant to the industry');
+          
+          // Check for enhancement quality
+          const hasProfessionalSummary = resumeText.includes('summary') || resumeText.includes('profile');
+          const hasQuantifiedAchievements = /\d+%|\$[\d,]+|\d+\+?\s+(years|users|customers|projects|team|increase|improvement|reduction)/g.test(resumeText);
+          const hasActionVerbs = /(led|developed|implemented|achieved|managed|created|improved|delivered|built|designed|optimized|executed|coordinated)/g.test(resumeText);
+          const hasEducation = resumeText.includes('education') || resumeText.includes('degree');
+          
+          // Check for job-specific enhancements
+          const jobKeywords = [jobTitle.toLowerCase(), companyName.toLowerCase(), ...jobDescription.toLowerCase().match(/\b\w{4,}\b/g)?.slice(0, 10) || []];
+          const keywordMatches = jobKeywords.filter(keyword => resumeText.includes(keyword)).length;
+          const keywordScore = Math.min((keywordMatches / jobKeywords.length) * 30, 30);
+          
+          const qualityScore = [
+            hasRealName ? 15 : 0,              // Real candidate name preserved
+            hasRealEmail ? 15 : 0,             // Real email preserved  
+            hasRealPhone ? 10 : 0,             // Real phone preserved
+            hasSpecificExperience ? 20 : 0,    // Actual experience preserved
+            hasDetailedSkills ? 10 : 0,        // Real skills preserved
+            hasProfessionalSummary ? 10 : 0,   // Professional summary present
+            hasQuantifiedAchievements ? 10 : 0, // Quantified achievements
+            hasActionVerbs ? 5 : 0,            // Strong action verbs
+            hasEducation ? 5 : 0,              // Education section
+            keywordScore                       // Job-specific keyword integration
+          ].reduce((sum, score) => sum + score, 0);
 
          console.log(`✅ [${requestId}] Resume created successfully. Quality Score: ${qualityScore}%`);
 
@@ -559,22 +574,31 @@ ${resumeContent}
                 original_resume_id: null,
                 job_id: null,
                 tailored_content: tailoredResume,
-                ai_suggestions: {
-                  qualityScore: `${qualityScore}% professional resume quality`,
-                  recommendations: [
-                    hasContactInfo ? '✅ Complete contact information' : '⚠️ Add contact information',
-                    hasProfessionalSummary ? '✅ Professional summary included' : '⚠️ Add professional summary',
-                    hasQuantifiedAchievements ? '✅ Quantified achievements' : '⚠️ Add quantified achievements',
-                    hasActionVerbs ? '✅ Strong action verbs' : '⚠️ Use stronger action verbs',
-                    hasEducation ? '✅ Education section' : '⚠️ Add education information'
-                  ]
-                },
-                tailoring_score: qualityScore,
-                job_title: jobTitle,
-                company_name: companyName,
-                job_description: jobDescription.substring(0, 5000),
-                tailored_file_path: storagePath,
-                file_format: 'pdf'
+                 ai_suggestions: {
+                   qualityScore: `${qualityScore}% enhanced resume quality`,
+                   contentPreservation: {
+                     hasRealName,
+                     hasRealEmail,
+                     hasRealPhone,
+                     hasSpecificExperience,
+                     hasDetailedSkills
+                   },
+                   recommendations: [
+                     hasRealName ? '✅ Candidate name preserved' : '⚠️ Missing candidate name',
+                     hasRealEmail ? '✅ Contact email preserved' : '⚠️ Missing contact email',
+                     hasSpecificExperience ? '✅ Original experience preserved' : '⚠️ Generic experience detected',
+                     hasProfessionalSummary ? '✅ Professional summary enhanced' : '⚠️ Add professional summary',
+                     hasQuantifiedAchievements ? '✅ Quantified achievements included' : '⚠️ Add measurable achievements',
+                     hasActionVerbs ? '✅ Strong action verbs used' : '⚠️ Use stronger action verbs',
+                     keywordScore > 15 ? '✅ Job keywords integrated' : '⚠️ Improve keyword integration'
+                   ]
+                 },
+                 tailoring_score: qualityScore,
+                 job_title: jobTitle,
+                 company_name: companyName,
+                 job_description: jobDescription.substring(0, 5000),
+                 tailored_file_path: storagePath,
+                 file_format: 'pdf'
               })
               .select()
               .single();

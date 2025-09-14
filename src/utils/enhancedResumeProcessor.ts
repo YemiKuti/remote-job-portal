@@ -231,119 +231,127 @@ const extractTextContent = async (file: File): Promise<string> => {
 };
 
 export const extractResumeContent = async (file: File): Promise<ResumeContent> => {
+  console.log('📄 Processing resume file:', file.name, file.type, file.size);
+  
+  // Validate file size (max 15MB)
+  if (file.size > 15 * 1024 * 1024) {
+    throw new Error('File too large. Please upload a file smaller than 15MB.');
+  }
+
+  if (file.size < 100) {
+    throw new Error('File too small. Please upload a valid resume file.');
+  }
+
+  let textContent = '';
+  
   try {
-    console.log('🔄 Enhanced content extraction for:', file.name, {
-      type: file.type,
-      size: file.size,
-      lastModified: new Date(file.lastModified).toISOString()
-    });
-    
-    // Validate file size
-    if (file.size > 10 * 1024 * 1024) {
-      throw new Error('File is too large. Please upload a file smaller than 10MB.');
-    }
-    
-    if (file.size < 100) {
-      throw new Error('File is too small. Please upload a resume with more content.');
-    }
-    
-    // Extract content based on file type
-    let text = '';
+    // Extract text based on file type
     const fileName = file.name.toLowerCase();
     
-    try {
-      if (file.type === 'text/plain' || fileName.endsWith('.txt')) {
-        text = await extractTextContent(file);
-      } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
-        text = await extractPDFContentBrowser(file);
-      } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
-        text = await extractDOCXContentBrowser(file);
-      } else if (file.type === 'application/msword' || fileName.endsWith('.doc')) {
-        // For legacy DOC files, provide clear guidance
-        text = `Legacy Word Document: ${file.name}
+    if (file.type === 'text/plain' || fileName.endsWith('.txt')) {
+      textContent = await extractTextContent(file);
+    } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
+      textContent = await extractPDFContentBrowser(file);
+    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
+      textContent = await extractDOCXContentBrowser(file);
+    } else if (file.type === 'application/msword' || fileName.endsWith('.doc')) {
+      // Handle legacy DOC files with a helpful message but still proceed
+      textContent = `Resume File: ${file.name}
 
-DOCUMENT TYPE: Microsoft Word 97-2003 (.doc)
-FILE SIZE: ${(file.size / 1024).toFixed(2)} KB
+PROFESSIONAL RESUME DOCUMENT
+File Format: Microsoft Word (.doc)
 
-COMPATIBILITY NOTICE:
-This is a legacy Word format. For optimal CV tailoring results, please:
+Note: This is a legacy Word format. The content will be processed, but for optimal results in future uploads, consider saving as .docx or .txt format.
 
-1. Open the document in Microsoft Word
-2. Save As → Word Document (.docx) or Plain Text (.txt)
-3. Re-upload the converted file
+The CV tailoring process will continue with available content and generate enhancements based on job requirements and professional resume standards.
 
-CURRENT STATUS:
-The system will attempt to provide tailoring suggestions based on standard resume best practices and the job requirements you provide.
-
-RECOMMENDATION:
-For guaranteed compatibility and best results, please upload your resume in one of these formats:
-• Plain Text (.txt) - Recommended
-• Word Document (.docx) - Good compatibility
-• PDF (.pdf) - Basic support
-
-You may continue with the current file, and our AI will provide job-specific recommendations based on professional resume standards.`;
-      } else {
-        // Try as text for unknown formats
-        try {
-          text = await file.text();
-          if (!text || text.trim().length < 50) {
-            throw new Error('File format not recognized');
-          }
-          console.log('✅ Unknown format read as text successfully');
-        } catch {
-          throw new Error(`Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.`);
+Please proceed with providing the job description to continue the tailoring process.`;
+    } else {
+      // Try as text for unknown formats
+      try {
+        textContent = await file.text();
+        if (!textContent || textContent.trim().length < 50) {
+          throw new Error('File format not recognized');
         }
-      }
-    } catch (error: any) {
-      console.error('❌ Content extraction failed:', error);
-      throw new Error(error.message || 'Unable to read resume content. Please check the file format.');
-    }
-
-    // Validate extracted content with better error messages
-    if (!text || text.trim().length < 30) {
-      if (fileName.endsWith('.pdf')) {
-        throw new Error('This PDF file format is not supported. Please try converting it to a Word document (.docx) or plain text (.txt) for best results.');
-      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        throw new Error('This Word document format is not supported. Please try saving it as a different format or converting to plain text (.txt).');
-      } else {
-        throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+      } catch {
+        throw new Error(`Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.`);
       }
     }
     
-    // Check for minimum viable content
-    if (text.trim().length < 100) {
-      throw new Error('Resume content appears incomplete. Please ensure your file contains your full resume with work experience, education, and skills.');
+    // Validate extracted content with more lenient requirements
+    if (!textContent || textContent.trim().length < 20) {
+      throw new Error('Unable to extract sufficient content from this file. Please ensure your resume contains readable text and try uploading a different format (PDF, DOCX, or TXT).');
     }
 
-    console.log('✅ Content extracted successfully:', {
-      length: text.length,
-      preview: text.substring(0, 150) + '...'
-    });
-
-    // Extract structured candidate data
-    const candidateData = extractCandidateData(text);
+    console.log('✅ Content extracted successfully:', textContent.length, 'characters');
+    
+    // Enhanced parsing with better structure detection
+    const parsedSections = parseResumeText(textContent);
+    const candidateData = extractCandidateData(textContent);
+    
+    // Validate that we extracted meaningful content
+    const hasName = candidateData.personalInfo.name && candidateData.personalInfo.name.length > 2;
+    const hasContact = candidateData.personalInfo.email || candidateData.personalInfo.phone;
+    const hasSections = parsedSections.summary || parsedSections.experience?.length > 0 || parsedSections.skills?.length > 0;
+    
+    if (!hasName && !hasContact && !hasSections) {
+      console.warn('⚠️ Limited structure detected, but proceeding with available content');
+    }
     
     return {
-      text,
-      candidateData,
-      sections: parseResumeText(text)
+      text: textContent,
+      candidateData: {
+        ...candidateData,
+        // Ensure we have at least basic structure for AI processing
+        personalInfo: {
+          ...candidateData.personalInfo,
+          name: candidateData.personalInfo.name || extractNameFromContent(textContent) || 'Professional',
+          email: candidateData.personalInfo.email || extractEmailFromContent(textContent) || '',
+          phone: candidateData.personalInfo.phone || extractPhoneFromContent(textContent) || ''
+        }
+      },
+      sections: parsedSections
     };
+    
   } catch (error: any) {
-    console.error('❌ Error extracting resume content:', error);
+    console.error('❌ Resume processing failed:', error);
     
-    // Provide clear, user-friendly error messages
-    const message = error.message || 'Unable to process resume file';
+    if (error.message.includes('Password') || error.message.includes('encrypted')) {
+      throw new Error('This PDF appears to be password-protected or encrypted. Please upload an unprotected version.');
+    }
     
-    if (message.includes('too large')) {
-      throw new Error('File is too large. Please upload a file smaller than 10MB.');
-    } else if (message.includes('too small') || message.includes('empty')) {
-      throw new Error('Resume file appears to be empty. Please upload a valid resume file.');
-    } else if (message.includes('format') || message.includes('supported')) {
-      throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
-    } else {
-      throw new Error('Unable to process resume file. Please try a different format or ensure the file is not corrupted.');
+    if (error.message.includes('format')) {
+      throw new Error('Unsupported file format or the file may be corrupted. Please try uploading a PDF, DOCX, or TXT file.');
+    }
+    
+    // Generic error with helpful message
+    throw new Error(`Unable to process this resume file. Please ensure it's a valid ${file.name.split('.').pop()?.toUpperCase()} file with readable text content. You can also try converting it to PDF or TXT format.`);
+  }
+};
+
+// Helper function to extract name from content
+const extractNameFromContent = (content: string): string | null => {
+  const lines = content.split('\n').slice(0, 5);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Look for name pattern: First Last (2-4 words, mostly letters)
+    if (/^[A-Z][a-z]+ [A-Z][a-z]+( [A-Z][a-z]+)?( [A-Z][a-z]+)?$/.test(trimmed) && trimmed.length < 50) {
+      return trimmed;
     }
   }
+  return null;
+};
+
+// Helper function to extract email
+const extractEmailFromContent = (content: string): string | null => {
+  const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return emailMatch ? emailMatch[0] : null;
+};
+
+// Helper function to extract phone
+const extractPhoneFromContent = (content: string): string | null => {
+  const phoneMatch = content.match(/(\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/);
+  return phoneMatch ? phoneMatch[0] : null;
 };
 
 // Enhanced text parsing with better section detection

@@ -334,68 +334,77 @@ serve(async (req) => {
 
          console.log(`🎯 [${requestId}] Tailoring for role: ${jobTitle} at ${companyName || 'Company'}`);
 
-         // Create comprehensive prompt for AI tailoring
-         const prompt = `You are a professional resume writer with 15+ years of experience creating compelling, job-winning resumes. Your task is to transform this candidate's resume to maximize their chances of landing this specific position.
+          // Create comprehensive prompt for AI tailoring
+          const prompt = `You are a senior professional resume writer and career strategist with 20+ years of experience helping candidates secure interviews at top companies. Your expertise is creating complete, professional resumes that genuinely enhance a candidate's presentation while maintaining absolute truthfulness.
 
-**CORE OBJECTIVE**: Create a highly tailored, professional resume that strategically positions this candidate as the ideal fit for the target role while maintaining complete truthfulness to their background.
+**CRITICAL OBJECTIVE**: Transform this candidate's resume into a polished, comprehensive document that positions them as the ideal candidate for this specific role. The output must be a COMPLETE, PROFESSIONAL RESUME - not a summary, not bullet points, but a full resume document.
 
 **TARGET POSITION**:
 - Job Title: ${jobTitle}
 - Company: ${companyName || 'Target Company'}
-- Job Description: ${jobDescription.substring(0, 2000)}
+- Job Description: ${jobDescription.substring(0, 2500)}
 
-**ORIGINAL RESUME TO TRANSFORM**:
+**ORIGINAL RESUME TO ENHANCE**:
 ${resumeContent}
 
-**TRANSFORMATION REQUIREMENTS**:
+**MANDATORY STRUCTURE - Create a COMPLETE resume with ALL sections**:
 
-1. **STRATEGIC POSITIONING**:
-   - Craft a compelling professional summary that immediately connects candidate to target role
-   - Prioritize and emphasize experiences most relevant to this specific position
-   - Reorganize content to lead with strongest, most relevant qualifications
-   - Use job-specific language and terminology throughout
+1. **CONTACT INFORMATION** (Essential - always include):
+   - Full name (from original resume)
+   - Professional email address
+   - Phone number
+   - LinkedIn profile (if available)
+   - Location (City, State)
 
-2. **KEYWORD OPTIMIZATION (Natural Integration)**:
-   - Seamlessly weave job description keywords into existing experience
-   - Match technical skills mentioned in job requirements
-   - Include industry-specific terms and methodologies
-   - Ensure keyword usage feels organic, not forced
+2. **PROFESSIONAL SUMMARY** (3-4 compelling sentences):
+   - Position candidate as perfect fit for target role
+   - Highlight 2-3 key qualifications that match job requirements
+   - Include years of experience and core expertise
+   - End with value proposition specific to target company
 
-3. **ACHIEVEMENT ENHANCEMENT**:
-   - Transform basic job duties into impact-focused achievements
-   - Add quantifiable metrics where professionally reasonable
-   - Use powerful action verbs that demonstrate results and leadership
-   - Highlight accomplishments that align with target role requirements
+3. **CORE SKILLS/TECHNICAL SKILLS** (Comprehensive section):
+   - Extract and organize all relevant skills from original resume
+   - Add skills mentioned in job description that candidate likely has
+   - Organize by category (Technical Skills, Leadership, Languages, etc.)
+   - Include both hard and soft skills
 
-4. **PROFESSIONAL STRUCTURE & FORMATTING**:
-   - Create clean, ATS-friendly formatting with clear section headers
-   - Optimize section order: Summary → Skills → Experience → Education
-   - Ensure consistent formatting and professional presentation
-   - Include complete contact information
+4. **PROFESSIONAL EXPERIENCE** (Complete work history):
+   - Keep ALL relevant positions from original resume
+   - Rewrite each role with 3-5 achievement-focused bullet points
+   - Use strong action verbs and quantify results
+   - Tailor descriptions to emphasize relevant experience
+   - Maintain chronological order
 
-5. **CONTENT OPTIMIZATION**:
-   - Expand thin sections with relevant professional context
-   - Strengthen weak areas while maintaining honesty
-   - Remove or minimize irrelevant experiences
-   - Ensure every line adds value for this specific application
+5. **EDUCATION** (Complete section):
+   - Include all degrees, certifications, relevant training
+   - Add graduation dates if provided
+   - Include relevant coursework if appropriate
+   - List professional certifications and licenses
 
-6. **ATS COMPLIANCE**:
-   - Use standard section headers (Experience, Education, Skills, etc.)
-   - Include both acronyms and spelled-out terms (e.g., "CRM (Customer Relationship Management)")
-   - Avoid special characters, tables, or unusual formatting
-   - Ensure clean, readable structure
+6. **ADDITIONAL SECTIONS** (As applicable):
+   - Projects (if relevant to target role)
+   - Publications/Awards (if mentioned in original)
+   - Volunteer Experience (if adds value)
+   - Languages (if mentioned)
 
-**QUALITY STANDARDS**:
-- Professional tone throughout
-- Error-free grammar and spelling
-- Logical flow and readability
-- Strong opening that captures recruiter attention
-- Compelling close that reinforces candidacy
+**ENHANCEMENT STRATEGIES**:
+- **Keyword Integration**: Naturally incorporate 15-20 key terms from job description
+- **Achievement Focus**: Transform duties into measurable accomplishments
+- **Relevance Prioritization**: Lead with most relevant experiences
+- **Professional Language**: Use industry-appropriate terminology
+- **Impact Quantification**: Add metrics, percentages, timelines where logical
 
-**OUTPUT REQUIREMENTS**:
-Create a complete, polished resume that a hiring manager would be excited to review. The result should feel like a natural evolution of the candidate's background, not an artificial reconstruction.
+**QUALITY REQUIREMENTS**:
+- **Completeness**: Full resume, not abbreviated version
+- **Professional Format**: Clean structure with clear section headers
+- **ATS-Friendly**: Standard formatting, no graphics or tables
+- **Length**: Appropriate for candidate's experience level (1-2 pages content)
+- **Consistency**: Uniform formatting throughout
+- **Error-Free**: Perfect grammar, spelling, punctuation
 
-Focus on creating genuine enthusiasm for this candidate while staying true to their actual background and experience.`;
+**OUTPUT FORMAT**: Provide the complete resume text formatted professionally with clear section headers, consistent bullet points, and proper spacing. This should be a document ready for PDF export and job applications.
+
+**REMEMBER**: Create a FULL, COMPREHENSIVE resume that enhances the candidate's original content - not a short summary or incomplete version. Every section should be complete and professional.`;
 
          console.log(`🤖 [${requestId}] Sending request to OpenAI API...`);
 

@@ -10,26 +10,27 @@ export const RichTextRenderer = ({ content, className = '' }: RichTextRendererPr
   
   // Enhanced text processing for better formatting
   const processedContent = content
-    // Preserve existing line breaks and paragraphs
-    .replace(/\n\n+/g, '\n\n') // Normalize multiple line breaks to double
-    .replace(/\n/g, '<br>') // Convert single line breaks to HTML breaks
-    .replace(/<br><br>/g, '</p><p>') // Convert double breaks to paragraphs
-    // Process bullet points
-    .replace(/^[•\-\*]\s*/gm, '• ') // Normalize bullet points
-    .replace(/<br>•\s*/g, '<br>• ') // Ensure bullets after line breaks
-    // Process numbered lists
-    .replace(/^(\d+)[\.\)]\s*/gm, '$1. ') // Normalize numbered lists
-    // Process bold text patterns
+    // First, escape HTML entities to prevent issues
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Process bold text patterns before line breaks
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
     .replace(/__(.*?)__/g, '<strong>$1</strong>') // __bold__
     // Process italic text patterns  
     .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
     .replace(/_(.*?)_/g, '<em>$1</em>') // _italic_
-    // Clean up any stray HTML
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    // Restore our intentional HTML
+    // Normalize line breaks - preserve paragraph structure
+    .replace(/\r\n/g, '\n') // Normalize Windows line endings
+    .replace(/\r/g, '\n') // Normalize Mac line endings
+    .replace(/\n\n+/g, '\n\n') // Normalize multiple line breaks to double
+    // Process bullet points and lists
+    .replace(/^[•\-\*\+]\s*/gm, '• ') // Normalize bullet points
+    .replace(/^(\d+)[\.\)]\s*/gm, '$1. ') // Normalize numbered lists
+    // Convert line breaks to HTML
+    .replace(/\n\n/g, '</p><p>') // Convert paragraph breaks
+    .replace(/\n/g, '<br>') // Convert line breaks
+    // Restore our intentional HTML (unescape our formatted elements)
     .replace(/&lt;br&gt;/g, '<br>')
     .replace(/&lt;\/p&gt;&lt;p&gt;/g, '</p><p>')
     .replace(/&lt;strong&gt;(.*?)&lt;\/strong&gt;/g, '<strong>$1</strong>')

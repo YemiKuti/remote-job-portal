@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, AlertCircle, Mail, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Mail, ExternalLink, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { EditJobDialog } from './EditJobDialog';
+import { RichTextRenderer } from '@/components/RichTextRenderer';
 
 interface JobApprovalPanelProps {
   onJobsUpdated: () => void;
@@ -36,6 +38,7 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [editingJob, setEditingJob] = useState<PendingJob | null>(null);
   const { toast } = useToast();
 
   const fetchPendingJobs = async () => {
@@ -157,35 +160,14 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
     return 'Not specified';
   };
 
-  const formatDescription = (description: string): JSX.Element => {
-    const paragraphs = description.split('\n').filter(p => p.trim());
-    
-    return (
-      <div className="space-y-2 max-h-40 overflow-y-auto">
-        {paragraphs.slice(0, 5).map((paragraph, index) => {
-          const trimmed = paragraph.trim();
-          if (!trimmed) return null;
-          
-          if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-            return (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-primary mt-1 text-xs">•</span>
-                <span className="text-sm text-muted-foreground">{trimmed.replace(/^[•\-*]\s*/, '')}</span>
-              </div>
-            );
-          }
-          
-          return (
-            <p key={index} className="text-sm text-muted-foreground leading-relaxed">
-              {trimmed}
-            </p>
-          );
-        })}
-        {paragraphs.length > 5 && (
-          <p className="text-xs text-muted-foreground italic">... and {paragraphs.length - 5} more paragraphs</p>
-        )}
-      </div>
-    );
+  const handleEdit = (job: PendingJob) => {
+    setEditingJob(job);
+  };
+
+  const handleEditSuccess = () => {
+    fetchPendingJobs();
+    onJobsUpdated();
+    setEditingJob(null);
   };
 
   if (loading) {
@@ -252,7 +234,12 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
               <div className="space-y-3">
                 <div>
                   <h4 className="text-sm font-medium mb-2">Job Description</h4>
-                  {formatDescription(job.description)}
+                  <div className="max-h-40 overflow-y-auto">
+                    <RichTextRenderer 
+                      content={job.description} 
+                      className="text-sm text-muted-foreground"
+                    />
+                  </div>
                 </div>
 
                 {job.apply_email && (
@@ -280,6 +267,15 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
               </div>
 
               <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => handleEdit(job)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  Edit Job
+                </Button>
+
                 <Button
                   onClick={() => handleApprove(job.id)}
                   disabled={approving === job.id}
@@ -318,6 +314,13 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
             </div>
           ))}
         </div>
+
+        <EditJobDialog
+          isOpen={!!editingJob}
+          onClose={() => setEditingJob(null)}
+          job={editingJob}
+          onSuccess={handleEditSuccess}
+        />
       </CardContent>
     </Card>
   );

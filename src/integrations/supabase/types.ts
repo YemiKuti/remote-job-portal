@@ -1168,6 +1168,7 @@ export type Database = {
           job_id: string | null
           job_title: string | null
           original_resume_id: string | null
+          status: string
           tailored_content: string
           tailored_file_path: string | null
           tailoring_score: number | null
@@ -1186,6 +1187,7 @@ export type Database = {
           job_id?: string | null
           job_title?: string | null
           original_resume_id?: string | null
+          status?: string
           tailored_content: string
           tailored_file_path?: string | null
           tailoring_score?: number | null
@@ -1204,6 +1206,7 @@ export type Database = {
           job_id?: string | null
           job_title?: string | null
           original_resume_id?: string | null
+          status?: string
           tailored_content?: string
           tailored_file_path?: string | null
           tailoring_score?: number | null

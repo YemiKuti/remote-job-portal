@@ -210,7 +210,8 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
           jobTitle: jobTitle || 'Job Title',
           companyName: companyName || 'Company',
           candidateData: selectedResume.candidate_data || null,
-          jobRequirements: selectedJob.requirements || []
+          jobRequirements: selectedJob.requirements || [],
+          userId: userId
         }
       });
 
@@ -271,27 +272,21 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
         throw new Error('AI service failed to generate a tailored resume. Please try again with a different resume or job description.');
       }
 
-      // Enhanced validation for content quality and preservation
-      const hasPlaceholderText = tailoredResumeContent.includes('Contact Information Available Upon Request');
-      const hasGenericContent = tailoredResumeContent.includes('Experienced professional with a demonstrated history');
-      const hasBrokenSentences = /\b(proven expertise in\s*\.|relevant to the industry\.\s*$)/i.test(tailoredResumeContent);
-      const isTooShort = tailoredResumeContent.length < 300;
+      // Quality validation aligned with production requirements
+      const hasPlaceholderText = /Contact Information Available Upon Request/i.test(tailoredResumeContent);
+      const isTooShort = tailoredResumeContent.trim().length < 300;
       
-      // Check if AI preserved original content structure
-      const qualityScore = data.score || data.tailoring_score || 0;
-      const isLowQuality = qualityScore < 60;
+      const qualityScore = data.score ?? data.tailoring_score ?? data.matchScore ?? data.match_score ?? data.analysis?.matchScore ?? 0;
       
-      if (hasPlaceholderText || hasGenericContent || hasBrokenSentences || isTooShort || isLowQuality) {
+      if (hasPlaceholderText || isTooShort || qualityScore < 80) {
         console.warn('⚠️ AI-generated resume failed quality checks:', {
           hasPlaceholderText,
-          hasGenericContent,
-          hasBrokenSentences,
           isTooShort,
           qualityScore,
           contentLength: tailoredResumeContent.length
         });
         
-        throw new Error('The AI-generated resume did not meet quality standards. The system is being improved to better preserve your original resume content while adding enhancements. Please try again shortly.');
+        throw new Error('The AI-generated resume did not meet quality standards. Please ensure your uploaded CV is readable and try again.');
       }
 
       // Use the AI-generated content if it passes quality checks
@@ -318,7 +313,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
           job_id: selectedJob.id,
           tailored_content: data.tailoredResume,
           ai_suggestions: data.suggestions,
-          tailoring_score: data.score,
+          tailoring_score: qualityScore,
           job_title: jobTitle,
           company_name: companyName,
           job_description: jobDescription

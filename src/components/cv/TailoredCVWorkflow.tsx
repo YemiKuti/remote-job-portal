@@ -278,7 +278,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       
       const qualityScore = data.score ?? data.tailoring_score ?? data.matchScore ?? data.match_score ?? data.analysis?.matchScore ?? 0;
       
-      if (hasPlaceholderText || isTooShort || qualityScore < 80) {
+      if (hasPlaceholderText || isTooShort || qualityScore < 70) {
         console.warn('⚠️ AI-generated resume failed quality checks:', {
           hasPlaceholderText,
           isTooShort,

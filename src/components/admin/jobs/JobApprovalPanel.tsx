@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, AlertCircle, Mail, ExternalLink, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { EditJobDialog } from './EditJobDialog';
+import { EditJobButton } from './EditJobButton';
 import { RichTextRenderer } from '@/components/RichTextRenderer';
 
 interface JobApprovalPanelProps {
@@ -38,7 +38,7 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [editingJob, setEditingJob] = useState<PendingJob | null>(null);
+  
   const { toast } = useToast();
 
   const fetchPendingJobs = async () => {
@@ -161,13 +161,11 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
   };
 
   const handleEdit = (job: PendingJob) => {
-    setEditingJob(job);
+    // This function is no longer needed since we use EditJobButton
   };
 
   const handleEditSuccess = () => {
-    fetchPendingJobs();
-    onJobsUpdated();
-    setEditingJob(null);
+    // This function is no longer needed since we use EditJobButton
   };
 
   if (loading) {
@@ -267,14 +265,18 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
               </div>
 
               <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => handleEdit(job)}
-                  className="flex items-center gap-2"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  Edit Job
-                </Button>
+                <EditJobButton 
+                  job={{
+                    id: job.id,
+                    title: job.title,
+                    company: job.company,
+                    status: job.status
+                  }}
+                  onJobUpdated={() => {
+                    fetchPendingJobs();
+                    onJobsUpdated();
+                  }}
+                />
 
                 <Button
                   onClick={() => handleApprove(job.id)}
@@ -315,12 +317,6 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
           ))}
         </div>
 
-        <EditJobDialog
-          isOpen={!!editingJob}
-          onClose={() => setEditingJob(null)}
-          job={editingJob}
-          onSuccess={handleEditSuccess}
-        />
       </CardContent>
     </Card>
   );

@@ -209,6 +209,8 @@ const parseJobRow = (row: any): ParsedJobData => {
       .replace(/-\s+/g, '• ') // Convert dashes to bullet points
       .replace(/[ \t]+/g, ' ') // Normalize spaces but keep line breaks
       .replace(/\n\s+/g, '\n') // Remove leading spaces after line breaks
+      .replace(/^\s*[\n\r]/, '') // Remove leading empty lines
+      .replace(/[\n\r]\s*$/, '') // Remove trailing empty lines
       .trim();
   };
 
@@ -246,13 +248,13 @@ const parseJobRow = (row: any): ParsedJobData => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const urlRegex = /^https?:\/\/.+/;
 
-  // Prefer URL when present and valid
-  if (rawUrl && urlRegex.test(rawUrl.trim())) {
-    application_type = 'external';
-    application_value = rawUrl.trim();
-  } else if (rawEmail && emailRegex.test(rawEmail.trim())) {
+  // Prefer email when present and valid (better for applying via email)
+  if (rawEmail && emailRegex.test(rawEmail.trim())) {
     application_type = 'email';
     application_value = rawEmail.trim();
+  } else if (rawUrl && urlRegex.test(rawUrl.trim())) {
+    application_type = 'external';
+    application_value = rawUrl.trim();
   } else if (rawUrl) {
     // Try to normalize missing protocol
     const normalizedUrl = rawUrl.trim().startsWith('http') ? rawUrl.trim() : `https://${rawUrl.trim()}`;
@@ -312,8 +314,7 @@ export const parseCSVFile = (file: File): Promise<ParsedJobData[]> => {
             .map((row: any, index: number) => {
               try {
                 const job = parseJobRow(row);
-                // Truncate long descriptions
-                job.description = truncateDescription(job.description);
+                // Don't truncate descriptions - preserve full content for formatting
                 return job;
               } catch (error: any) {
                 console.warn(`Skipping row ${index + 2}: ${error.message}`);
@@ -405,12 +406,12 @@ export const validateJobData = (job: ParsedJobData, duplicateKey?: string): Vali
     // Clean up description
     job.description = job.description.trim();
     
-    // Check description quality
+    // Check description quality but allow longer descriptions
     if (job.description.length < 50) {
       warnings.push('Job description is quite short - consider adding more details about responsibilities and requirements');
-    } else if (job.description.length > 2000) {
-      job.description = truncateDescription(job.description, 2000);
-      warnings.push('Job description was truncated to fit length limits (2000 characters)');
+    } else if (job.description.length > 5000) {
+      job.description = truncateDescription(job.description, 5000);
+      warnings.push('Job description was truncated to fit length limits (5000 characters)');
     }
     
     // Check for placeholder text and auto-fix

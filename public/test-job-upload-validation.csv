@@ -1,0 +1,40 @@
+title,company,location,description,email,employment_type,experience_level,salary_min,salary_max
+"Frontend Developer","TechSoft Labs","London","Join our team as a Frontend Developer.
+
+• Build responsive web applications using React and TypeScript
+• Collaborate with backend teams to integrate APIs
+• Ensure cross-browser compatibility and performance optimization
+• Participate in code reviews and agile development processes
+
+Requirements:
+- 3+ years of React development experience
+- Strong JavaScript and TypeScript skills
+- Knowledge of modern CSS frameworks
+- Experience with Git and CI/CD pipelines","hr@techsoft.com","full-time","mid",60000,80000
+"Business Continuity Manager","Global Corp","Remote","We are seeking an experienced Business Continuity Manager to join our risk management team.
+
+Key Responsibilities:
+• Develop and maintain business continuity plans
+• Conduct risk assessments and resilience testing
+• Ensure compliance with UK regulatory requirements (FCA, PRA)
+• Lead crisis management and disaster recovery initiatives
+• Train staff on emergency procedures
+
+Essential Requirements:
+- 5+ years in business continuity or risk management
+- Experience with BCM frameworks and ISO 22301
+- Strong understanding of regulatory compliance
+- Excellent communication and leadership skills","jobs@globalcorp.co.uk","full-time","senior",75000,95000
+"Marketing Specialist","Creative Agency","Manchester","Join our creative team as a Marketing Specialist.
+
+What you'll do:
+• Create and execute marketing campaigns across multiple channels
+• Manage social media presence and content calendar
+• Analyze campaign performance and provide insights
+• Collaborate with design team on creative assets
+
+Requirements:
+- 2+ years marketing experience
+- Experience with digital marketing tools
+- Strong analytical skills
+- Creative mindset","marketing@creativeagency.com","full-time","mid",35000,45000

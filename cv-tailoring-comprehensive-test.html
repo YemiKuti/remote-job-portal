@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Tailoring System Comprehensive Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            background: #3b82f6;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-case {
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .partial { background: #fef3c7; color: #92400e; }
+        .loading { background: #e0e7ff; color: #3730a3; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        .disabled { 
+            background: #9ca3af; 
+            cursor: not-allowed; 
+        }
+        .config-section {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .content-preview {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 CV Tailoring System Comprehensive Test</h1>
+        <p>Testing all components after Edge Function fixes</p>
+    </div>
+
+    <div class="test-container">
+        <div class="config-section">
+            <h3>🔧 Test Configuration</h3>
+            <label>Supabase URL:</label>
+            <input type="text" id="supabaseUrl" value="https://mmbrvcndxhipaoxysvwr.supabase.co" />
+            
+            <label>Supabase Anon Key:</label>
+            <input type="text" id="supabaseKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tYnJ2Y25keGhpcGFveHlzdndyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNzE2NDcsImV4cCI6MjA2MTg0NzY0N30.VWBmdbI7lMzHaaXl6ASJnc2116YnHm0WLHE0bkfW870" />
+            
+            <label>User ID (for authenticated requests):</label>
+            <input type="text" id="userId" placeholder="Enter user ID for testing" />
+        </div>
+
+        <div class="test-case">
+            <h3>📋 Test Case 1: Upload CV + Job Description</h3>
+            <p>Tests if the edge function processes requests without errors</p>
+            
+            <label>Sample Resume Content:</label>
+            <textarea id="resumeContent" rows="6">
+John Smith
+Software Engineer
+Email: john.smith@email.com
+Phone: (555) 123-4567
+LinkedIn: linkedin.com/in/johnsmith
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 5+ years in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of delivering scalable web applications.
+
+EXPERIENCE
+Senior Software Engineer - TechCorp (2020-Present)
+• Developed and maintained React-based web applications serving 100K+ users
+• Implemented RESTful APIs using Node.js and Express
+• Collaborated with cross-functional teams to deliver features on schedule
+• Optimized application performance resulting in 40% faster load times
+
+Software Developer - StartupXYZ (2018-2020)  
+• Built responsive web applications using modern JavaScript frameworks
+• Worked with databases including PostgreSQL and MongoDB
+• Participated in code reviews and maintained high code quality standards
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology (2014-2018)
+
+SKILLS
+JavaScript, React, Node.js, Python, PostgreSQL, MongoDB, AWS, Docker, Git
+            </textarea>
+
+            <label>Sample Job Description:</label>
+            <textarea id="jobDescription" rows="6">
+Senior Frontend Developer - Remote
+
+We are seeking a Senior Frontend Developer to join our growing team. You will be responsible for building and maintaining high-quality web applications using React and modern JavaScript technologies.
+
+Key Responsibilities:
+• Develop responsive web applications using React, TypeScript, and modern CSS
+• Collaborate with UX/UI designers to implement pixel-perfect designs
+• Optimize applications for maximum speed and scalability
+• Write clean, maintainable code and conduct code reviews
+• Work with backend APIs and integrate third-party services
+• Mentor junior developers and contribute to team best practices
+
+Requirements:
+• 4+ years of experience with React and JavaScript
+• Strong knowledge of TypeScript, HTML5, and CSS3
+• Experience with state management libraries (Redux, Zustand)
+• Familiarity with testing frameworks (Jest, React Testing Library)
+• Knowledge of version control systems (Git)
+• Experience with CI/CD pipelines and deployment processes
+• Strong communication skills and ability to work in a remote team
+
+Nice to have:
+• Experience with Next.js or similar React frameworks
+• Knowledge of GraphQL and modern API technologies
+• Experience with cloud platforms (AWS, Vercel)
+• Understanding of web accessibility standards (WCAG)
+            </textarea>
+
+            <input type="text" id="jobTitle" value="Senior Frontend Developer" placeholder="Job Title" />
+            <input type="text" id="companyName" value="TechFlow Solutions" placeholder="Company Name" />
+            
+            <button onclick="testCase1()">🚀 Test CV Processing</button>
+            <div id="result1" class="test-result loading" style="display:none;">Running test...</div>
+        </div>
+
+        <div class="test-case">
+            <h3>📊 Test Case 2: Structure Preservation</h3>
+            <p>Verifies that original candidate details are preserved</p>
+            <button onclick="testCase2()" class="disabled">🔍 Check Structure Preservation</button>
+            <div id="result2" class="test-result" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>✨ Test Case 3: Content Quality</h3>
+            <p>Ensures CV enhancements are job-relevant and not generic</p>
+            <button onclick="testCase3()" class="disabled">📝 Analyze Content Quality</button>
+            <div id="result3" class="test-result" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>🎯 Test Case 4: Job-Specific Enhancements</h3>
+            <p>Checks if job keywords are properly integrated</p>
+            <button onclick="testCase4()" class="disabled">🔍 Check Keyword Integration</button>
+            <div id="result4" class="test-result" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>📄 Test Case 5: PDF Export</h3>
+            <p>Tests if tailored CV can be downloaded as PDF</p>
+            <button onclick="testCase5()" class="disabled">📥 Test PDF Export</button>
+            <div id="result5" class="test-result" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>🗄️ Test Case 6: Database Verification</h3>
+            <p>Verifies database entries show proper scores and data</p>
+            <button onclick="testCase6()" class="disabled">🔍 Check Database Records</button>
+            <div id="result6" class="test-result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>📈 Test Results Summary</h3>
+        <div id="summaryResults" class="results-grid">
+            <div>
+                <h4>Pass Count: <span id="passCount">0</span></h4>
+                <h4>Fail Count: <span id="failCount">0</span></h4>
+                <h4>Partial Count: <span id="partialCount">0</span></h4>
+            </div>
+            <div>
+                <h4>Overall Status: <span id="overallStatus">Not Started</span></h4>
+                <div id="detailedResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            pass: 0,
+            fail: 0,
+            partial: 0,
+            results: []
+        };
+
+        let tailoredResult = null; // Store result from test case 1
+
+        async function createSupabaseClient() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            // Import Supabase client
+            const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.4');
+            return createClient(url, key);
+        }
+
+        function updateResult(testNum, status, message, details = '') {
+            const resultDiv = document.getElementById(`result${testNum}`);
+            resultDiv.style.display = 'block';
+            resultDiv.className = `test-result ${status}`;
+            resultDiv.innerHTML = `
+                <div>${message}</div>
+                ${details ? `<div class="content-preview">${details}</div>` : ''}
+            `;
+            
+            // Update counters
+            testResults[status]++;
+            testResults.results.push({ test: testNum, status, message });
+            updateSummary();
+        }
+
+        function updateSummary() {
+            document.getElementById('passCount').textContent = testResults.pass;
+            document.getElementById('failCount').textContent = testResults.fail;
+            document.getElementById('partialCount').textContent = testResults.partial;
+            
+            const total = testResults.pass + testResults.fail + testResults.partial;
+            if (total > 0) {
+                if (testResults.fail === 0) {
+                    document.getElementById('overallStatus').textContent = 'ALL TESTS PASSED ✅';
+                } else if (testResults.pass > testResults.fail) {
+                    document.getElementById('overallStatus').textContent = 'MOSTLY PASSING ⚠️';
+                } else {
+                    document.getElementById('overallStatus').textContent = 'ISSUES DETECTED ❌';
+                }
+            }
+        }
+
+        function enableNextTests() {
+            // Enable subsequent test buttons
+            for (let i = 2; i <= 6; i++) {
+                const btn = document.querySelector(`button[onclick="testCase${i}()"]`);
+                btn.classList.remove('disabled');
+                btn.disabled = false;
+            }
+        }
+
+        async function testCase1() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result loading';
+            resultDiv.textContent = 'Testing Edge Function...';
+
+            try {
+                const supabase = await createSupabaseClient();
+                const userId = document.getElementById('userId').value || 'test-user-id';
+                
+                const payload = {
+                    resumeContent: document.getElementById('resumeContent').value,
+                    jobDescription: document.getElementById('jobDescription').value,
+                    jobTitle: document.getElementById('jobTitle').value,
+                    companyName: document.getElementById('companyName').value,
+                    userId: userId
+                };
+
+                console.log('🚀 Calling tailor-cv function with payload:', Object.keys(payload));
+                
+                const { data, error } = await supabase.functions.invoke('tailor-cv', {
+                    body: payload
+                });
+
+                console.log('📝 Function response:', { data: data ? 'Received' : 'None', error });
+
+                if (error) {
+                    updateResult(1, 'fail', `❌ FAIL: Edge Function Error: ${error.message}`, JSON.stringify(error, null, 2));
+                    return;
+                }
+
+                if (!data || data.success === false) {
+                    updateResult(1, 'fail', `❌ FAIL: ${data?.error || 'No response from function'}`, JSON.stringify(data, null, 2));
+                    return;
+                }
+
+                // Store result for other tests
+                tailoredResult = data;
+                
+                const score = data.score || data.tailoring_score || 0;
+                const hasContent = data.tailoredResume || data.tailoredContent;
+                
+                if (hasContent && score > 0) {
+                    updateResult(1, 'pass', `✅ PASS: CV Tailoring Successful (Score: ${score}%)`, 
+                        `Content Length: ${hasContent.length} chars\nDownload URL: ${data.downloadUrl ? 'Available' : 'Missing'}`);
+                    enableNextTests();
+                } else {
+                    updateResult(1, 'fail', `❌ FAIL: Invalid Response`, JSON.stringify(data, null, 2));
+                }
+
+            } catch (err) {
+                console.error('Test Case 1 Error:', err);
+                updateResult(1, 'fail', `❌ FAIL: Request Error: ${err.message}`, err.stack);
+            }
+        }
+
+        function testCase2() {
+            if (!tailoredResult) {
+                updateResult(2, 'fail', '❌ FAIL: No tailored result available. Run Test Case 1 first.');
+                return;
+            }
+
+            const content = tailoredResult.tailoredResume || tailoredResult.tailoredContent || '';
+            const originalResume = document.getElementById('resumeContent').value;
+
+            // Check for placeholder content
+            const placeholders = [
+                'Contact Information Available Upon Request',
+                'Available Upon Request', 
+                'lorem ipsum',
+                'your name',
+                'email@example.com',
+                '[email]',
+                '[phone]',
+                '[name]'
+            ];
+
+            const hasPlaceholders = placeholders.some(placeholder => 
+                content.toLowerCase().includes(placeholder.toLowerCase())
+            );
+
+            // Check if original details are preserved
+            const originalEmail = originalResume.match(/[\w.-]+@[\w.-]+\.\w+/);
+            const originalPhone = originalResume.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+            const originalName = 'john smith'; // From sample
+
+            const emailPreserved = originalEmail ? content.toLowerCase().includes(originalEmail[0].toLowerCase()) : true;
+            const phonePreserved = originalPhone ? content.includes(originalPhone[0]) : true;
+            const namePreserved = content.toLowerCase().includes(originalName);
+
+            if (hasPlaceholders) {
+                updateResult(2, 'fail', '❌ FAIL: Contains placeholder text', 
+                    `Found placeholders in content. Original details not preserved properly.`);
+            } else if (!emailPreserved || !phonePreserved || !namePreserved) {
+                updateResult(2, 'partial', '⚠️ PARTIAL: Some original details missing', 
+                    `Email: ${emailPreserved ? '✓' : '✗'}, Phone: ${phonePreserved ? '✓' : '✗'}, Name: ${namePreserved ? '✓' : '✗'}`);
+            } else {
+                updateResult(2, 'pass', '✅ PASS: Original candidate details preserved', 
+                    'All original contact information and identity preserved in tailored CV');
+            }
+        }
+
+        function testCase3() {
+            if (!tailoredResult) {
+                updateResult(3, 'fail', '❌ FAIL: No tailored result available. Run Test Case 1 first.');
+                return;
+            }
+
+            const content = tailoredResult.tailoredResume || tailoredResult.tailoredContent || '';
+            const jobDesc = document.getElementById('jobDescription').value;
+            
+            // Check for job-relevant enhancements
+            const jobKeywords = ['react', 'typescript', 'frontend', 'javascript', 'css', 'html', 'responsive'];
+            const keywordsFound = jobKeywords.filter(keyword => 
+                content.toLowerCase().includes(keyword.toLowerCase())
+            );
+
+            // Check for generic template text
+            const genericPhrases = [
+                'proven track record',
+                'team player',
+                'hard worker',
+                'educational background and professional development',
+                'proven expertise in'
+            ];
+
+            const hasGeneric = genericPhrases.some(phrase => 
+                content.toLowerCase().includes(phrase.toLowerCase())
+            );
+
+            // Check for action verbs
+            const actionVerbs = ['developed', 'implemented', 'built', 'created', 'designed', 'optimized', 'led', 'managed'];
+            const verbsFound = actionVerbs.filter(verb => 
+                content.toLowerCase().includes(verb.toLowerCase())
+            );
+
+            const keywordRatio = keywordsFound.length / jobKeywords.length;
+            const verbRatio = verbsFound.length / actionVerbs.length;
+
+            if (keywordRatio >= 0.5 && verbRatio >= 0.3 && !hasGeneric) {
+                updateResult(3, 'pass', '✅ PASS: High-quality job-relevant content', 
+                    `Keywords found: ${keywordsFound.join(', ')}\nAction verbs: ${verbsFound.join(', ')}`);
+            } else if (keywordRatio >= 0.3 || verbRatio >= 0.2) {
+                updateResult(3, 'partial', '⚠️ PARTIAL: Some enhancements applied', 
+                    `Keywords: ${keywordRatio * 100}%, Action verbs: ${verbRatio * 100}%\nGeneric text: ${hasGeneric ? 'Found' : 'None'}`);
+            } else {
+                updateResult(3, 'fail', '❌ FAIL: Generic or low-quality content', 
+                    `Insufficient job-specific enhancements. Keywords: ${keywordRatio * 100}%`);
+            }
+        }
+
+        function testCase4() {
+            if (!tailoredResult) {
+                updateResult(4, 'fail', '❌ FAIL: No tailored result available. Run Test Case 1 first.');
+                return;
+            }
+
+            const score = tailoredResult.score || tailoredResult.tailoring_score || 0;
+            const content = tailoredResult.tailoredResume || tailoredResult.tailoredContent || '';
+            
+            // Extract job-specific keywords from job description
+            const jobDesc = document.getElementById('jobDescription').value.toLowerCase();
+            const keyTerms = [
+                'react', 'typescript', 'frontend', 'responsive', 'javascript',
+                'css', 'html', 'redux', 'testing', 'git', 'api', 'performance'
+            ];
+
+            const integratedKeywords = keyTerms.filter(term => 
+                content.toLowerCase().includes(term)
+            );
+
+            const integrationRatio = integratedKeywords.length / keyTerms.length;
+
+            if (score >= 80 && integrationRatio >= 0.4) {
+                updateResult(4, 'pass', `✅ PASS: Excellent keyword integration (Score: ${score}%)`, 
+                    `Integrated keywords: ${integratedKeywords.join(', ')}\nIntegration ratio: ${(integrationRatio * 100).toFixed(1)}%`);
+            } else if (score >= 60 && integrationRatio >= 0.2) {
+                updateResult(4, 'partial', `⚠️ PARTIAL: Moderate keyword integration (Score: ${score}%)`, 
+                    `Some keywords integrated: ${integratedKeywords.join(', ')}`);
+            } else {
+                updateResult(4, 'fail', `❌ FAIL: Low tailoring score (Score: ${score}%)`, 
+                    `Insufficient keyword integration. Found: ${integratedKeywords.join(', ') || 'None'}`);
+            }
+        }
+
+        function testCase5() {
+            if (!tailoredResult) {
+                updateResult(5, 'fail', '❌ FAIL: No tailored result available. Run Test Case 1 first.');
+                return;
+            }
+
+            const downloadUrl = tailoredResult.downloadUrl;
+            
+            if (!downloadUrl) {
+                updateResult(5, 'fail', '❌ FAIL: No download URL provided', 
+                    'PDF export functionality not available');
+                return;
+            }
+
+            // Test if URL is accessible
+            fetch(downloadUrl, { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/pdf')) {
+                            updateResult(5, 'pass', '✅ PASS: PDF export available', 
+                                `Download URL: ${downloadUrl}\nContent-Type: ${contentType}`);
+                        } else {
+                            updateResult(5, 'partial', '⚠️ PARTIAL: File accessible but may not be PDF', 
+                                `Content-Type: ${contentType || 'Unknown'}`);
+                        }
+                    } else {
+                        updateResult(5, 'fail', `❌ FAIL: PDF not accessible (${response.status})`, 
+                            `URL: ${downloadUrl}`);
+                    }
+                })
+                .catch(error => {
+                    updateResult(5, 'fail', '❌ FAIL: Cannot access PDF', 
+                        `Error: ${error.message}`);
+                });
+        }
+
+        async function testCase6() {
+            if (!tailoredResult) {
+                updateResult(6, 'fail', '❌ FAIL: No tailored result available. Run Test Case 1 first.');
+                return;
+            }
+
+            try {
+                const supabase = await createSupabaseClient();
+                const tailoredResumeId = tailoredResult.tailoredResumeId;
+                
+                if (!tailoredResumeId) {
+                    updateResult(6, 'fail', '❌ FAIL: No database record ID provided');
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('tailored_resumes')
+                    .select('*')
+                    .eq('id', tailoredResumeId)
+                    .single();
+
+                if (error) {
+                    updateResult(6, 'fail', `❌ FAIL: Database query error: ${error.message}`);
+                    return;
+                }
+
+                const score = data.tailoring_score || 0;
+                const hasPlaceholders = data.tailored_content ? 
+                    data.tailored_content.toLowerCase().includes('available upon request') : false;
+                const hasProperContent = data.tailored_content && data.tailored_content.length > 500;
+
+                if (score >= 80 && !hasPlaceholders && hasProperContent) {
+                    updateResult(6, 'pass', `✅ PASS: Database record shows high quality (Score: ${score}%)`, 
+                        `Status: ${data.status}\nContent length: ${data.tailored_content?.length || 0} chars\nNo placeholders found`);
+                } else if (score >= 50 && hasProperContent) {
+                    updateResult(6, 'partial', `⚠️ PARTIAL: Database record shows medium quality (Score: ${score}%)`, 
+                        `Some issues detected\nPlaceholders: ${hasPlaceholders ? 'Yes' : 'No'}`);
+                } else {
+                    updateResult(6, 'fail', `❌ FAIL: Database record shows poor quality (Score: ${score}%)`, 
+                        `Placeholders: ${hasPlaceholders ? 'Yes' : 'No'}\nContent length: ${data.tailored_content?.length || 0}`);
+                }
+
+            } catch (error) {
+                updateResult(6, 'fail', `❌ FAIL: Database verification error: ${error.message}`);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('CV Tailoring Comprehensive Test initialized');
+        });
+    </script>
+</body>
+</html>

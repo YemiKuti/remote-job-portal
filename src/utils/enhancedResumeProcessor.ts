@@ -210,23 +210,57 @@ The CV tailoring process will continue with advanced content analysis and job-sp
   }
 };
 
-// Enhanced text file processing
+// Enhanced text file processing with Unicode support
 const extractTextContent = async (file: File): Promise<string> => {
   try {
     console.log('📄 Processing text file:', file.name);
     
-    const text = await file.text();
-    
-    if (!text || text.trim().length < 50) {
-      throw new Error('Text file appears to be empty or too short.');
+    let text = '';
+    try {
+      // Try reading as UTF-8 first
+      text = await file.text();
+    } catch (textError) {
+      // Fallback: read as array buffer and handle encoding
+      const buffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+      
+      try {
+        // Try UTF-8 with strict mode
+        text = new TextDecoder('utf-8', { fatal: true }).decode(uint8Array);
+      } catch (utf8Error) {
+        try {
+          // Fallback to UTF-8 with error recovery
+          text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+        } catch (recoveryError) {
+          // Final fallback to Latin-1
+          text = new TextDecoder('iso-8859-1').decode(uint8Array);
+        }
+      }
     }
     
-    console.log('✅ Text content extracted successfully');
-    return text.trim();
+    // Sanitize Unicode characters that could cause issues
+    text = text
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
+      .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
+      .replace(/\\u[0-9a-fA-F]{4}/g, ' ') // Remove Unicode escape sequences
+      .replace(/[""]/g, '"') // Smart quotes to regular quotes
+      .replace(/['']/g, "'") // Smart apostrophes to regular
+      .replace(/[—–]/g, '-') // Em/en dashes to regular dash
+      .trim();
     
-  } catch (error) {
+    if (!text || text.length < 50) {
+      throw new Error('CONTENT_TOO_SHORT');
+    }
+    
+    console.log('✅ Text content extracted successfully with Unicode handling');
+    return text;
+    
+  } catch (error: any) {
     console.error('❌ Text file parsing error:', error);
-    throw new Error('Unable to read text file content.');
+    if (error.message === 'CONTENT_TOO_SHORT') {
+      throw new Error('CONTENT_TOO_SHORT');
+    }
+    throw new Error('UNSUPPORTED_ENCODING');
   }
 };
 

@@ -19,8 +19,34 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
     const uint8Array = new Uint8Array(arrayBuffer);
-    const textDecoder = new TextDecoder('utf-8', { fatal: false });
-    const raw = textDecoder.decode(uint8Array);
+    
+    // Enhanced Unicode handling with multiple encoding fallbacks
+    let raw = '';
+    try {
+      // Try UTF-8 first (most common)
+      raw = new TextDecoder('utf-8', { fatal: true }).decode(uint8Array);
+    } catch (utf8Error) {
+      try {
+        // Fallback to UTF-8 with error recovery
+        raw = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+      } catch (fallbackError) {
+        try {
+          // Try Latin-1 encoding for legacy documents
+          raw = new TextDecoder('iso-8859-1').decode(uint8Array);
+        } catch (latinError) {
+          // Final fallback: process as binary and extract ASCII-safe characters
+          raw = Array.from(uint8Array)
+            .map(byte => (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ' ')
+            .join('');
+        }
+      }
+    }
+
+    // Sanitize Unicode characters that could cause JSON parsing issues
+    raw = raw
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
+      .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
+      .replace(/\\u[0-9a-fA-F]{4}/g, ' '); // Remove Unicode escape sequences
 
     // Try to preserve line-ish breaks using PDF text operators (approximation)
     const parenMatches = raw.match(/\((.*?)\)/g) || [];
@@ -32,7 +58,7 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
     if (extracted.length < 50) {
       // Fallback: keep existing line breaks where possible
       extracted = raw
-        .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, ' ')
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, ' ') // Keep extended Latin
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n')
         .replace(/[ \t]+/g, ' ')
@@ -40,14 +66,25 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
         .trim();
     }
 
-    // Normalize bullets and simple dashes
+    // Normalize bullets and simple dashes with Unicode-safe replacements
     extracted = extracted
-      .replace(/•/g, '•')
-      .replace(/-\s+/g, '- ');
+      .replace(/[•●○◦▪▫■□▲△▼▽]/g, '•')
+      .replace(/-\s+/g, '- ')
+      .replace(/—/g, '-') // Em dash to regular dash
+      .replace(/–/g, '-') // En dash to regular dash
+      .replace(/[""]/g, '"') // Smart quotes to regular quotes
+      .replace(/['']/g, "'"); // Smart apostrophes to regular
+
+    if (extracted.length < 50) {
+      throw new Error('CONTENT_TOO_SHORT');
+    }
 
     return extracted;
   } catch (error) {
-    throw new Error('PDF format not supported or file is corrupted. Please upload a text-based PDF or DOCX file.');
+    if (error.message === 'CONTENT_TOO_SHORT') {
+      throw new Error('CONTENT_TOO_SHORT');
+    }
+    throw new Error('UNSUPPORTED_ENCODING');
   }
 }
 
@@ -57,8 +94,33 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
 async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
     const uint8Array = new Uint8Array(arrayBuffer);
-    const textDecoder = new TextDecoder('utf-8', { fatal: false });
-    const docxContent = textDecoder.decode(uint8Array);
+    
+    // Enhanced Unicode handling for DOCX content
+    let docxContent = '';
+    try {
+      // Try UTF-8 first
+      docxContent = new TextDecoder('utf-8', { fatal: true }).decode(uint8Array);
+    } catch (utf8Error) {
+      try {
+        // Fallback to UTF-8 with error recovery
+        docxContent = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+      } catch (fallbackError) {
+        // Try UTF-16 which is common in Office documents
+        try {
+          docxContent = new TextDecoder('utf-16le').decode(uint8Array);
+        } catch (utf16Error) {
+          // Final fallback to Latin-1
+          docxContent = new TextDecoder('iso-8859-1').decode(uint8Array);
+        }
+      }
+    }
+
+    // Sanitize Unicode characters and escape sequences
+    docxContent = docxContent
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
+      .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
+      .replace(/\\u[0-9a-fA-F]{4}/g, ' ') // Remove Unicode escape sequences
+      .replace(/\\[rnt]/g, ' '); // Remove common escape sequences
 
     // Preserve paragraph breaks and tabs, then strip tags
     const withParagraphs = docxContent
@@ -73,13 +135,24 @@ async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
+    // Unicode normalization for special characters
+    text = text
+      .replace(/[""]/g, '"') // Smart quotes
+      .replace(/['']/g, "'") // Smart apostrophes
+      .replace(/[—–]/g, '-') // Em/en dashes
+      .replace(/[•●○◦▪▫■□]/g, '•') // Normalize bullets
+      .replace(/\u00A0/g, ' '); // Non-breaking space to regular space
+
     if (text.length < 50) {
-      throw new Error('Could not extract sufficient text from DOCX');
+      throw new Error('CONTENT_TOO_SHORT');
     }
 
     return text;
   } catch (error) {
-    throw new Error('DOCX format not supported or file is corrupted. Please upload a valid DOCX file.');
+    if (error.message === 'CONTENT_TOO_SHORT') {
+      throw new Error('CONTENT_TOO_SHORT');
+    }
+    throw new Error('UNSUPPORTED_ENCODING');
   }
 }
 
@@ -491,6 +564,24 @@ async function generateEnhancedPdf(content: string, candidateName: string, jobTi
   }
 }
 
+// Enhanced error classification and file validation functions
+function classifyError(error: any): { code: string, message: string, userMessage: string } {
+  const errorMsg = error.message || error.toString();
+  if (errorMsg.includes('FILE_TOO_LARGE') || errorMsg.includes('too large')) {
+    return { code: 'FILE_TOO_LARGE', message: errorMsg, userMessage: 'Your file is too large. Please upload a resume under 10MB.' };
+  }
+  if (errorMsg.includes('UNSUPPORTED_ENCODING') || errorMsg.includes('Unicode') || errorMsg.includes('encoding')) {
+    return { code: 'UNSUPPORTED_ENCODING', message: errorMsg, userMessage: 'Your resume contains unsupported characters. Please save and upload again in PDF or DOCX format with UTF-8 encoding.' };
+  }
+  if (errorMsg.includes('INVALID_FORMAT') || errorMsg.includes('format not supported')) {
+    return { code: 'INVALID_FORMAT', message: errorMsg, userMessage: 'Unsupported file format. Please upload PDF, DOC, DOCX, or TXT.' };
+  }
+  if (errorMsg.includes('CONTENT_TOO_SHORT') || errorMsg.includes('too short') || errorMsg.includes('insufficient')) {
+    return { code: 'CONTENT_TOO_SHORT', message: errorMsg, userMessage: 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.' };
+  }
+  return { code: 'UNKNOWN_ERROR', message: errorMsg, userMessage: 'An unexpected error occurred. Please try again or contact support if the issue persists.' };
+}
+
 serve(async (req) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID().substring(0, 8);
@@ -884,11 +975,15 @@ serve(async (req) => {
     const duration = Date.now() - startTime;
     console.error(`❌ [${requestId}] Error after ${duration}ms:`, error);
     
-    // Always return a 200 response with error details in the body
+    // Enhanced error response with classification
+    const errorInfo = classifyError(error);
+    
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || 'An unexpected error occurred while processing your CV.',
+        error: errorInfo.userMessage,
+        errorCode: errorInfo.code,
+        technicalError: errorInfo.message,
         requestId: requestId,
         timestamp: new Date().toISOString(),
         context: {

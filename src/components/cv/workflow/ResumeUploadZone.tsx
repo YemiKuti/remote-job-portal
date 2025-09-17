@@ -18,35 +18,76 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [dragOver, setDragOver] = useState(false);
 
+  // Enhanced error message mapping
+  const getErrorMessage = (error: any): string => {
+    const message = error.message || error.toString();
+    
+    // Handle structured error codes from backend
+    if (error.errorCode) {
+      switch (error.errorCode) {
+        case 'FILE_TOO_LARGE':
+          return 'Your file is too large. Please upload a resume under 10MB.';
+        case 'UNSUPPORTED_ENCODING':
+          return 'Your file contains unsupported characters. Please re-save in UTF-8 format and try again.';
+        case 'INVALID_FORMAT':
+          return 'Unsupported file format. Please upload PDF, DOC, DOCX, or TXT.';
+        case 'CONTENT_TOO_SHORT':
+          return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
+        case 'TIMEOUT':
+          return 'Processing took too long. Please try with a shorter resume or simpler format.';
+        default:
+          return error.error || message;
+      }
+    }
+    
+    // Legacy error message handling
+    if (message.includes('FILE_TOO_LARGE') || message.includes('too large')) {
+      return 'Your file is too large. Please upload a resume under 10MB.';
+    }
+    if (message.includes('UNSUPPORTED_ENCODING') || message.includes('Unicode') || message.includes('encoding')) {
+      return 'Your file contains unsupported characters. Please re-save in UTF-8 format and try again.';
+    }
+    if (message.includes('INVALID_FORMAT') || message.includes('format') || message.includes('supported')) {
+      return 'Unsupported file format. Please upload PDF, DOC, DOCX, or TXT.';
+    }
+    if (message.includes('CONTENT_TOO_SHORT') || message.includes('too short')) {
+      return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
+    }
+    
+    return message;
+  };
+
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
 
     setUploading(true);
     setError(null);
-    setUploadProgress('Validating file...');
+    setUploadProgress('0%');
 
     try {
-      // Enhanced file validation
+      // Enhanced file validation with progress updates
+      setUploadProgress('10% - Validating file format...');
       const fileName = file.name.toLowerCase();
       const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
       const isSupported = supportedFormats.some(format => fileName.endsWith(format)) || 
                           ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type);
       
       if (!isSupported) {
-        throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+        throw { errorCode: 'INVALID_FORMAT', message: 'Unsupported file format' };
       }
 
+      setUploadProgress('20% - Checking file size...');
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('File is too large. Please upload a file smaller than 10MB.');
+        throw { errorCode: 'FILE_TOO_LARGE', message: 'File too large' };
       }
 
       // Validate minimum file size
       if (file.size < 1024) {
-        throw new Error('File is too small. Please upload a resume with more content.');
+        throw { errorCode: 'FILE_TOO_SMALL', message: 'File too small' };
       }
 
-      setUploadProgress('Extracting resume content...');
+      setUploadProgress('30% - Extracting resume content...');
       
       // Extract content from the resume with enhanced error handling
       let resumeContent;
@@ -55,9 +96,10 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         
         // Additional validation for extracted content
         if (!resumeContent.text || resumeContent.text.trim().length < 30) {
-          throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
+          throw { errorCode: 'CONTENT_TOO_SHORT', message: 'Insufficient content extracted' };
         }
         
+        setUploadProgress('50% - Content extracted successfully...');
         console.log('✅ Resume content validated:', {
           textLength: resumeContent.text.length,
           hasPersonalInfo: !!resumeContent.candidateData.personalInfo,
@@ -66,21 +108,20 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         
       } catch (extractError: any) {
         console.error('Content extraction error:', extractError);
-        const errorMessage = extractError.message || 'Unable to read resume content';
         
-        // Provide specific error messages based on error type
-        if (errorMessage.includes('format') || errorMessage.includes('supported')) {
-          throw new Error('This file format is not supported. Please upload a PDF or DOCX resume.');
-        } else if (errorMessage.includes('empty') || errorMessage.includes('short')) {
-          throw new Error('Resume file appears to be empty or corrupted. Please upload a valid resume file.');
-        } else if (errorMessage.includes('large')) {
-          throw new Error('File is too large. Please upload a file smaller than 10MB.');
+        // Handle structured error codes from extraction
+        if (extractError.message === 'CONTENT_TOO_SHORT') {
+          throw { errorCode: 'CONTENT_TOO_SHORT', message: extractError.message };
+        } else if (extractError.message === 'UNSUPPORTED_ENCODING') {
+          throw { errorCode: 'UNSUPPORTED_ENCODING', message: extractError.message };
+        } else if (extractError.message && extractError.message.includes('format')) {
+          throw { errorCode: 'INVALID_FORMAT', message: extractError.message };
         } else {
-          throw new Error('Unable to process resume file. Please ensure the file is valid and not corrupted.');
+          throw { errorCode: 'PROCESSING_ERROR', message: 'Unable to process resume file' };
         }
       }
 
-      setUploadProgress('Uploading to storage...');
+      setUploadProgress('70% - Uploading to storage...');
 
       // Upload file to Supabase storage
       const fileName_unique = `${Date.now()}-${file.name}`;
@@ -97,10 +138,33 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      setUploadProgress('Saving resume data...');
+      setUploadProgress('90% - Saving resume data...');
 
-      // Convert candidate data to JSON-compatible format
-      const candidateDataJson = JSON.parse(JSON.stringify(resumeContent.candidateData));
+      // Convert candidate data to JSON-compatible format with Unicode sanitization
+      let candidateDataJson;
+      try {
+        const candidateDataString = JSON.stringify(resumeContent.candidateData)
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
+          .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
+          .replace(/\\u[0-9a-fA-F]{4}/g, ' '); // Remove Unicode escape sequences
+        candidateDataJson = JSON.parse(candidateDataString);
+      } catch (jsonError) {
+        console.warn('JSON serialization issue, using fallback:', jsonError);
+        candidateDataJson = {
+          personalInfo: {
+            name: resumeContent.candidateData.personalInfo?.name || 'Professional',
+            email: resumeContent.candidateData.personalInfo?.email || '',
+            phone: resumeContent.candidateData.personalInfo?.phone || ''
+          }
+        };
+      }
+
+      // Sanitize extracted content for database storage
+      const sanitizedContent = resumeContent.text
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
+        .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
+        .replace(/\\u[0-9a-fA-F]{4}/g, ' ') // Remove Unicode escape sequences
+        .trim();
 
       // Save resume record to database
       const { data: savedResume, error: saveError } = await supabase
@@ -110,7 +174,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
           name: file.name,
           file_path: filePath,
           file_size: file.size,
-          extracted_content: resumeContent.text,
+          extracted_content: sanitizedContent,
           candidate_data: candidateDataJson,
           is_default: false
         })
@@ -120,7 +184,8 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
       if (saveError) {
         // Clean up uploaded file if database insert fails
         await supabase.storage.from('documents').remove([filePath]);
-        throw new Error(`Failed to save resume: ${saveError.message}`);
+        console.error('Database save error:', saveError);
+        throw { errorCode: 'DATABASE_ERROR', message: `Failed to save resume: ${saveError.message}` };
       }
 
       // Enhance the resume object with content for immediate use
@@ -133,6 +198,8 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         sections: resumeContent.sections
       };
 
+      setUploadProgress('100% - Upload complete!');
+      
       console.log('✅ Resume uploaded successfully:', {
         id: savedResume.id,
         name: file.name,
@@ -145,8 +212,9 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
 
     } catch (error: any) {
       console.error('❌ Resume upload error:', error);
-      setError(error.message || 'Failed to upload resume');
-      toast.error(error.message || 'Failed to upload resume');
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -198,6 +266,14 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
               <div className="text-sm font-medium">{uploadProgress}</div>
+              {uploadProgress.includes('%') && (
+                <div className="w-48 bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: uploadProgress.match(/(\d+)%/)?.[1] + '%' || '0%' }}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <Upload className="h-12 w-12 text-gray-400 mx-auto" />
@@ -249,9 +325,14 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
           <li><strong>Legacy Word (.doc)</strong> - Limited support</li>
           <li><strong>Plain Text (.txt)</strong> - Recommended for best results</li>
         </ul>
-        <p className="text-xs text-gray-500 mt-2">
-          💡 <strong>Tip:</strong> For optimal CV tailoring, save your resume as a .txt file to ensure all content is properly extracted.
-        </p>
+        <div className="border-t pt-2 mt-2">
+          <p className="text-xs text-gray-500 flex items-center gap-1">
+            💡 <strong>Tip:</strong> For optimal results, save your resume as a .txt file to ensure all content is properly extracted.
+          </p>
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+            🔤 <strong>Unicode Support:</strong> Files with special characters (accents, symbols) are automatically processed with UTF-8 encoding fallback.
+          </p>
+        </div>
       </div>
     </div>
   );

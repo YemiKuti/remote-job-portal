@@ -311,9 +311,9 @@ function validateTailoredContent(content: string, originalCV: any, keywords: str
 
   // Action verb coverage
   const ACTION_VERBS = ['Led','Delivered','Built','Owned','Designed','Implemented','Developed','Improved','Optimized','Automated','Managed','Coordinated','Launched','Reduced','Increased','Streamlined','Enhanced','Created','Architected','Deployed','Analyzed','Refactored','Mentored','Facilitated'];
-  const bulletLines = content.split('\n').filter(l => /^[•-]\s*/.test(l.trim()));
+  const bulletLines = content.split('\n').filter(l => /^[•\-]\s*/.test(l.trim()));
   const verbsOk = bulletLines.length ? bulletLines.filter(l => {
-    const word = l.replace(/^[−-•]\s*/, '').split(/[\s,]/)[0];
+    const word = l.replace(/^[\u2212\-•]\s*/, '').split(/[\s,]/)[0];
     return ACTION_VERBS.some(v => v.toLowerCase() === word.toLowerCase());
   }).length / bulletLines.length : 1;
   if (verbsOk < 0.7) {
@@ -344,9 +344,9 @@ function calculateTailoringScore(originalCV: any, enhancedCV: any, keywords: str
   const keywordsRatio = keywords.length ? keywordsFound / keywords.length : 1;
 
   const ACTION_VERBS = ['Led','Delivered','Built','Owned','Designed','Implemented','Developed','Improved','Optimized','Automated','Managed','Coordinated','Launched','Reduced','Increased','Streamlined','Enhanced','Created','Architected','Deployed','Analyzed','Refactored','Mentored','Facilitated'];
-  const bulletLines = content.split('\n').filter(l => /^[•-]\s*/.test(l.trim()));
+  const bulletLines = content.split('\n').filter(l => /^[•\-]\s*/.test(l.trim()));
   const verbsOkCount = bulletLines.filter(l => {
-    const word = l.replace(/^[−-•]\s*/, '').split(/[\s,]/)[0];
+    const word = l.replace(/^[\u2212\-•]\s*/, '').split(/[\s,]/)[0];
     return ACTION_VERBS.some(v => v.toLowerCase() === word.toLowerCase());
   }).length;
   const verbsCoverage = bulletLines.length ? verbsOkCount / bulletLines.length : 1;
@@ -774,8 +774,106 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
+      } else if (contentType.includes('application/json')) {
+        console.log(`🧾 [${requestId}] Processing JSON payload`);
+        const body = await req.json();
+
+        let resumeContent = String(body.resumeContent || body.resume_text || '').trim();
+        const jobDescription = String(body.jobDescription || '').trim();
+        const jobTitle = String(body.jobTitle || 'Job Title').trim();
+        const companyName = String(body.companyName || '').trim();
+        const userId = body.userId ? String(body.userId) : '';
+
+        if (!resumeContent || resumeContent.length < 30) {
+          throw new Error('Resume content is required and must be at least 30 characters.');
+        }
+        if (!jobDescription || jobDescription.length < 50) {
+          throw new Error('Job description is required and must be at least 50 characters long.');
+        }
+
+        const candidateName = resumeContent.split('\n').map((l: string) => l.trim()).filter(Boolean)[0] || 'Professional';
+
+        const structuredCV = parseResumeToJSON(resumeContent);
+        const jobKeywords = extractJobKeywords(jobDescription, jobTitle);
+        const enhancedCV = enhanceResumeWithKeywords(structuredCV, jobKeywords, jobTitle, companyName);
+        const tailoredContent = formatEnhancedResume(enhancedCV);
+
+        const validation = validateTailoredContent(tailoredContent, structuredCV, jobKeywords);
+        if (!validation.isValid) {
+          throw new Error(`Content validation failed: ${validation.errors.join(', ')}`);
+        }
+
+        let qualityScore = calculateTailoringScore(structuredCV, enhancedCV, jobKeywords, tailoredContent);
+
+        const pdfBytes = await generateEnhancedPdf(tailoredContent, candidateName, jobTitle);
+        if (pdfBytes.length < 1000) {
+          throw new Error('PDF export too small - possible generation failure');
+        }
+
+        const tailoredFileName = `tailored_${Date.now()}_${requestId}.pdf`;
+        const { error: uploadError } = await supabase.storage
+          .from('tailored-resumes')
+          .upload(tailoredFileName, pdfBytes, {
+            contentType: 'application/pdf',
+            upsert: false
+          });
+        if (uploadError) {
+          console.error('❌ Storage upload error:', uploadError);
+          throw new Error(`Failed to upload tailored resume: ${uploadError.message}`);
+        }
+
+        const { data: tailoredResume, error: insertError } = await supabase
+          .from('tailored_resumes')
+          .insert({
+            user_id: userId || null,
+            original_resume_id: null,
+            job_id: null,
+            tailored_content: tailoredContent,
+            job_title: jobTitle,
+            company_name: companyName,
+            job_description: jobDescription,
+            tailored_file_path: tailoredFileName,
+            file_format: 'pdf',
+            tailoring_score: qualityScore,
+            status: 'tailored',
+            ai_suggestions: {
+              keywords_added: jobKeywords.filter((kw: string) => tailoredContent.toLowerCase().includes(kw.toLowerCase())).length,
+              enhancements_made: validation.enhancementsApplied,
+              structure_preserved: validation.structurePreserved,
+              timestamp: new Date().toISOString()
+            }
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Database insert error:', insertError);
+          throw new Error(`Failed to save tailored resume: ${insertError.message}`);
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            tailoredResume: tailoredContent,
+            score: qualityScore,
+            downloadUrl: supabase.storage.from('tailored-resumes').getPublicUrl(tailoredFileName).data.publicUrl,
+            tailoredResumeId: tailoredResume.id,
+            analysis: {
+              qualityElements: {
+                structurePreserved: validation.structurePreserved,
+                enhancementsApplied: validation.enhancementsApplied,
+                keywordsIntegrated: jobKeywords.filter((kw: string) => tailoredContent.toLowerCase().includes(kw.toLowerCase())).length
+              }
+            },
+            requestId,
+            timestamp: new Date().toISOString()
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       } else {
-        throw new Error('Invalid request format. Please use file upload.');
+        throw new Error('Invalid request format. Please use file upload (multipart/form-data) or JSON.');
       }
     };
 

@@ -331,6 +331,86 @@ function formatEnhancedResume(cv: any): string {
 }
 
 /**
+ * Smart content moderation and auto-truncation for resumes
+ */
+function moderateResumeContent(content: string): { content: string, warnings: string[] } {
+  const warnings: string[] = [];
+  let processedContent = content;
+  
+  // Character count thresholds
+  const STANDARD_LENGTH = 8000; // ~2-3 pages
+  const VERY_LONG_LENGTH = 15000; // ~5+ pages
+  const MAX_PROCESSING_LENGTH = 20000; // Hard limit
+  
+  if (content.length <= STANDARD_LENGTH) {
+    // Standard length resume - process as-is
+    return { content: processedContent, warnings };
+  }
+  
+  if (content.length <= VERY_LONG_LENGTH) {
+    // Longer than average but acceptable
+    warnings.push('Your resume is longer than average. We\'ll process the essential content, but for best results, consider shortening less critical sections (like references or older roles).');
+    return { content: processedContent, warnings };
+  }
+  
+  if (content.length <= MAX_PROCESSING_LENGTH) {
+    // Very long - attempt smart truncation
+    warnings.push('Your resume is unusually long. We\'ll process the essential content, but for best results, consider shortening less critical sections.');
+    
+    // Smart truncation - preserve essential sections
+    const lines = content.split('\n');
+    const essentialSections = [];
+    let currentSection = '';
+    let inEssentialSection = false;
+    
+    // Section headers to prioritize
+    const essentialHeaders = [
+      /^(professional\s+summary|summary|profile|objective)/i,
+      /^(experience|work\s+experience|employment|career)/i,
+      /^(education|academic)/i,
+      /^(skills|technical\s+skills|core\s+competencies)/i,
+      /^(certifications|certificates)/i
+    ];
+    
+    // Sections to deprioritize
+    const nonEssentialHeaders = [
+      /^(references|personal\s+references)/i,
+      /^(hobbies|interests|personal\s+interests)/i,
+      /^(publications|research|projects)/i,
+      /^(volunteer|volunteering)/i
+    ];
+    
+    for (let i = 0; i < lines.length && essentialSections.join('\n').length < STANDARD_LENGTH; i++) {
+      const line = lines[i].trim();
+      
+      // Check if this is a section header
+      const isEssential = essentialHeaders.some(pattern => pattern.test(line));
+      const isNonEssential = nonEssentialHeaders.some(pattern => pattern.test(line));
+      
+      if (isEssential) {
+        inEssentialSection = true;
+        currentSection = line;
+        essentialSections.push(line);
+      } else if (isNonEssential) {
+        inEssentialSection = false;
+        // Skip non-essential sections entirely
+      } else if (inEssentialSection || (!isEssential && !isNonEssential && i < 50)) {
+        // Include essential section content or first 50 lines (header area)
+        essentialSections.push(line);
+      }
+    }
+    
+    processedContent = essentialSections.join('\n');
+    return { content: processedContent, warnings };
+  }
+  
+  // Extremely long - hard truncate with warning
+  warnings.push('Your resume is unusually long. Please shorten it or split into multiple sections for better processing.');
+  processedContent = content.substring(0, MAX_PROCESSING_LENGTH);
+  return { content: processedContent, warnings };
+}
+
+/**
  * Validate tailored content quality
  */
 function validateTailoredContent(content: string, originalCV: any, keywords: string[]): any {
@@ -352,8 +432,9 @@ function validateTailoredContent(content: string, originalCV: any, keywords: str
     errors.push('Contains placeholder text');
   }
 
-  if (content.length < 600) {
-    errors.push('Content too short');
+  // More lenient content length check for standard resumes
+  if (content.length < 200) {
+    errors.push('Content too short - needs more detail');
   }
 
   // Structure checks
@@ -446,7 +527,7 @@ async function generateEnhancedPdf(content: string, candidateName: string, jobTi
   try {
     console.log('🔄 Generating enhanced PDF');
 
-    if (!content || content.length < 100) {
+    if (!content || content.length < 50) {
       throw new Error('Content too short for PDF generation');
     }
 
@@ -579,6 +660,9 @@ function classifyError(error: any): { code: string, message: string, userMessage
   if (errorMsg.includes('CONTENT_TOO_SHORT') || errorMsg.includes('too short') || errorMsg.includes('insufficient')) {
     return { code: 'CONTENT_TOO_SHORT', message: errorMsg, userMessage: 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.' };
   }
+  if (errorMsg.includes('CONTENT_TOO_LARGE') || errorMsg.includes('unusually long')) {
+    return { code: 'CONTENT_TOO_LARGE', message: errorMsg, userMessage: 'Your resume is longer than average. We\'ll process the essential content, but for best results, consider shortening less critical sections (like references or older roles).' };
+  }
   return { code: 'UNKNOWN_ERROR', message: errorMsg, userMessage: 'An unexpected error occurred. Please try again or contact support if the issue persists.' };
 }
 
@@ -629,9 +713,9 @@ serve(async (req) => {
           throw new Error('Unsupported file format. Please upload a PDF, DOCX, or TXT file.');
         }
         
-        // Validate file size
-        if (file.size > 15 * 1024 * 1024) { // 15MB limit
-          throw new Error('File too large. Please upload a file smaller than 15MB.');
+        // Validate file size - allow up to 10MB for standard resumes
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          throw new Error('FILE_TOO_LARGE');
         }
         
         if (file.size < 100) {
@@ -672,6 +756,14 @@ serve(async (req) => {
         // Validate extracted content
         if (!resumeContent || resumeContent.trim().length < 30) {
           throw new Error('Insufficient content extracted. Please upload a file with readable text.');
+        }
+
+        // Apply smart content moderation and auto-truncation
+        const { content: moderatedContent, warnings } = moderateResumeContent(resumeContent);
+        resumeContent = moderatedContent;
+        
+        if (warnings.length > 0) {
+          console.log(`⚠️ [${requestId}] Content moderation warnings:`, warnings);
         }
 
         // Validate job description

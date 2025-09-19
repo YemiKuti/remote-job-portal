@@ -33,6 +33,8 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
           return 'Unsupported file format. Please upload PDF, DOC, DOCX, or TXT.';
         case 'CONTENT_TOO_SHORT':
           return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
+        case 'CONTENT_TOO_LARGE':
+          return 'Your resume is longer than average. We\'ll process the essential content, but for best results, consider shortening less critical sections (like references or older roles).';
         case 'TIMEOUT':
           return 'Processing took too long. Please try with a shorter resume or simpler format.';
         default:
@@ -52,6 +54,9 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
     }
     if (message.includes('CONTENT_TOO_SHORT') || message.includes('too short')) {
       return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
+    }
+    if (message.includes('CONTENT_TOO_LARGE') || message.includes('longer than average') || message.includes('unusually long')) {
+      return 'Your resume is longer than average. We\'ll process the essential content, but for best results, consider shortening less critical sections (like references or older roles).';
     }
     
     return message;
@@ -112,6 +117,8 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         // Handle structured error codes from extraction
         if (extractError.message === 'CONTENT_TOO_SHORT') {
           throw { errorCode: 'CONTENT_TOO_SHORT', message: extractError.message };
+        } else if (extractError.message === 'CONTENT_TOO_LARGE') {
+          throw { errorCode: 'CONTENT_TOO_LARGE', message: extractError.message };
         } else if (extractError.message === 'UNSUPPORTED_ENCODING') {
           throw { errorCode: 'UNSUPPORTED_ENCODING', message: extractError.message };
         } else if (extractError.message && extractError.message.includes('format')) {

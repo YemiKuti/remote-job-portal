@@ -267,9 +267,9 @@ const extractTextContent = async (file: File): Promise<string> => {
 export const extractResumeContent = async (file: File): Promise<ResumeContent> => {
   console.log('📄 Processing resume file:', file.name, file.type, file.size);
   
-  // Validate file size (max 15MB)
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error('File too large. Please upload a file smaller than 15MB.');
+  // Validate file size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('FILE_TOO_LARGE');
   }
 
   if (file.size < 100) {
@@ -312,9 +312,14 @@ Please proceed with providing the job description to continue the tailoring proc
       }
     }
     
-    // Validate extracted content with more lenient requirements
+    // Validate extracted content with more lenient requirements for standard resumes
     if (!textContent || textContent.trim().length < 20) {
       throw new Error('Unable to extract sufficient content from this file. Please ensure your resume contains readable text and try uploading a different format (PDF, DOCX, or TXT).');
+    }
+
+    // Additional check for extremely short content
+    if (textContent.trim().length < 50) {
+      console.warn('⚠️ Very short content detected, but proceeding with processing');
     }
 
     console.log('✅ Content extracted successfully:', textContent.length, 'characters');

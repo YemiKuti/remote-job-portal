@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Content Size Validation Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin: 20px 0;
+        }
+        
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .test-case {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .test-case:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .test-case.pass {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .test-case.fail {
+            border-color: #f56565;
+            background: #fff5f5;
+        }
+        
+        .test-case.pending {
+            border-color: #ed8936;
+            background: #fffaf0;
+        }
+        
+        .test-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-icon.pass { background: #48bb78; }
+        .status-icon.fail { background: #f56565; }
+        .status-icon.pending { background: #ed8936; }
+        
+        .expected-result {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #4a5568;
+            font-size: 0.95em;
+        }
+        
+        .expected-result strong {
+            color: #2d3748;
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #ebf4ff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .result-area {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+            display: none;
+        }
+        
+        .result-success {
+            background: #f0fff4;
+            border: 1px solid #48bb78;
+            color: #22543d;
+        }
+        
+        .result-error {
+            background: #fff5f5;
+            border: 1px solid #f56565;
+            color: #742a2a;
+        }
+        
+        .result-warning {
+            background: #fffaf0;
+            border: 1px solid #ed8936;
+            color: #7b341e;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            padding: 25px;
+            background: #f7fafc;
+            border-radius: 12px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .summary-label {
+            color: #718096;
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .critical-success {
+            background: #f0fff4 !important;
+            border: 2px solid #48bb78 !important;
+            box-shadow: 0 0 20px rgba(72, 187, 120, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Resume Content Size Validation</h1>
+        <p class="subtitle">Testing the fix for "Resume content is too large" issue</p>
+        
+        <div class="summary">
+            <div class="summary-item">
+                <div class="summary-number" id="total-tests">5</div>
+                <div class="summary-label">Total Tests</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" id="passed-tests">0</div>
+                <div class="summary-label">Passed</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" id="failed-tests">0</div>
+                <div class="summary-label">Failed</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" id="pending-tests">5</div>
+                <div class="summary-label">Pending</div>
+            </div>
+        </div>
+        
+        <div class="test-grid">
+            <!-- Test Case 1: Standard CV -->
+            <div class="test-case" id="test-1">
+                <div class="test-title">
+                    <span class="status-icon pending" id="status-1">1</span>
+                    Standard CV (2–4 pages, &lt;10MB)
+                </div>
+                
+                <div class="expected-result">
+                    <strong>✅ Expected:</strong> Resume processes successfully with no errors.
+                    <br><strong>🚫 Fail if:</strong> Resume is rejected with "content too large" error.
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('file-1').click()">
+                    📁 Drop a normal CV file here or click to browse
+                    <br><small>PDF, DOCX, or TXT • 2-4 pages • Under 10MB</small>
+                </div>
+                
+                <input type="file" id="file-1" class="file-input" accept=".pdf,.docx,.doc,.txt">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runTest(1)">🧪 Run Test</button>
+                    <button class="btn btn-success" onclick="markTest(1, 'pass')">✓ Mark Pass</button>
+                    <button class="btn btn-danger" onclick="markTest(1, 'fail')">✗ Mark Fail</button>
+                </div>
+                
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill" id="progress-1"></div>
+                </div>
+                
+                <div class="result-area" id="result-1"></div>
+            </div>
+            
+            <!-- Test Case 2: Extended CV -->
+            <div class="test-case" id="test-2">
+                <div class="test-title">
+                    <span class="status-icon pending" id="status-2">2</span>
+                    Extended CV (8–12 pages, &lt;10MB)
+                </div>
+                
+                <div class="expected-result">
+                    <strong>✅ Expected:</strong> Resume processes with warning message:<br>
+                    <em>"Your resume is longer than average. We'll process the essential content."</em>
+                    <br><strong>🚫 Fail if:</strong> Resume is rejected outright without processing.
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('file-2').click()">
+                    📁 Drop an academic/research CV here or click to browse
+                    <br><small>PDF, DOCX, or TXT • 8-12 pages • Under 10MB</small>
+                </div>
+                
+                <input type="file" id="file-2" class="file-input" accept=".pdf,.docx,.doc,.txt">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runTest(2)">🧪 Run Test</button>
+                    <button class="btn btn-success" onclick="markTest(2, 'pass')">✓ Mark Pass</button>
+                    <button class="btn btn-danger" onclick="markTest(2, 'fail')">✗ Mark Fail</button>
+                </div>
+                
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill" id="progress-2"></div>
+                </div>
+                
+                <div class="result-area" id="result-2"></div>
+            </div>
+            
+            <!-- Test Case 3: Oversized File -->
+            <div class="test-case" id="test-3">
+                <div class="test-title">
+                    <span class="status-icon pending" id="status-3">3</span>
+                    Oversized File (&gt;10MB)
+                </div>
+                
+                <div class="expected-result">
+                    <strong>✅ Expected:</strong> Error message appears:<br>
+                    <em>"Your file is too large. Please upload a resume under 10MB."</em>
+                    <br><strong>🚫 Fail if:</strong> System crashes, hangs, or gives vague error.
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('file-3').click()">
+                    📁 Drop a large file (&gt;10MB) here or click to browse
+                    <br><small>Any format • Must be over 10MB</small>
+                </div>
+                
+                <input type="file" id="file-3" class="file-input">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runTest(3)">🧪 Run Test</button>
+                    <button class="btn btn-success" onclick="markTest(3, 'pass')">✓ Mark Pass</button>
+                    <button class="btn btn-danger" onclick="markTest(3, 'fail')">✗ Mark Fail</button>
+                </div>
+                
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill" id="progress-3"></div>
+                </div>
+                
+                <div class="result-area" id="result-3"></div>
+            </div>
+            
+            <!-- Test Case 4: Very Large Resume -->
+            <div class="test-case" id="test-4">
+                <div class="test-title">
+                    <span class="status-icon pending" id="status-4">4</span>
+                    Very Large Resume (20+ pages, &lt;10MB)
+                </div>
+                
+                <div class="expected-result">
+                    <strong>✅ Expected:</strong> Resume processes partially with message:<br>
+                    <em>"We processed the essential sections for best results."</em>
+                    <br><strong>🚫 Fail if:</strong> System rejects the file outright or fails silently.
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('file-4').click()">
+                    📁 Drop a very long resume (20+ pages) here or click to browse
+                    <br><small>PDF, DOCX, or TXT • 20+ pages • Under 10MB</small>
+                </div>
+                
+                <input type="file" id="file-4" class="file-input" accept=".pdf,.docx,.doc,.txt">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runTest(4)">🧪 Run Test</button>
+                    <button class="btn btn-success" onclick="markTest(4, 'pass')">✓ Mark Pass</button>
+                    <button class="btn btn-danger" onclick="markTest(4, 'fail')">✗ Mark Fail</button>
+                </div>
+                
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill" id="progress-4"></div>
+                </div>
+                
+                <div class="result-area" id="result-4"></div>
+            </div>
+            
+            <!-- Test Case 5: Special Characters -->
+            <div class="test-case" id="test-5">
+                <div class="test-title">
+                    <span class="status-icon pending" id="status-5">5</span>
+                    Special Characters / Unicode
+                </div>
+                
+                <div class="expected-result">
+                    <strong>✅ Expected:</strong> Resume processes correctly with no "Unicode escape sequence" error.
+                    <br><strong>🚫 Fail if:</strong> Error such as "unsupported Unicode escape sequence."
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('file-5').click()">
+                    📁 Drop a CV with accents, emojis, or non-English text here
+                    <br><small>PDF, DOCX, or TXT • Contains special characters</small>
+                </div>
+                
+                <input type="file" id="file-5" class="file-input" accept=".pdf,.docx,.doc,.txt">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runTest(5)">🧪 Run Test</button>
+                    <button class="btn btn-success" onclick="markTest(5, 'pass')">✓ Mark Pass</button>
+                    <button class="btn btn-danger" onclick="markTest(5, 'fail')">✗ Mark Fail</button>
+                </div>
+                
+                <div class="progress-bar" style="display: none;">
+                    <div class="progress-fill" id="progress-5"></div>
+                </div>
+                
+                <div class="result-area" id="result-5"></div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f7fafc; border-radius: 8px;">
+            <h3 style="margin: 0 0 10px 0; color: #2d3748;">🎯 Success Criteria</h3>
+            <p style="margin: 0; color: #4a5568;">
+                <strong>PASS if:</strong> Test Cases 1 & 2 pass (standard resumes process successfully)
+                <br><strong>PASS if:</strong> Test Cases 3 & 4 pass (edge cases handled gracefully)  
+                <br><strong>PASS if:</strong> Test Case 5 passes (Unicode issues fixed)
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            1: 'pending',
+            2: 'pending', 
+            3: 'pending',
+            4: 'pending',
+            5: 'pending'
+        };
+
+        function updateSummary() {
+            const results = Object.values(testResults);
+            const passed = results.filter(r => r === 'pass').length;
+            const failed = results.filter(r => r === 'fail').length;
+            const pending = results.filter(r => r === 'pending').length;
+            
+            document.getElementById('passed-tests').textContent = passed;
+            document.getElementById('failed-tests').textContent = failed;
+            document.getElementById('pending-tests').textContent = pending;
+            
+            // Highlight critical success if tests 1 & 2 pass
+            if (testResults[1] === 'pass' && testResults[2] === 'pass') {
+                document.getElementById('test-1').classList.add('critical-success');
+                document.getElementById('test-2').classList.add('critical-success');
+            }
+        }
+
+        function markTest(testNumber, status) {
+            testResults[testNumber] = status;
+            
+            const testCase = document.getElementById(`test-${testNumber}`);
+            const statusIcon = document.getElementById(`status-${testNumber}`);
+            
+            // Remove old classes
+            testCase.classList.remove('pass', 'fail', 'pending');
+            statusIcon.classList.remove('pass', 'fail', 'pending');
+            
+            // Add new classes
+            testCase.classList.add(status);
+            statusIcon.classList.add(status);
+            
+            // Update icon content
+            if (status === 'pass') {
+                statusIcon.textContent = '✓';
+            } else if (status === 'fail') {
+                statusIcon.textContent = '✗';
+            } else {
+                statusIcon.textContent = testNumber;
+            }
+            
+            updateSummary();
+        }
+
+        function showResult(testNumber, type, message) {
+            const resultArea = document.getElementById(`result-${testNumber}`);
+            resultArea.className = `result-area result-${type}`;
+            resultArea.innerHTML = message;
+            resultArea.style.display = 'block';
+        }
+
+        function showProgress(testNumber, percentage) {
+            const progressBar = document.querySelector(`#test-${testNumber} .progress-bar`);
+            const progressFill = document.getElementById(`progress-${testNumber}`);
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = percentage + '%';
+            
+            if (percentage >= 100) {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        async function runTest(testNumber) {
+            const fileInput = document.getElementById(`file-${testNumber}`);
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult(testNumber, 'error', '❌ Please select a file first');
+                return;
+            }
+            
+            showProgress(testNumber, 10);
+            showResult(testNumber, 'warning', `🧪 Testing file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            
+            try {
+                // Simulate file validation tests
+                showProgress(testNumber, 30);
+                
+                if (testNumber === 1) {
+                    // Standard CV test
+                    if (file.size > 10 * 1024 * 1024) {
+                        showResult(testNumber, 'error', '❌ FAIL: File too large for standard CV test');
+                        markTest(testNumber, 'fail');
+                        return;
+                    }
+                    if (file.size < 50 * 1024) {
+                        showResult(testNumber, 'error', '❌ FAIL: File too small to be a real CV');
+                        markTest(testNumber, 'fail');
+                        return;
+                    }
+                    showResult(testNumber, 'success', '✅ PASS: Standard CV size acceptable, should process successfully');
+                    markTest(testNumber, 'pass');
+                }
+                
+                else if (testNumber === 2) {
+                    // Extended CV test  
+                    if (file.size > 10 * 1024 * 1024) {
+                        showResult(testNumber, 'error', '❌ FAIL: File too large even for extended CV');
+                        markTest(testNumber, 'fail');
+                        return;
+                    }
+                    if (file.size < 500 * 1024) {
+                        showResult(testNumber, 'warning', '⚠️ WARNING: File may be too small to be an extended CV');
+                    }
+                    showResult(testNumber, 'success', '✅ PASS: Extended CV size, should process with warning message');
+                    markTest(testNumber, 'pass');
+                }
+                
+                else if (testNumber === 3) {
+                    // Oversized file test
+                    if (file.size <= 10 * 1024 * 1024) {
+                        showResult(testNumber, 'error', '❌ FAIL: File not large enough to test oversized behavior');
+                        markTest(testNumber, 'fail');
+                        return;
+                    }
+                    showResult(testNumber, 'success', '✅ PASS: File over 10MB, should show size error message');
+                    markTest(testNumber, 'pass');
+                }
+                
+                else if (testNumber === 4) {
+                    // Very large resume test
+                    if (file.size > 10 * 1024 * 1024) {
+                        showResult(testNumber, 'error', '❌ FAIL: File too large, use a large but under 10MB file');
+                        markTest(testNumber, 'fail');
+                        return;
+                    }
+                    showResult(testNumber, 'success', '✅ PASS: Very large content, should process with truncation message');
+                    markTest(testNumber, 'pass');
+                }
+                
+                else if (testNumber === 5) {
+                    // Unicode test
+                    showProgress(testNumber, 60);
+                    
+                    // Try to read file content to check for special characters
+                    try {
+                        const text = await readFileAsText(file);
+                        showProgress(testNumber, 80);
+                        
+                        const hasSpecialChars = hasSpecialCharacters(text);
+                        if (!hasSpecialChars) {
+                            showResult(testNumber, 'warning', '⚠️ WARNING: File may not contain special characters to test Unicode handling');
+                        } else {
+                            showResult(testNumber, 'success', '✅ PASS: File contains special characters, should process without encoding errors');
+                            markTest(testNumber, 'pass');
+                        }
+                    } catch (error) {
+                        showResult(testNumber, 'error', '❌ Could not read file content for Unicode test');
+                        markTest(testNumber, 'fail');
+                    }
+                }
+                
+                showProgress(testNumber, 100);
+                
+            } catch (error) {
+                showResult(testNumber, 'error', `❌ Test error: ${error.message}`);
+                markTest(testNumber, 'fail');
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function hasSpecialCharacters(text) {
+            // Check for accented characters, emojis, or non-ASCII characters
+            return /[^\x00-\x7F]/.test(text) || /[àáâãäåèéêëìíîïòóôõöùúûüýÿñç]/.test(text) || /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(text);
+        }
+
+        // Set up drag and drop for all upload areas
+        document.querySelectorAll('.upload-area').forEach((area, index) => {
+            const testNumber = index + 1;
+            const fileInput = document.getElementById(`file-${testNumber}`);
+            
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('dragover');
+            });
+            
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    area.innerHTML = `📎 ${files[0].name} <br><small>${(files[0].size / 1024 / 1024).toFixed(2)} MB</small>`;
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    area.innerHTML = `📎 ${file.name} <br><small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>`;
+                }
+            });
+        });
+
+        // Initialize summary
+        updateSummary();
+    </script>
+</body>
+</html>

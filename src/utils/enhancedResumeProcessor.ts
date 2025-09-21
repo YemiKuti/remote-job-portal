@@ -258,9 +258,10 @@ const extractTextContent = async (file: File): Promise<string> => {
 export const extractResumeContent = async (file: File): Promise<ResumeContent> => {
   console.log('📄 Processing resume file:', file.name, file.type, file.size);
   
+  // Step 1: Validate CV file before processing
   // Check if file is empty or corrupted (0 bytes)
-  if (file.size === 0) {
-    throw new Error('FILE_EMPTY');
+  if (file.size <= 0) {
+    throw new Error('RESUME_EMPTY_OR_UNREADABLE');
   }
   
   // Validate file size (max 10MB)
@@ -269,7 +270,7 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
   }
 
   if (file.size < 100) {
-    throw new Error('FILE_TOO_SMALL');
+    throw new Error('RESUME_EMPTY_OR_UNREADABLE');
   }
 
   let textContent = '';
@@ -350,6 +351,20 @@ Please proceed with providing the job description to continue the tailoring proc
     
   } catch (error: any) {
     console.error('❌ Resume processing failed:', error);
+    
+    // Step 1 & 2: Handle empty/unreadable files
+    if (error.message === 'RESUME_EMPTY_OR_UNREADABLE' || 
+        error.message === 'PDF_NO_TEXT_CONTENT' || 
+        error.message === 'FILE_EMPTY') {
+      throw new Error('Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
+    }
+    
+    // Handle partial extraction failures
+    if (error.message === 'PDF_PROCESSING_ERROR' || 
+        error.message.includes('extraction') || 
+        error.message.includes('parsing')) {
+      throw new Error('We could not read the full document. Please try uploading in DOCX format.');
+    }
     
     if (error.message.includes('Password') || error.message.includes('encrypted')) {
       throw new Error('This PDF appears to be password-protected or encrypted. Please upload an unprotected version.');

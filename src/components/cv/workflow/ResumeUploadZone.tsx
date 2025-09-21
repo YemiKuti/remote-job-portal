@@ -25,20 +25,22 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
     // Handle structured error codes from backend
     if (error.errorCode) {
       switch (error.errorCode) {
+        case 'RESUME_EMPTY_OR_UNREADABLE':
+          return 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).';
         case 'FILE_EMPTY':
-          return 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.';
+          return 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).';
         case 'PDF_NO_TEXT_CONTENT':
-          return 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.';
+          return 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).';
         case 'PDF_PROCESSING_ERROR':
-          return 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.';
+          return 'We could not read the full document. Please try uploading in DOCX format.';
         case 'FILE_TOO_LARGE':
           return 'Your file is too large. Please upload a resume under 5MB.';
         case 'FILE_TOO_SMALL':
-          return 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.';
+          return 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).';
         case 'UNSUPPORTED_ENCODING':
           return 'Your file contains unsupported characters. Please re-save in UTF-8 format and try again.';
         case 'INVALID_FORMAT':
-          return 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.';
+          return 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).';
         case 'CONTENT_TOO_SHORT':
           return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
         case 'CONTENT_TOO_LARGE':
@@ -102,7 +104,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
 
       // Validate minimum file size
       if (file.size < 1024) {
-        throw { errorCode: 'FILE_TOO_SMALL', message: 'Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.' };
+        throw { errorCode: 'RESUME_EMPTY_OR_UNREADABLE', message: 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
       }
 
       setUploadProgress('30% - Extracting resume content...');

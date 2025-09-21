@@ -49,8 +49,8 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       // Check if file is empty or corrupted (0 bytes)
-      if (selectedFile.size === 0) {
-        setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
+      if (selectedFile.size <= 0) {
+        setError('Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
         return;
       }
       
@@ -60,7 +60,7 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
       const isSupported = supportedFormats.some(format => fileName.endsWith(format));
       
       if (!isSupported) {
-        setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
+        setError('Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
         return;
       }
       
@@ -82,8 +82,8 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
     }
 
     // Additional file validation before processing
-    if (file.size === 0) {
-      setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
+    if (file.size <= 0) {
+      setError('Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
       return;
     }
 

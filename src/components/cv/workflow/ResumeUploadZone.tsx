@@ -25,12 +25,16 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
     // Handle structured error codes from backend
     if (error.errorCode) {
       switch (error.errorCode) {
+        case 'FILE_EMPTY':
+          return 'Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).';
         case 'FILE_TOO_LARGE':
           return 'Your file is too large. Please upload a resume under 10MB.';
+        case 'FILE_TOO_SMALL':
+          return 'Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).';
         case 'UNSUPPORTED_ENCODING':
           return 'Your file contains unsupported characters. Please re-save in UTF-8 format and try again.';
         case 'INVALID_FORMAT':
-          return 'Unsupported file format. Please upload PDF, DOC, DOCX, or TXT.';
+          return 'Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).';
         case 'CONTENT_TOO_SHORT':
           return 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.';
         case 'CONTENT_TOO_LARGE':
@@ -82,6 +86,11 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
       }
 
       setUploadProgress('20% - Checking file size...');
+      // Check if file is empty or corrupted (0 bytes)
+      if (file.size === 0) {
+        throw { errorCode: 'FILE_EMPTY', message: 'Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).' };
+      }
+      
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         throw { errorCode: 'FILE_TOO_LARGE', message: 'File too large' };
@@ -89,7 +98,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
 
       // Validate minimum file size
       if (file.size < 1024) {
-        throw { errorCode: 'FILE_TOO_SMALL', message: 'File too small' };
+        throw { errorCode: 'FILE_TOO_SMALL', message: 'Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).' };
       }
 
       setUploadProgress('30% - Extracting resume content...');

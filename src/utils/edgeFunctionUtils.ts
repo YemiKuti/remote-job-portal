@@ -134,6 +134,11 @@ export async function callEdgeFunctionWithRetry(
  * Validates file size before uploading
  */
 export function validateFileSize(file: File, maxSizeMB: number = 10): void {
+  // Check if file is empty or corrupted (0 bytes)
+  if (file.size === 0) {
+    throw new Error('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
+  }
+  
   const maxBytes = maxSizeMB * 1024 * 1024;
   
   if (file.size > maxBytes) {
@@ -141,7 +146,7 @@ export function validateFileSize(file: File, maxSizeMB: number = 10): void {
   }
   
   if (file.size < 100) {
-    throw new Error('File too small. Please upload a valid resume file.');
+    throw new Error('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
   }
 }
 
@@ -155,6 +160,6 @@ export function validateFileFormat(fileName: string): void {
   const isSupported = supportedFormats.some(format => lowerFileName.endsWith(format));
   
   if (!isSupported) {
-    throw new Error('Unsupported file format. Please upload a PDF, DOCX, or TXT file.');
+    throw new Error('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
   }
 }

@@ -48,13 +48,19 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
+      // Check if file is empty or corrupted (0 bytes)
+      if (selectedFile.size === 0) {
+        setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
+        return;
+      }
+      
       // Validate file type
       const fileName = selectedFile.name.toLowerCase();
       const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
       const isSupported = supportedFormats.some(format => fileName.endsWith(format));
       
       if (!isSupported) {
-        setError('Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.');
+        setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
         return;
       }
       
@@ -72,6 +78,12 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
   const handleSubmit = async () => {
     if (!file || !jobDescription.trim()) {
       setError('Please upload a resume and provide a job description.');
+      return;
+    }
+
+    // Additional file validation before processing
+    if (file.size === 0) {
+      setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
       return;
     }
 

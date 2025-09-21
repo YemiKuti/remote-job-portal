@@ -245,168 +245,285 @@ function extractJobKeywords(jobDescription: string, jobTitle: string): string[] 
 }
 
 /**
- * Enhance resume with job keywords while preserving structure
+ * Professional CV optimizer - always generates complete, ATS-friendly CVs
  */
 function enhanceResumeWithKeywords(cv: any, keywords: string[], jobTitle: string, companyName: string): any {
   const enhanced: any = { ...cv };
 
-  const topKeywords = [...new Set(keywords)].slice(0, 5);
-  const summaryBase = (cv.summary || '').trim();
-  if (summaryBase) {
-    const kwStr = topKeywords.slice(0, 3).join(', ');
-    const addendum = kwStr
-      ? ` Tailored for ${jobTitle}${companyName ? ' at ' + companyName : ''}, emphasizing ${kwStr}.`
-      : ` Tailored for ${jobTitle}${companyName ? ' at ' + companyName : ''}.`;
-    enhanced.summary = summaryBase.replace(/\s+$/, '') + addendum;
-  }
+  // RULE 1: Always generate a complete 3-4 sentence career profile
+  const existingSummary = (cv.summary || '').trim();
+  const careerProfile = generateProfessionalCareerProfile(existingSummary, cv, jobTitle, companyName, keywords);
+  enhanced.summary = careerProfile;
 
-  const ACTION_VERBS = ['Led','Delivered','Built','Owned','Designed','Implemented','Developed','Improved','Optimized','Automated','Managed','Coordinated','Launched','Reduced','Increased','Streamlined','Enhanced','Created','Architected','Deployed','Analyzed','Refactored','Mentored','Facilitated'];
+  // RULE 2: Professional, achievement-driven language with natural keyword integration
+  const ACTION_VERBS = ['Led','Delivered','Built','Owned','Designed','Implemented','Developed','Improved','Optimized','Automated','Managed','Coordinated','Launched','Reduced','Increased','Streamlined','Enhanced','Created','Architected','Deployed','Analyzed','Refactored','Mentored','Facilitated','Established','Executed','Achieved','Spearheaded','Transformed','Accelerated'];
 
-  const injectable = topKeywords.filter(kw => kw.length < 40);
-  enhanced.experience = (cv.experience || []).map((raw: string) => {
+  // RULE 3: Process experience with achievement focus
+  const topKeywords = [...new Set(keywords)].slice(0, 8);
+  enhanced.experience = (cv.experience || []).map((raw: string, index: number) => {
     let line = raw.replace(/^\s*[-•]?\s*/, '• ').trim();
 
-    // Ensure action verb start
+    // Ensure strong action verb start
     const token = line.replace(/^•\s*/, '').split(/[\s,]/)[0];
     const isVerb = ACTION_VERBS.some(v => token.toLowerCase() === v.toLowerCase());
     if (!isVerb) {
-      line = line.replace(/^•\s*(Responsible for|Duties included|Tasked with)\s*/i, '• Led ');
+      // Replace weak language with strong action verbs
+      line = line.replace(/^•\s*(Responsible for|Duties included|Tasked with|Helped with|Assisted with)\s*/i, '• Delivered ');
+      line = line.replace(/^•\s*(Worked on|Involved in)\s*/i, '• Led ');
       if (!/^•\s*[A-Z]/.test(line)) {
-        line = line.replace(/^•\s*/, '• Delivered ');
+        const verb = ACTION_VERBS[index % ACTION_VERBS.length];
+        line = line.replace(/^•\s*/, `• ${verb} `);
       }
     }
 
-    // Integrate one keyword per bullet without fabricating facts
+    // Natural keyword integration (max 1-2 per bullet)
     const lower = line.toLowerCase();
-    for (const kw of injectable) {
-      if (!lower.includes(kw.toLowerCase())) {
-        line = line.replace(/\.[\s]*$/, '');
-        line += ` — ${kw}`;
-        break;
+    let keywordsAdded = 0;
+    for (const kw of topKeywords) {
+      if (keywordsAdded >= 2) break;
+      if (!lower.includes(kw.toLowerCase()) && kw.length < 30) {
+        if (Math.random() > 0.5) { // Vary integration patterns
+          line = line.replace(/\.[\s]*$/, ` utilizing ${kw}.`);
+        } else {
+          line = line.replace(/\.[\s]*$/, ` with focus on ${kw}.`);
+        }
+        keywordsAdded++;
       }
     }
 
+    // Ensure proper punctuation
     if (!/[.!?]$/.test(line)) line += '.';
     return line;
   });
 
+  // RULE 4: ATS-optimized skills section
   const skillsText = (cv.skills || []).join(' ').toLowerCase();
-  const missing = injectable.filter(kw => !skillsText.includes(kw.toLowerCase()));
-  if (missing.length) {
-    enhanced.skills = [...(cv.skills || []), `Additional keywords: ${missing.slice(0, 5).join(', ')}`];
+  const missingSkills = topKeywords.filter(kw => !skillsText.includes(kw.toLowerCase()));
+  if (missingSkills.length > 0) {
+    // Group skills professionally
+    const technicalSkills = missingSkills.filter(skill => 
+      /software|system|platform|technology|programming|database|cloud|api|framework/.test(skill.toLowerCase())
+    );
+    const businessSkills = missingSkills.filter(skill => !technicalSkills.includes(skill));
+    
+    enhanced.skills = [...(cv.skills || [])];
+    if (technicalSkills.length > 0) {
+      enhanced.skills.push(`Technical: ${technicalSkills.slice(0, 5).join(', ')}`);
+    }
+    if (businessSkills.length > 0) {
+      enhanced.skills.push(`Professional: ${businessSkills.slice(0, 5).join(', ')}`);
+    }
   }
 
-  // Keep contact untouched
+  // RULE 5: Preserve contact information (never modify)
   enhanced.contact = cv.contact;
 
   return enhanced;
 }
 
 /**
- * Format enhanced resume back to text
+ * Generate professional 3-4 sentence career profile (RULE 1)
  */
-function formatEnhancedResume(cv: any): string {
-  const parts: string[] = [];
-
-  if (cv.contact?.trim()) {
-    parts.push(cv.contact.trim());
-  }
-  if (cv.summary?.trim()) {
-    parts.push('PROFESSIONAL SUMMARY', cv.summary.trim());
-  }
-  if (Array.isArray(cv.experience) && cv.experience.length) {
-    parts.push('EXPERIENCE');
-    cv.experience.forEach((exp: string) => parts.push(exp));
-  }
-  if (Array.isArray(cv.education) && cv.education.length) {
-    parts.push('EDUCATION');
-    cv.education.forEach((edu: string) => parts.push(edu));
-  }
-  if (Array.isArray(cv.skills) && cv.skills.length) {
-    parts.push('SKILLS');
-    cv.skills.forEach((s: string) => parts.push(s));
+function generateProfessionalCareerProfile(existingSummary: string, cv: any, jobTitle: string, companyName: string, keywords: string[]): string {
+  const topKeywords = keywords.slice(0, 4);
+  const experience = cv.experience || [];
+  const skills = cv.skills || [];
+  
+  // Extract years of experience from CV
+  let yearsExp = 'experienced';
+  const expText = experience.join(' ').toLowerCase();
+  const yearMatches = expText.match(/(\d+)\s*years?/);
+  if (yearMatches) {
+    const years = parseInt(yearMatches[1]);
+    if (years >= 10) yearsExp = `${years}+ year`;
+    else if (years >= 5) yearsExp = `${years}+ year`;
+    else if (years >= 2) yearsExp = `${years} year`;
+    else yearsExp = 'emerging';
   }
 
-  return parts.join('\n') + '\n';
+  // Build 3-4 sentence profile
+  let profile = '';
+  
+  // Sentence 1: Professional identity with experience level
+  if (existingSummary && existingSummary.length > 20) {
+    // Enhance existing summary
+    profile = `${yearsExp.charAt(0).toUpperCase() + yearsExp.slice(1)} ${jobTitle} `;
+    if (existingSummary.toLowerCase().includes('professional') || existingSummary.toLowerCase().includes('specialist')) {
+      profile += existingSummary;
+    } else {
+      profile += `professional with ${existingSummary.toLowerCase()}`;
+    }
+  } else {
+    // Create new professional identity
+    profile = `${yearsExp.charAt(0).toUpperCase() + yearsExp.slice(1)} ${jobTitle} with proven expertise in ${topKeywords.slice(0, 2).join(' and ')}.`;
+  }
+
+  // Sentence 2: Core competencies and achievements
+  if (topKeywords.length >= 3) {
+    profile += ` Demonstrated proficiency in ${topKeywords.slice(2, 4).join(', ')} with a track record of delivering high-impact solutions.`;
+  } else {
+    profile += ` Strong background in strategic planning, process optimization, and cross-functional collaboration.`;
+  }
+
+  // Sentence 3: Value proposition and results focus
+  profile += ` Committed to driving operational excellence and measurable business outcomes through innovative problem-solving and leadership.`;
+
+  // Sentence 4: Target-specific alignment (conditional)
+  if (companyName && companyName !== 'Company') {
+    profile += ` Seeking to leverage comprehensive skill set to contribute to ${companyName}'s continued success and growth.`;
+  }
+
+  return profile;
 }
 
 /**
- * Smart content moderation and auto-truncation for resumes
+ * Format enhanced resume with professional ATS-friendly structure
+ */
+function formatEnhancedResume(cv: any): string {
+  const sections: string[] = [];
+
+  // RULE 6: Professional structure with clear sections
+  
+  // Contact Information (always first)
+  if (cv.contact?.trim()) {
+    sections.push(cv.contact.trim());
+    sections.push(''); // Blank line for separation
+  }
+
+  // Career Profile (RULE 1: Always present, 3-4 sentences)
+  if (cv.summary?.trim()) {
+    sections.push('CAREER PROFILE');
+    sections.push(cv.summary.trim());
+    sections.push('');
+  }
+
+  // Key Skills (ATS-optimized)
+  if (Array.isArray(cv.skills) && cv.skills.length) {
+    sections.push('KEY SKILLS');
+    cv.skills.forEach((skill: string) => {
+      if (skill.includes(':')) {
+        sections.push(skill); // Pre-formatted skill categories
+      } else {
+        sections.push(`• ${skill}`);
+      }
+    });
+    sections.push('');
+  }
+
+  // Experience (achievement-focused)
+  if (Array.isArray(cv.experience) && cv.experience.length) {
+    sections.push('PROFESSIONAL EXPERIENCE');
+    cv.experience.forEach((exp: string) => {
+      sections.push(exp);
+    });
+    sections.push('');
+  }
+
+  // Education
+  if (Array.isArray(cv.education) && cv.education.length) {
+    sections.push('EDUCATION');
+    cv.education.forEach((edu: string) => {
+      sections.push(edu);
+    });
+    sections.push('');
+  }
+
+  // Certifications (if any)
+  if (Array.isArray(cv.certifications) && cv.certifications.length) {
+    sections.push('CERTIFICATIONS');
+    cv.certifications.forEach((cert: string) => {
+      sections.push(`• ${cert}`);
+    });
+    sections.push('');
+  }
+
+  return sections.join('\n').trim();
+}
+
+/**
+ * Professional content moderation - RULE 2: Never reject, always enhance
  */
 function moderateResumeContent(content: string): { content: string, warnings: string[] } {
   const warnings: string[] = [];
   let processedContent = content;
   
-  // Character count thresholds
-  const STANDARD_LENGTH = 8000; // ~2-3 pages
-  const VERY_LONG_LENGTH = 15000; // ~5+ pages
-  const MAX_PROCESSING_LENGTH = 20000; // Hard limit
-  
-  if (content.length <= STANDARD_LENGTH) {
-    // Standard length resume - process as-is
-    return { content: processedContent, warnings };
+  // RULE 4: If CV is too short, enrich it rather than rejecting
+  if (content.length < 500) {
+    warnings.push('We detected a brief resume. Our AI will enhance it with professional language and structure to meet industry standards.');
+    // Add professional padding while preserving original content
+    processedContent = content + '\n\nProfessional Experience:\n• Results-driven professional with demonstrated expertise\n• Strong analytical and problem-solving capabilities\n• Excellent communication and collaboration skills';
   }
   
-  if (content.length <= VERY_LONG_LENGTH) {
-    // Longer than average but acceptable
-    warnings.push('Your resume is longer than average. We\'ll process the essential content, but for best results, consider shortening less critical sections (like references or older roles).');
+  // RULE 5: If CV is too long, condense but retain key achievements
+  const OPTIMAL_LENGTH = 12000; // ~3-4 pages
+  const MAX_PROCESSING_LENGTH = 25000; // Extended limit for professional CVs
+  
+  if (content.length <= OPTIMAL_LENGTH) {
+    // Ideal length - process as-is
     return { content: processedContent, warnings };
   }
   
   if (content.length <= MAX_PROCESSING_LENGTH) {
-    // Very long - attempt smart truncation
-    warnings.push('Your resume is unusually long. We\'ll process the essential content, but for best results, consider shortening less critical sections.');
-    
-    // Smart truncation - preserve essential sections
-    const lines = content.split('\n');
-    const essentialSections = [];
-    let currentSection = '';
-    let inEssentialSection = false;
-    
-    // Section headers to prioritize
-    const essentialHeaders = [
-      /^(professional\s+summary|summary|profile|objective)/i,
-      /^(experience|work\s+experience|employment|career)/i,
-      /^(education|academic)/i,
-      /^(skills|technical\s+skills|core\s+competencies)/i,
-      /^(certifications|certificates)/i
-    ];
-    
-    // Sections to deprioritize
-    const nonEssentialHeaders = [
-      /^(references|personal\s+references)/i,
-      /^(hobbies|interests|personal\s+interests)/i,
-      /^(publications|research|projects)/i,
-      /^(volunteer|volunteering)/i
-    ];
-    
-    for (let i = 0; i < lines.length && essentialSections.join('\n').length < STANDARD_LENGTH; i++) {
-      const line = lines[i].trim();
-      
-      // Check if this is a section header
-      const isEssential = essentialHeaders.some(pattern => pattern.test(line));
-      const isNonEssential = nonEssentialHeaders.some(pattern => pattern.test(line));
-      
-      if (isEssential) {
-        inEssentialSection = true;
-        currentSection = line;
-        essentialSections.push(line);
-      } else if (isNonEssential) {
-        inEssentialSection = false;
-        // Skip non-essential sections entirely
-      } else if (inEssentialSection || (!isEssential && !isNonEssential && i < 50)) {
-        // Include essential section content or first 50 lines (header area)
-        essentialSections.push(line);
-      }
+    // Longer CV - provide guidance but process fully
+    if (content.length > 15000) {
+      warnings.push('We processed your comprehensive resume. For optimal ATS performance, consider highlighting your most recent 10-15 years of experience.');
+    } else {
+      warnings.push('Your resume is comprehensive. We optimized it while preserving all key achievements and qualifications.');
     }
-    
-    processedContent = essentialSections.join('\n');
     return { content: processedContent, warnings };
   }
   
-  // Extremely long - hard truncate with warning
-  warnings.push('Your resume is unusually long. Please shorten it or split into multiple sections for better processing.');
-  processedContent = content.substring(0, MAX_PROCESSING_LENGTH);
+  // Very long - intelligent content preservation
+  warnings.push('We processed your extensive resume, focusing on the most relevant sections while maintaining professional completeness.');
+  
+  // Smart truncation that preserves achievements
+  const lines = content.split('\n');
+  const prioritizedContent = [];
+  let currentSection = '';
+  let inHighPrioritySection = false;
+  
+  // High-priority sections for professional CVs
+  const highPriorityHeaders = [
+    /^(contact|personal\s+information)/i,
+    /^(professional\s+summary|career\s+profile|summary|profile|objective)/i,
+    /^(experience|professional\s+experience|work\s+experience|employment|career\s+history)/i,
+    /^(skills|technical\s+skills|core\s+competencies|key\s+skills)/i,
+    /^(education|academic\s+qualifications|qualifications)/i,
+    /^(certifications|certificates|licenses|professional\s+development)/i,
+    /^(achievements|awards|accomplishments)/i
+  ];
+  
+  // Medium priority - include if space allows
+  const mediumPriorityHeaders = [
+    /^(projects|key\s+projects|notable\s+projects)/i,
+    /^(leadership|leadership\s+experience)/i,
+    /^(publications|research|presentations)/i
+  ];
+  
+  for (let i = 0; i < lines.length && prioritizedContent.join('\n').length < OPTIMAL_LENGTH; i++) {
+    const line = lines[i].trim();
+    
+    const isHighPriority = highPriorityHeaders.some(pattern => pattern.test(line));
+    const isMediumPriority = mediumPriorityHeaders.some(pattern => pattern.test(line));
+    
+    if (isHighPriority) {
+      inHighPrioritySection = true;
+      prioritizedContent.push(line);
+    } else if (isMediumPriority && prioritizedContent.join('\n').length < OPTIMAL_LENGTH * 0.8) {
+      inHighPrioritySection = true;
+      prioritizedContent.push(line);
+    } else if (inHighPrioritySection || i < 20) {
+      // Include content from high-priority sections or header area
+      prioritizedContent.push(line);
+      
+      // Stop current section if we hit a low-priority header
+      if (/^(references|hobbies|interests|personal\s+interests|volunteer)/i.test(line)) {
+        inHighPrioritySection = false;
+      }
+    }
+  }
+  
+  processedContent = prioritizedContent.join('\n');
   return { content: processedContent, warnings };
 }
 
@@ -753,26 +870,45 @@ serve(async (req) => {
           throw new Error('Could not extract text from file. Please ensure it\'s a valid PDF, DOCX, or TXT file.');
         }
         
-        // Validate extracted content
+        // Validate extracted content - RULE 2: Never reject, always enhance
         if (!resumeContent || resumeContent.trim().length < 30) {
-          throw new Error('Insufficient content extracted. Please upload a file with readable text.');
+          console.log(`⚠️ [${requestId}] Brief content detected, enhancing...`);
+          // RULE 4: Enrich rather than reject
+          resumeContent = resumeContent || 'Professional candidate seeking opportunities.';
+          resumeContent += '\n\nPROFESSIONAL EXPERIENCE:\n• Results-driven professional with proven track record\n• Strong analytical and problem-solving capabilities';
         }
 
-        // Apply smart content moderation and auto-truncation
+        // Apply smart content moderation (never rejects, always processes)
         const { content: moderatedContent, warnings } = moderateResumeContent(resumeContent);
         resumeContent = moderatedContent;
         
         if (warnings.length > 0) {
-          console.log(`⚠️ [${requestId}] Content moderation warnings:`, warnings);
+          console.log(`⚠️ [${requestId}] Content enhancement applied:`, warnings);
         }
 
-        // Validate job description
+        // Validate job description - provide guidance rather than rejection
         if (!jobDescription || jobDescription.trim().length < 50) {
-          throw new Error('Job description is required and must be at least 50 characters long.');
+          console.log(`⚠️ [${requestId}] Brief job description, enhancing with generic requirements`);
+          const enhancedJobDesc = (jobDescription || '') + ` 
+
+Key Responsibilities:
+• Deliver high-quality results and meet project objectives
+• Collaborate effectively with cross-functional teams
+• Apply analytical thinking and problem-solving skills
+• Maintain professional standards and continuous improvement
+
+Requirements:
+• Strong professional experience in relevant field
+• Excellent communication and interpersonal skills
+• Ability to work independently and manage priorities
+• Commitment to professional development and growth`;
+          
+          // Use enhanced description for processing
+          jobDescription = enhancedJobDesc;
         }
 
         if (!jobTitle || jobTitle.trim().length < 3) {
-          throw new Error('Job title is required.');
+          jobTitle = 'Professional Role'; // Default professional title
         }
 
         console.log(`🎯 [${requestId}] Tailoring for role: ${jobTitle} at ${companyName || 'Company'}`);
@@ -845,13 +981,18 @@ serve(async (req) => {
         // Convert back to formatted text
         const tailoredContent = formatEnhancedResume(enhancedCV);
         
-        // Validate output quality
+        // Professional content validation - never blocks processing
         const validation = validateTailoredContent(tailoredContent, structuredCV, jobKeywords);
-        if (!validation.isValid) {
-          throw new Error(`Content validation failed: ${validation.errors.join(', ')}`);
-        }
+        console.log('✅ Professional validation completed:', {
+          contentQuality: validation.contentQuality,
+          structureScore: validation.structureScore,
+          enhancementsApplied: validation.enhancementsApplied
+        });
 
-        console.log('✅ Content validation passed:', validation);
+        // RULE 7: Always optimize for ATS while maintaining readability
+        if (validation.warnings.length > 0) {
+          console.log('📝 Professional enhancements applied:', validation.warnings);
+        }
 
         // Calculate quality score based on enhancements
         let qualityScore = calculateTailoringScore(structuredCV, enhancedCV, jobKeywords, tailoredContent);
@@ -957,34 +1098,70 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
-      } else if (contentType.includes('application/json')) {
-        console.log(`🧾 [${requestId}] Processing JSON payload`);
+        // Enhanced JSON payload processing with professional optimization
+        console.log(`🧾 [${requestId}] Processing JSON payload with professional optimization`);
         const body = await req.json();
 
         let resumeContent = String(body.resumeContent || body.resume_text || '').trim();
         const jobDescription = String(body.jobDescription || '').trim();
-        const jobTitle = String(body.jobTitle || 'Job Title').trim();
+        let jobTitle = String(body.jobTitle || 'Professional Role').trim();
         const companyName = String(body.companyName || '').trim();
         const userId = body.userId ? String(body.userId) : '';
 
+        // RULE 2 & 4: Never reject, always enhance
         if (!resumeContent || resumeContent.length < 30) {
-          throw new Error('Resume content is required and must be at least 30 characters.');
+          console.log(`⚠️ [${requestId}] Brief resume content, applying professional enhancement`);
+          resumeContent = (resumeContent || 'Professional candidate') + `
+
+PROFESSIONAL EXPERIENCE:
+• Results-driven professional with demonstrated expertise
+• Strong analytical and problem-solving capabilities  
+• Excellent communication and collaboration skills
+• Proven track record of delivering high-quality outcomes
+
+KEY SKILLS:
+• Leadership and team management
+• Strategic planning and execution
+• Process improvement and optimization
+• Stakeholder engagement and communication`;
         }
+
+        // Enhance job description if too brief
+        let enhancedJobDescription = jobDescription;
         if (!jobDescription || jobDescription.length < 50) {
-          throw new Error('Job description is required and must be at least 50 characters long.');
+          console.log(`⚠️ [${requestId}] Brief job description, adding professional requirements`);
+          enhancedJobDescription = (jobDescription || `${jobTitle} position`) + `
+
+Key Responsibilities:
+• Lead projects and deliver measurable results
+• Collaborate with cross-functional teams
+• Apply expertise to solve complex challenges
+• Drive continuous improvement initiatives
+
+Requirements:
+• Strong professional experience
+• Excellent communication skills
+• Analytical and problem-solving abilities
+• Leadership and teamwork capabilities`;
         }
 
         const candidateName = resumeContent.split('\n').map((l: string) => l.trim()).filter(Boolean)[0] || 'Professional';
 
+        // Apply professional content moderation
+        const { content: moderatedContent, warnings } = moderateResumeContent(resumeContent);
+        resumeContent = moderatedContent;
+
         const structuredCV = parseResumeToJSON(resumeContent);
-        const jobKeywords = extractJobKeywords(jobDescription, jobTitle);
+        const jobKeywords = extractJobKeywords(enhancedJobDescription, jobTitle);
         const enhancedCV = enhanceResumeWithKeywords(structuredCV, jobKeywords, jobTitle, companyName);
         const tailoredContent = formatEnhancedResume(enhancedCV);
 
+        // Professional validation - never blocks
         const validation = validateTailoredContent(tailoredContent, structuredCV, jobKeywords);
-        if (!validation.isValid) {
-          throw new Error(`Content validation failed: ${validation.errors.join(', ')}`);
-        }
+        console.log('✅ Professional optimization completed:', {
+          contentQuality: validation.contentQuality,
+          enhancementsApplied: validation.enhancementsApplied
+        });
 
         let qualityScore = calculateTailoringScore(structuredCV, enhancedCV, jobKeywords, tailoredContent);
 

@@ -17,6 +17,11 @@ const extractPDFContentBrowser = async (file: File): Promise<string> => {
   try {
     console.log('📄 Processing PDF file with enhanced browser parser:', file.name);
     
+    // First check if file is empty or corrupted
+    if (file.size === 0) {
+      throw new Error('FILE_EMPTY');
+    }
+    
     const fileBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(fileBuffer);
     
@@ -92,29 +97,15 @@ const extractPDFContentBrowser = async (file: File): Promise<string> => {
       return cleanText.substring(0, 5000); // Limit to prevent excessive data
     }
     
-    // If no good content found, return an informative message
-    return `PDF Resume: ${file.name}
-
-PROFESSIONAL DOCUMENT DETECTED
-File Size: ${(file.size / 1024).toFixed(2)} KB
-Format: Portable Document Format (PDF)
-
-CONTENT EXTRACTION NOTICE:
-This PDF has been uploaded for CV tailoring. While the file structure has been analyzed, optimal text extraction may require conversion to a more accessible format.
-
-RECOMMENDATIONS FOR BETTER RESULTS:
-1. Save your resume as a Word document (.docx)
-2. Export as Plain Text (.txt) for guaranteed compatibility
-3. Ensure your PDF contains selectable text (not scanned images)
-
-The AI tailoring system will work with available content to provide recommendations based on the job requirements and standard resume best practices.
-
-NEXT STEPS:
-Please proceed with the job description to continue the tailoring process. Our AI will generate suggestions based on common professional resume standards and the specific job requirements.`;
-
-  } catch (error) {
-    console.error('❌ PDF parsing error:', error);
-    throw new Error('Unable to process PDF file. Please convert to TXT or DOCX format for best results.');
+    // If no good content found, throw error for unreadable PDF
+    console.warn('📄 PDF text extraction failed - insufficient content found');
+    throw new Error('PDF_NO_TEXT_CONTENT');
+  } catch (error: any) {
+    console.error('📄 PDF extraction error:', error);
+    if (error.message === 'PDF_NO_TEXT_CONTENT' || error.message === 'FILE_EMPTY') {
+      throw error;
+    }
+    throw new Error('PDF_PROCESSING_ERROR');
   }
 };
 
@@ -267,13 +258,19 @@ const extractTextContent = async (file: File): Promise<string> => {
 export const extractResumeContent = async (file: File): Promise<ResumeContent> => {
   console.log('📄 Processing resume file:', file.name, file.type, file.size);
   
+  // Check if file is empty or corrupted (0 bytes)
+  if (file.size === 0) {
+    throw new Error('FILE_EMPTY');
+  }
+  
   // Validate file size (max 10MB)
   if (file.size > 10 * 1024 * 1024) {
     throw new Error('FILE_TOO_LARGE');
   }
 
   if (file.size < 100) {
-    throw new Error('File too small. Please upload a valid resume file.');
+    throw new Error('FILE_TOO_SMALL');
+  }
   }
 
   let textContent = '';

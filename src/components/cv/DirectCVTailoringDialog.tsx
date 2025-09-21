@@ -50,7 +50,7 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
     if (selectedFile) {
       // Check if file is empty or corrupted (0 bytes)
       if (selectedFile.size === 0) {
-        setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
+        setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
         return;
       }
       
@@ -60,13 +60,13 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
       const isSupported = supportedFormats.some(format => fileName.endsWith(format));
       
       if (!isSupported) {
-        setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
+        setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
         return;
       }
       
-      // Validate file size (max 10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('File is too large. Please upload a file smaller than 10MB.');
+      // Validate file size (max 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setError('File is too large. Please upload a file smaller than 5MB.');
         return;
       }
       
@@ -83,7 +83,7 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
 
     // Additional file validation before processing
     if (file.size === 0) {
-      setError('Your resume file seems to be empty or invalid. Please upload a valid PDF, DOC, DOCX, or TXT file (max 10MB).');
+      setError('Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF under 5MB.');
       return;
     }
 

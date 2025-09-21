@@ -966,9 +966,9 @@ Requirements:
         const structuredCV = parseResumeToJSON(resumeContent);
         console.log('📋 Parsed CV structure:', {
           hasContact: !!structuredCV.contact,
-          experienceCount: structuredCV.experience.length,
-          educationCount: structuredCV.education.length,
-          skillsCount: structuredCV.skills.length
+          experienceCount: structuredCV.experience?.length || 0,
+          educationCount: structuredCV.education?.length || 0,
+          skillsCount: structuredCV.skills?.length || 0
         });
 
         // Extract job keywords for enhancement

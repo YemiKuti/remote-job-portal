@@ -271,7 +271,6 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
   if (file.size < 100) {
     throw new Error('FILE_TOO_SMALL');
   }
-  }
 
   let textContent = '';
   

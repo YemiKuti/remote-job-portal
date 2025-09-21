@@ -1098,6 +1098,7 @@ Requirements:
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
+      } else {
         // Enhanced JSON payload processing with professional optimization
         console.log(`🧾 [${requestId}] Processing JSON payload with professional optimization`);
         const body = await req.json();

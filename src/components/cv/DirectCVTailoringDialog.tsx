@@ -24,6 +24,7 @@ import {
   Brain 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { callEdgeFunctionWithRetry, validateFileSize, validateFileFormat } from "@/utils/edgeFunctionUtils";
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
@@ -108,6 +109,10 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
     setProgress(10);
 
     try {
+      // Validate file before processing
+      validateFileSize(file, 10);
+      validateFileFormat(file.name);
+      
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('file', file);
@@ -120,21 +125,20 @@ export const DirectCVTailoringDialog = ({ trigger }: DirectCVTailoringDialogProp
       
       console.log('🚀 Invoking tailor-cv with file upload...');
       
-      // Call the edge function with file upload
-      const { data, error: functionError } = await supabase.functions.invoke('tailor-cv', {
-        body: formData
-      });
+      // Call the edge function with retry logic
+      const data = await callEdgeFunctionWithRetry(
+        'tailor-cv',
+        formData,
+        { maxRetries: 2, baseDelay: 2000 },
+        (message, retryCount) => {
+          if (retryCount !== undefined) {
+            setProgress(30 + (retryCount * 20));
+          }
+          toast(message);
+        }
+      );
 
       setProgress(80);
-
-      if (functionError) {
-        console.error('❌ Function error:', functionError);
-        throw new Error(functionError.message || 'Failed to process CV tailoring request.');
-      }
-
-      if (!data || data.success === false) {
-        throw new Error(data?.error || 'Failed to tailor CV. Please try again.');
-      }
 
       setResult(data);
       setStep('complete');

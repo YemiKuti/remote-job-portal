@@ -26,6 +26,7 @@ import { AIAnalysisStep } from "./workflow/AIAnalysisStep";
 import { DownloadStep } from "./workflow/DownloadStep";
 import { DirectCVTailoringDialog } from "./DirectCVTailoringDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { callEdgeFunctionWithRetry } from "@/utils/edgeFunctionUtils";
 import { extractResumeContent } from "@/utils/enhancedResumeProcessor";
 import { extractSection, generateProfessionalSummary, generateKeyCompetencies, calculateMatchScore } from "@/utils/resumeHelpers";
 import { toast } from "sonner";
@@ -203,8 +204,9 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
         requirementsCount: selectedJob.requirements?.length || 0
       });
 
-      const { data, error: functionError } = await supabase.functions.invoke('tailor-cv', {
-        body: {
+      const data = await callEdgeFunctionWithRetry(
+        'tailor-cv',
+        {
           resumeContent: resumeContent,
           jobDescription: jobDescription,
           jobTitle: jobTitle || 'Job Title',
@@ -212,37 +214,22 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
           candidateData: selectedResume.candidate_data || null,
           jobRequirements: selectedJob.requirements || [],
           userId: userId
+        },
+        { maxRetries: 2, baseDelay: 2000 },
+        (message, retryCount) => {
+          if (retryCount !== undefined) {
+            setProgress(40 + (retryCount * 15));
+          }
+          // Progress message handled by toast in utility function
         }
-      });
+      );
 
       clearInterval(progressInterval);
 
       console.log('📝 AI response received:', { 
         data: data ? 'Response received' : 'No data',
-        hasError: !!functionError,
-        errorMessage: functionError?.message,
         responseKeys: data ? Object.keys(data) : []
       });
-
-      // Check for function call errors first
-      if (functionError) {
-        console.error('❌ AI analysis function error:', functionError);
-        let errorMessage = '⚠️ Please provide a valid CV and Job Description.';
-        
-        if (functionError.message) {
-          if (functionError.message.includes('timeout')) {
-            errorMessage = 'Request timed out. Please try again with a shorter resume or job description.';
-          } else if (functionError.message.includes('network') || functionError.message.includes('fetch')) {
-            errorMessage = 'Network error. Please check your connection and try again.';
-          } else if (functionError.message.includes('API key')) {
-            errorMessage = '⚠️ Please provide a valid CV and Job Description.';
-          } else {
-            errorMessage = functionError.message;
-          }
-        }
-        
-        throw new Error(errorMessage);
-      }
 
       // Validate response structure
       if (!data) {

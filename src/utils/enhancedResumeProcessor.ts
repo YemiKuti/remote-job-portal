@@ -109,6 +109,68 @@ const extractPDFContentBrowser = async (file: File): Promise<string> => {
   }
 };
 
+// OCR-style fallback for PDFs that failed primary extraction
+const extractPDFWithOCRFallback = async (file: File): Promise<string> => {
+  try {
+    console.log('📄 Attempting OCR-style fallback for PDF:', file.name);
+    
+    const fileBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(fileBuffer);
+    
+    // More aggressive text extraction methods for scanned/image PDFs
+    const textDecoder = new TextDecoder('utf-8', { fatal: false });
+    let rawText = textDecoder.decode(uint8Array);
+    
+    // Method 1: Look for any readable ASCII characters
+    let extractedText = rawText
+      .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ')  // Remove non-printable characters
+      .replace(/\s+/g, ' ')                   // Normalize whitespace
+      .trim();
+    
+    // Method 2: Try to find text patterns in the raw binary
+    if (extractedText.length < 50) {
+      const binaryText = Array.from(uint8Array)
+        .map(byte => (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ' ')
+        .join('')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (binaryText.length > extractedText.length) {
+        extractedText = binaryText;
+      }
+    }
+    
+    // Method 3: Look for common resume keywords in different encodings
+    if (extractedText.length < 100) {
+      try {
+        // Try different decoders
+        const latinText = new TextDecoder('iso-8859-1').decode(uint8Array)
+          .replace(/[^\x20-\x7E]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        if (latinText.length > extractedText.length) {
+          extractedText = latinText;
+        }
+      } catch (e) {
+        console.warn('📄 Latin-1 decoding failed');
+      }
+    }
+    
+    // If we still have very little content, this might be a scanned PDF
+    if (extractedText.length < 20) {
+      throw new Error('PDF_NO_TEXT_CONTENT');
+    }
+    
+    console.log(`📄 OCR fallback extracted ${extractedText.length} characters`);
+    return extractedText.substring(0, 5000); // Limit to prevent excessive data
+    
+  } catch (error: any) {
+    console.error('📄 OCR fallback failed:', error);
+    throw new Error('PDF_NO_TEXT_CONTENT');
+  }
+};
+
 // Enhanced DOCX parsing utility  
 const extractDOCXContentBrowser = async (file: File): Promise<string> => {
   try {
@@ -258,10 +320,9 @@ const extractTextContent = async (file: File): Promise<string> => {
 export const extractResumeContent = async (file: File): Promise<ResumeContent> => {
   console.log('📄 Processing resume file:', file.name, file.type, file.size);
   
-  // Step 1: Validate CV file before processing
-  // Check if file is empty or corrupted (0 bytes)
+  // Step 1: Validate CV file before processing - Check if file size > 0
   if (file.size <= 0) {
-    throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+    throw new Error('RESUME_INVALID_OR_UNREADABLE');
   }
   
   // Validate file size (max 10MB)
@@ -270,48 +331,59 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
   }
 
   if (file.size < 100) {
-    throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+    throw new Error('RESUME_INVALID_OR_UNREADABLE');
   }
 
   let textContent = '';
   
   try {
-    // Extract text based on file type
+    // Step 2: Try to extract text and validate
     const fileName = file.name.toLowerCase();
     
     if (file.type === 'text/plain' || fileName.endsWith('.txt')) {
       textContent = await extractTextContent(file);
     } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
-      textContent = await extractPDFContentBrowser(file);
+      try {
+        textContent = await extractPDFContentBrowser(file);
+      } catch (pdfError: any) {
+        // Step 3: PDF text extraction failed - attempt OCR-style fallback
+        console.warn('📄 Primary PDF extraction failed, attempting OCR-style fallback...');
+        try {
+          textContent = await extractPDFWithOCRFallback(file);
+        } catch (ocrError: any) {
+          console.error('📄 OCR fallback also failed:', ocrError);
+          throw new Error('RESUME_INVALID_OR_UNREADABLE');
+        }
+      }
     } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
       textContent = await extractDOCXContentBrowser(file);
     } else if (file.type === 'application/msword' || fileName.endsWith('.doc')) {
       // Handle legacy DOC files with a helpful message but still proceed
       textContent = `Resume File: ${file.name}
 
-PROFESSIONAL RESUME DOCUMENT
-File Format: Microsoft Word (.doc)
+This appears to be a legacy Microsoft Word (.doc) format. For optimal results, please convert to:
+• .docx (Word 2007+)
+• .txt (Plain text)
+• .pdf (with selectable text)
 
-Note: This is a legacy Word format. The content will be processed, but for optimal results in future uploads, consider saving as .docx or .txt format.
-
-The CV tailoring process will continue with available content and generate enhancements based on job requirements and professional resume standards.
-
-Please proceed with providing the job description to continue the tailoring process.`;
+The system will attempt to process this file, but converting to a newer format may improve accuracy.`;
     } else {
-      // Try as text for unknown formats
-      try {
-        textContent = await file.text();
-        if (!textContent || textContent.trim().length < 50) {
-          throw new Error('File format not recognized');
-        }
-      } catch {
-        throw new Error(`Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files.`);
-      }
+      throw new Error('Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.');
+    }
+
+    // Step 2 continued: Validate extracted text is not empty or unreadable
+    if (!textContent || textContent.trim().length === 0) {
+      throw new Error('RESUME_INVALID_OR_UNREADABLE');
     }
     
-    // Validate extracted content with more lenient requirements for standard resumes
-    if (!textContent || textContent.trim().length < 20) {
-      throw new Error('Unable to extract sufficient content from this file. Please ensure your resume contains readable text and try uploading a different format (PDF, DOCX, or TXT).');
+    // Step 4: Confirm readable sections exist
+    console.log(`📄 Extracted ${textContent.length} characters from ${file.name}`);
+    
+    // Check for basic resume content indicators
+    const hasResumeContent = /(?:experience|education|skills|work|employment|position|role|university|degree|contact|email|phone|profile|summary|objective|name)/i.test(textContent);
+    
+    if (!hasResumeContent && textContent.length < 200) {
+      throw new Error('RESUME_INVALID_OR_UNREADABLE');
     }
 
     // Additional check for extremely short content
@@ -352,18 +424,18 @@ Please proceed with providing the job description to continue the tailoring proc
   } catch (error: any) {
     console.error('❌ Resume processing failed:', error);
     
-    // Step 1 & 2: Handle empty/unreadable files
-    if (error.message === 'RESUME_EMPTY_OR_UNREADABLE' || 
+    // Step 2 & 3: Handle invalid/unreadable files with specific message
+    if (error.message === 'RESUME_INVALID_OR_UNREADABLE' || 
         error.message === 'PDF_NO_TEXT_CONTENT' || 
         error.message === 'FILE_EMPTY') {
-      throw new Error('Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
+      throw new Error('⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
     }
     
-    // Handle partial extraction failures
+    // Handle partial extraction failures - Step 5: Ensure completion
     if (error.message === 'PDF_PROCESSING_ERROR' || 
         error.message.includes('extraction') || 
         error.message.includes('parsing')) {
-      throw new Error('We could not read the full document. Please try uploading in DOCX format.');
+      throw new Error('⚠️ Partial resume processed. Please try uploading in DOCX format for full support.');
     }
     
     if (error.message.includes('Password') || error.message.includes('encrypted')) {

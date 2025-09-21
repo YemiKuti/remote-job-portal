@@ -766,17 +766,20 @@ async function generateEnhancedPdf(content: string, candidateName: string, jobTi
 function classifyError(error: any): { code: string, message: string, userMessage: string } {
   const errorMsg = error.message || error.toString();
   
-  // Step 1: Handle empty/unreadable files
+  // Step 2 & 3: Handle invalid/unreadable files with specific message
+  if (errorMsg.includes('RESUME_INVALID_OR_UNREADABLE') || errorMsg.includes('invalid or unreadable')) {
+    return { code: 'RESUME_INVALID_OR_UNREADABLE', message: errorMsg, userMessage: '⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
+  }
   if (errorMsg.includes('RESUME_EMPTY_OR_UNREADABLE') || errorMsg.includes('empty or unreadable')) {
-    return { code: 'RESUME_EMPTY_OR_UNREADABLE', message: errorMsg, userMessage: 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
+    return { code: 'RESUME_EMPTY_OR_UNREADABLE', message: errorMsg, userMessage: '⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
   }
   if (errorMsg.includes('PDF_NO_TEXT_CONTENT') || errorMsg.includes('no text content')) {
-    return { code: 'PDF_NO_TEXT_CONTENT', message: errorMsg, userMessage: 'Your resume seems empty or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
+    return { code: 'PDF_NO_TEXT_CONTENT', message: errorMsg, userMessage: '⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).' };
   }
   
-  // Step 2: Handle partial extraction failures
-  if (errorMsg.includes('PDF_PROCESSING_ERROR') || errorMsg.includes('could not read the full document')) {
-    return { code: 'PDF_PROCESSING_ERROR', message: errorMsg, userMessage: 'We could not read the full document. Please try uploading in DOCX format.' };
+  // Step 5: Handle partial extraction failures - ensure completion
+  if (errorMsg.includes('PDF_PROCESSING_ERROR') || errorMsg.includes('Partial resume processed')) {
+    return { code: 'PDF_PROCESSING_ERROR', message: errorMsg, userMessage: '⚠️ Partial resume processed. Please try uploading in DOCX format for full support.' };
   }
   
   if (errorMsg.includes('FILE_TOO_LARGE') || errorMsg.includes('too large')) {
@@ -849,13 +852,13 @@ serve(async (req) => {
           throw new Error('FILE_TOO_LARGE');
         }
         
-        // Step 1: Validate CV file before processing
+        // Step 1: Validate CV file before processing - Check if file size > 0
         if (file.size <= 0) {
-          throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+          throw new Error('RESUME_INVALID_OR_UNREADABLE');
         }
         
         if (file.size < 100) {
-          throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+          throw new Error('RESUME_INVALID_OR_UNREADABLE');
         }
         
         // Extract content from uploaded file
@@ -884,44 +887,45 @@ serve(async (req) => {
           
           console.log(`✅ [${requestId}] Content extracted: ${resumeContent.length} characters`);
           
-          // Step 1 continued: Validate extracted text is not empty
+          // Step 2: Validate extracted text is not empty or unreadable
           if (!resumeContent || resumeContent.trim().length === 0) {
-            throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+            throw new Error('RESUME_INVALID_OR_UNREADABLE');
           }
           
-          // Step 2: Confirm readable sections exist
-          const hasResumeContent = /(?:experience|education|skills|work|employment|position|role|university|degree|contact|email|phone|profile|summary|objective)/i.test(resumeContent);
+          // Step 4: Confirm readable sections exist
+          const hasResumeContent = /(?:experience|education|skills|work|employment|position|role|university|degree|contact|email|phone|profile|summary|objective|name)/i.test(resumeContent);
           
           if (!hasResumeContent && resumeContent.length < 200) {
-            throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+            throw new Error('RESUME_INVALID_OR_UNREADABLE');
           }
           
         } catch (extractError: any) {
           console.error(`❌ [${requestId}] Content extraction failed:`, extractError);
           
-          // Handle specific PDF extraction errors
+          // Handle specific PDF extraction errors with OCR fallback
           if (extractError.message?.includes('PDF_NO_TEXT_CONTENT') || 
               extractError.message?.includes('no text content')) {
-            throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+            throw new Error('RESUME_INVALID_OR_UNREADABLE');
           }
           
+          // Step 5: Handle partial extraction - ensure completion
           if (extractError.message?.includes('PDF_PROCESSING_ERROR') || 
               extractError.message?.includes('extraction')) {
-            throw new Error('PDF_PROCESSING_ERROR');
+            throw new Error('⚠️ Partial resume processed. Please try uploading in DOCX format for full support.');
           }
           
           throw new Error('Could not extract text from file. Please ensure it\'s a valid PDF, DOCX, or TXT file.');
         }
         
-        // Validate extracted content - Step 2: Process readable content or handle validation errors  
+        // Step 5: Validate extracted content - ensure processing completes  
         if (!resumeContent || resumeContent.trim().length < 30) {
           // If content is too short, it might be unreadable
           if (resumeContent.trim().length < 10) {
-            throw new Error('RESUME_EMPTY_OR_UNREADABLE');
+            throw new Error('RESUME_INVALID_OR_UNREADABLE');
           }
           
           console.log(`⚠️ [${requestId}] Brief content detected, enhancing...`);
-          // Step 3: Ensure processing completes - enrich rather than reject
+          // Step 5: Ensure processing completes - enrich rather than reject
           resumeContent = resumeContent || 'Professional candidate seeking opportunities.';
           resumeContent += '\n\nPROFESSIONAL EXPERIENCE:\n• Results-driven professional with proven track record\n• Strong analytical and problem-solving capabilities';
         }

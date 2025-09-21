@@ -1234,9 +1234,6 @@ Requirements:
           }
         );
       }
-    } else {
-      throw new Error('Invalid request format. Please use file upload (multipart/form-data) or JSON.');
-    }
     };
 
     // Race between processing and timeout

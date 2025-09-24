@@ -90,6 +90,7 @@ export async function callEdgeFunctionWithRetry(
         onProgress?.(`Retrying... (attempt ${attempt + 1})`, attempt);
       }
       
+      // Handle FormData and regular JSON payloads  
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload
       });

@@ -1243,117 +1243,70 @@ Requirements:
             throw new Error('⚠️ Unable to tailor the full document. Please try with a shorter CV or a different format.');
           }
 
-          return { structuredCV, enhancedCV, tailoredContent, validation, qualityScore, pdfBytes };
+          // Upload tailored resume as PDF to storage using candidate name from earlier
+          const tailoredFileName = `tailored_${Date.now()}_${file.name.replace(/\.[^/.]+$/, '')}.pdf`;
+          const { error: uploadError } = await supabase.storage
+            .from('tailored-resumes')
+            .upload(tailoredFileName, pdfBytes, {
+              contentType: 'application/pdf',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('❌ Storage upload error:', uploadError);
+            throw new Error(`Failed to upload tailored resume: ${uploadError.message}`);
+          }
+
+          // Insert tailored resume record into database
+          const { data: tailoredResume, error: insertError } = await supabase
+            .from('tailored_resumes')
+            .insert({
+              user_id: userId || null,
+              original_resume_id: resumeRecord?.id || null,
+              job_id: null,
+              tailored_content: tailoredContent,
+              job_title: jobTitle,
+              company_name: companyName,
+              match_score: qualityScore,
+              file_url: supabase.storage.from('tailored-resumes').getPublicUrl(tailoredFileName).data.publicUrl,
+              file_name: tailoredFileName
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('❌ Database insert error:', insertError);
+            throw new Error(`Failed to save tailored resume: ${insertError.message}`);
+          }
+
+          console.log(`✅ [${requestId}] Tailored resume saved:`, tailoredResume.id);
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              tailoredContent,
+              score: qualityScore,
+              downloadUrl: supabase.storage.from('tailored-resumes').getPublicUrl(tailoredFileName).data.publicUrl,
+              tailoredResumeId: tailoredResume.id,
+              analysis: {
+                qualityElements: {
+                  structurePreserved: validation.structurePreserved,
+                  enhancementsApplied: validation.enhancementsApplied,
+                  keywordsIntegrated: jobKeywords.filter(kw => tailoredContent.toLowerCase().includes(kw.toLowerCase())).length
+                }
+              },
+              requestId,
+              timestamp: new Date().toISOString()
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
 
         } catch (processingError) {
           console.error(`❌ [${requestId}] Processing error:`, processingError);
           throw processingError;
         }
-
-        // Extract candidate name from enhanced CV or fallback
-        const candidateName = enhancedCV?.contact?.name || 
-                            enhancedCV?.contact?.display_name || 
-                            resumeContent.split('\n').map(l => l.trim()).filter(Boolean)[0] || 
-                            'Professional';
-
-        // Upload tailored resume as PDF to storage
-        const tailoredFileName = `tailored_${Date.now()}_${file.name.replace(/\.[^/.]+$/, '')}.pdf`;
-        const { error: uploadError } = await supabase.storage
-          .from('tailored-resumes')
-          .upload(tailoredFileName, pdfBytes, {
-            contentType: 'application/pdf',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('❌ Storage upload error:', uploadError);
-          throw new Error(`Failed to upload tailored resume: ${uploadError.message}`);
-        }
-
-        console.log('💾 Uploaded tailored resume to storage:', tailoredFileName);
-
-        // Extract job keywords for database record (ensure it's available)
-        let jobKeywordsForDB;
-        try {
-          jobKeywordsForDB = extractJobKeywords(jobDescription, jobTitle);
-        } catch {
-          jobKeywordsForDB = ['professional', 'experience']; // Fallback keywords
-        }
-
-        // Save tailored resume record to database with status
-        const { data: tailoredResume, error: insertError } = await supabase
-          .from('tailored_resumes')
-          .insert({
-            user_id: userId,
-            original_resume_id: resumeRecord?.id,
-            job_id: null,
-            tailored_content: tailoredContent,
-            job_title: jobTitle,
-            company_name: companyName,
-            job_description: jobDescription,
-            tailored_file_path: tailoredFileName,
-            file_format: 'pdf',
-            tailoring_score: qualityScore,
-            status: 'tailored',
-            ai_suggestions: {
-              keywords_added: jobKeywordsForDB.filter(kw => tailoredContent.toLowerCase().includes(kw.toLowerCase())).length,
-              enhancements_made: validation?.enhancementsApplied || 0,
-              structure_preserved: validation?.structurePreserved || true,
-              timestamp: new Date().toISOString()
-            }
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('❌ Database insert error:', insertError);
-          throw new Error(`Failed to save tailored resume: ${insertError.message}`);
-        }
-
-        console.log('✅ Tailored resume saved:', tailoredResume.id);
-
-        // Update original resume record
-        if (resumeRecord) {
-          const { error: resumeUpdateError } = await supabase
-            .from('resumes')
-            .update({
-              tailored_text: tailoredContent,
-              status: 'tailored',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', resumeRecord.id);
-
-          if (resumeUpdateError) {
-            console.error(`❌ [${requestId}] Failed updating resume record:`, resumeUpdateError);
-          } else {
-            console.log(`✅ [${requestId}] Resume record updated to complete`);
-          }
-        }
-
-        const duration = Date.now() - startTime;
-        console.log(`🎉 [${requestId}] Request completed successfully in ${duration}ms`);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            tailoredResume: tailoredContent,
-            score: qualityScore,
-            downloadUrl: supabase.storage.from('tailored-resumes').getPublicUrl(tailoredFileName).data.publicUrl,
-            tailoredResumeId: tailoredResume.id,
-            analysis: {
-              qualityElements: {
-                structurePreserved: validation.structurePreserved,
-                enhancementsApplied: validation.enhancementsApplied,
-                keywordsIntegrated: jobKeywords.filter(kw => tailoredContent.toLowerCase().includes(kw.toLowerCase())).length
-              }
-            },
-            requestId,
-            timestamp: new Date().toISOString()
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
       } else {
         // Enhanced JSON payload processing with professional optimization
         console.log(`🧾 [${requestId}] Processing JSON payload with professional optimization`);

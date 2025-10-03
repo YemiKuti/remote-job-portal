@@ -5,6 +5,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 // Initialize Supabase client
@@ -882,11 +884,34 @@ serve(async (req) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID().substring(0, 8);
   
-  console.log(`🚀 [${requestId}] CV Tailoring request started`);
+  console.log(`🚀 [${requestId}] CV Tailoring request started at ${new Date().toISOString()}`);
+  console.log(`📋 [${requestId}] Request method: ${req.method}`);
+  console.log(`📋 [${requestId}] Request headers:`, {
+    contentType: req.headers.get('content-type'),
+    authorization: req.headers.get('authorization') ? 'Present' : 'Missing',
+    origin: req.headers.get('origin')
+  });
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log(`✅ [${requestId}] Responding to OPTIONS preflight request`);
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Validate request method
+  if (req.method !== 'POST') {
+    console.error(`❌ [${requestId}] Invalid method: ${req.method}`);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Method not allowed. Use POST to tailor your CV.',
+        requestId 
+      }),
+      { 
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 
   try {

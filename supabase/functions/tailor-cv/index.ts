@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
+// Import proper parsing libraries
+import mammoth from 'npm:mammoth@1.10.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,145 +18,209 @@ const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 /**
- * Extract text from PDF files
+ * Detect if PDF is image-based (scanned) or text-based
+ */
+function detectPdfType(arrayBuffer: ArrayBuffer): 'text' | 'image' | 'unknown' {
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const raw = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+  
+  // Check for text content markers
+  const hasTextOperators = /\(.*?\)\s*Tj/g.test(raw) || /BT\s*.*?\s*ET/g.test(raw);
+  
+  // Check for image markers
+  const hasImageMarkers = /\/Image|\/DCTDecode|\/JPXDecode|\/CCITTFaxDecode/gi.test(raw);
+  
+  if (hasTextOperators && !hasImageMarkers) return 'text';
+  if (hasImageMarkers && !hasTextOperators) return 'image';
+  if (hasImageMarkers && hasTextOperators) return 'text'; // Mixed, assume text-based
+  return 'unknown';
+}
+
+/**
+ * Extract text from PDF files with improved parsing
  */
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
+  console.log('📄 Starting PDF text extraction...');
+  
   try {
+    // First detect if PDF is image-based
+    const pdfType = detectPdfType(arrayBuffer);
+    console.log(`📄 PDF type detected: ${pdfType}`);
+    
+    if (pdfType === 'image') {
+      throw new Error('IMAGE_PDF: Unsupported format: image-based PDF detected. Please upload a text-based resume or convert to DOCX/TXT.');
+    }
+    
     const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Enhanced Unicode handling with multiple encoding fallbacks
+    // Try UTF-8 decoding with fallbacks
     let raw = '';
     try {
-      // Try UTF-8 first (most common)
-      raw = new TextDecoder('utf-8', { fatal: true }).decode(uint8Array);
-    } catch (utf8Error) {
-      try {
-        // Fallback to UTF-8 with error recovery
-        raw = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
-      } catch (fallbackError) {
-        try {
-          // Try Latin-1 encoding for legacy documents
-          raw = new TextDecoder('iso-8859-1').decode(uint8Array);
-        } catch (latinError) {
-          // Final fallback: process as binary and extract ASCII-safe characters
-          raw = Array.from(uint8Array)
-            .map(byte => (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ' ')
-            .join('');
-        }
+      raw = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+    } catch (error) {
+      console.log('⚠️ UTF-8 decode failed, trying Latin-1...');
+      raw = new TextDecoder('iso-8859-1').decode(uint8Array);
+    }
+
+    console.log(`📄 Raw PDF content length: ${raw.length} characters`);
+
+    // Sanitize control characters and invalid Unicode
+    raw = raw
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+      .replace(/[\uFFFD]/g, ' ')
+      .replace(/\\u[0-9a-fA-F]{4}/g, ' ');
+
+    // Method 1: Extract text from PDF text operators
+    // Look for text between parentheses in Tj, TJ operators
+    const textPattern = /\(((?:[^()\\]|\\.)*?)\)\s*T[jJ]/g;
+    let textMatches = [];
+    let match;
+    while ((match = textPattern.exec(raw)) !== null) {
+      if (match[1] && match[1].trim()) {
+        textMatches.push(match[1].trim());
       }
     }
+    
+    let extracted = textMatches.join(' ');
+    console.log(`📄 Method 1 (Tj operators): ${extracted.length} characters`);
 
-    // Sanitize Unicode characters that could cause JSON parsing issues
-    raw = raw
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
-      .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
-      .replace(/\\u[0-9a-fA-F]{4}/g, ' '); // Remove Unicode escape sequences
-
-    // Try to preserve line-ish breaks using PDF text operators (approximation)
-    const parenMatches = raw.match(/\((.*?)\)/g) || [];
-    let extracted = parenMatches
-      .map(m => m.slice(1, -1))
-      .filter(t => t.length > 1 && /[a-zA-Z0-9]/.test(t))
-      .join('\n');
-
+    // Method 2: Extract from BT...ET blocks if Method 1 failed
     if (extracted.length < 50) {
-      // Fallback: keep existing line breaks where possible
-      extracted = raw
-        .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F\u1E00-\u1EFF]/g, ' ') // Keep extended Latin
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
+      console.log('📄 Trying Method 2: BT...ET blocks...');
+      const btPattern = /BT\s*(.*?)\s*ET/gs;
+      let btMatches = [];
+      while ((match = btPattern.exec(raw)) !== null) {
+        const content = match[1]
+          .replace(/\((.*?)\)/g, '$1')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (content && content.length > 3) {
+          btMatches.push(content);
+        }
+      }
+      extracted = btMatches.join(' ');
+      console.log(`📄 Method 2 result: ${extracted.length} characters`);
     }
 
-    // Normalize bullets and simple dashes with Unicode-safe replacements
-    extracted = extracted
-      .replace(/[•●○◦▪▫■□▲△▼▽]/g, '•')
-      .replace(/-\s+/g, '- ')
-      .replace(/—/g, '-') // Em dash to regular dash
-      .replace(/–/g, '-') // En dash to regular dash
-      .replace(/[""]/g, '"') // Smart quotes to regular quotes
-      .replace(/['']/g, "'"); // Smart apostrophes to regular
-
+    // Method 3: Fallback - extract readable ASCII text
     if (extracted.length < 50) {
-      throw new Error('CONTENT_TOO_SHORT');
+      console.log('📄 Trying Method 3: ASCII extraction...');
+      extracted = raw
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      console.log(`📄 Method 3 result: ${extracted.length} characters`);
+    }
+
+    // Clean and normalize the text
+    extracted = extracted
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\t/g, '\t')
+      .replace(/\\/g, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[•●○◦▪▫■□▲△▼▽]/g, '•')
+      .replace(/[—–]/g, '-')
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      .trim();
+
+    console.log(`✅ PDF extraction complete: ${extracted.length} characters`);
+
+    // Validate extracted content
+    if (extracted.length < 50) {
+      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be image-based, corrupted, or encrypted.');
+    }
+    
+    // Check for resume-like content
+    const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree/i.test(extracted);
+    if (!hasResumeKeywords && extracted.length < 200) {
+      console.warn('⚠️ PDF lacks resume keywords');
+      throw new Error('PDF_NO_RESUME_CONTENT: PDF does not appear to contain resume information. Please ensure you uploaded the correct file.');
     }
 
     return extracted;
-  } catch (error) {
-    if (error.message === 'CONTENT_TOO_SHORT') {
-      throw new Error('CONTENT_TOO_SHORT');
+  } catch (error: any) {
+    console.error('❌ PDF extraction error:', error.message);
+    
+    if (error.message?.startsWith('IMAGE_PDF:')) {
+      throw error;
     }
-    throw new Error('UNSUPPORTED_ENCODING');
+    if (error.message?.startsWith('CONTENT_TOO_SHORT:')) {
+      throw error;
+    }
+    if (error.message?.startsWith('PDF_NO_RESUME_CONTENT:')) {
+      throw error;
+    }
+    
+    throw new Error('PDF_PROCESSING_ERROR: Could not extract text from PDF. The file may be encrypted, corrupted, or image-based. Please convert to DOCX or TXT format.');
   }
 }
 
 /**
- * Extract text from DOCX files
+ * Extract text from DOCX files using mammoth library
  */
 async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
+  console.log('📄 Starting DOCX text extraction with mammoth...');
+  
   try {
-    const uint8Array = new Uint8Array(arrayBuffer);
+    // Use mammoth to properly parse DOCX (ZIP archive with XML)
+    const result = await mammoth.extractRawText({ 
+      arrayBuffer: arrayBuffer 
+    });
     
-    // Enhanced Unicode handling for DOCX content
-    let docxContent = '';
-    try {
-      // Try UTF-8 first
-      docxContent = new TextDecoder('utf-8', { fatal: true }).decode(uint8Array);
-    } catch (utf8Error) {
-      try {
-        // Fallback to UTF-8 with error recovery
-        docxContent = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
-      } catch (fallbackError) {
-        // Try UTF-16 which is common in Office documents
-        try {
-          docxContent = new TextDecoder('utf-16le').decode(uint8Array);
-        } catch (utf16Error) {
-          // Final fallback to Latin-1
-          docxContent = new TextDecoder('iso-8859-1').decode(uint8Array);
-        }
-      }
+    let text = result.value;
+    console.log(`📄 Mammoth extraction: ${text.length} characters`);
+    
+    if (result.messages && result.messages.length > 0) {
+      console.log('📄 Mammoth messages:', result.messages.map(m => m.message).join(', '));
     }
 
-    // Sanitize Unicode characters and escape sequences
-    docxContent = docxContent
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // Remove control characters
-      .replace(/[\uFFFD]/g, ' ') // Remove replacement characters
-      .replace(/\\u[0-9a-fA-F]{4}/g, ' ') // Remove Unicode escape sequences
-      .replace(/\\[rnt]/g, ' '); // Remove common escape sequences
-
-    // Preserve paragraph breaks and tabs, then strip tags
-    const withParagraphs = docxContent
-      .replace(/<\/w:p>/g, '\n')
-      .replace(/<w:tab[^>]*\/>/g, '\t');
-
-    let text = withParagraphs
-      .replace(/<[^>]+>/g, ' ')
+    // Normalize whitespace and line breaks
+    text = text
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    // Unicode normalization for special characters
+    // Normalize special characters
     text = text
-      .replace(/[""]/g, '"') // Smart quotes
-      .replace(/['']/g, "'") // Smart apostrophes
-      .replace(/[—–]/g, '-') // Em/en dashes
-      .replace(/[•●○◦▪▫■□]/g, '•') // Normalize bullets
-      .replace(/\u00A0/g, ' '); // Non-breaking space to regular space
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
+      .replace(/[—–]/g, '-')
+      .replace(/[•●○◦▪▫■□]/g, '•')
+      .replace(/\u00A0/g, ' ');
 
-    if (text.length < 50) {
-      throw new Error('CONTENT_TOO_SHORT');
+    console.log(`✅ DOCX extraction complete: ${text.length} characters after cleanup`);
+
+    // Validate content
+    if (!text || text.trim().length < 50) {
+      throw new Error('CONTENT_TOO_SHORT: DOCX file appears empty or contains insufficient text. Please ensure the file contains your complete resume.');
+    }
+    
+    // Check for resume content
+    const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree/i.test(text);
+    if (!hasResumeKeywords && text.length < 200) {
+      console.warn('⚠️ DOCX lacks resume keywords');
+      throw new Error('DOCX_NO_RESUME_CONTENT: DOCX does not appear to contain resume information. Please ensure you uploaded the correct file.');
     }
 
     return text;
-  } catch (error) {
-    if (error.message === 'CONTENT_TOO_SHORT') {
-      throw new Error('CONTENT_TOO_SHORT');
+  } catch (error: any) {
+    console.error('❌ DOCX extraction error:', error.message);
+    
+    if (error.message?.startsWith('CONTENT_TOO_SHORT:')) {
+      throw error;
     }
-    throw new Error('UNSUPPORTED_ENCODING');
+    if (error.message?.startsWith('DOCX_NO_RESUME_CONTENT:')) {
+      throw error;
+    }
+    
+    throw new Error('DOCX_PROCESSING_ERROR: Could not extract text from DOCX. The file may be corrupted or in an unsupported format. Please try saving as a newer DOCX format or convert to TXT.');
   }
 }
 
@@ -845,42 +911,81 @@ async function generateEnhancedPdf(content: string, candidateName: string, jobTi
   }
 }
 
-// Enhanced error classification with user-specified messages
+// Enhanced error classification with specific error types
 function classifyError(error: any): { code: string, message: string, userMessage: string } {
   const errorMsg = error.message || error.toString();
   
-  // Handle file too large errors
-  if (errorMsg.includes('FILE_TOO_LARGE') || errorMsg.includes('too large') || errorMsg.includes('max 15MB')) {
+  console.log('🔍 Classifying error:', errorMsg);
+  
+  // Handle image-based PDF
+  if (errorMsg.includes('IMAGE_PDF:')) {
     return { 
-      code: 'FILE_TOO_LARGE', 
+      code: 'IMAGE_PDF', 
       message: errorMsg, 
-      userMessage: 'File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format. If your resume is very long, consider focusing on your most recent 10-15 years of experience.' 
+      userMessage: errorMsg.replace('IMAGE_PDF: ', '')
     };
   }
   
-  // Handle invalid/unreadable files with exact user-specified message
-  if (errorMsg.includes('RESUME_INVALID_OR_UNREADABLE') || 
-      errorMsg.includes('invalid or unreadable') || 
-      errorMsg.includes('empty or unreadable') ||
-      errorMsg.includes('PDF_NO_TEXT_CONTENT') || 
-      errorMsg.includes('no text content') ||
-      errorMsg.includes('FILE_EMPTY')) {
+  // Handle PDF with no resume content
+  if (errorMsg.includes('PDF_NO_RESUME_CONTENT:')) {
     return { 
-      code: 'RESUME_INVALID_OR_UNREADABLE', 
+      code: 'PDF_NO_RESUME_CONTENT', 
       message: errorMsg, 
-      userMessage: 'Invalid CV format. Please re-upload in .docx or .txt format for best results.' 
+      userMessage: errorMsg.replace('PDF_NO_RESUME_CONTENT: ', '')
     };
   }
   
-  // Handle partial extraction failures with exact user-specified message
-  if (errorMsg.includes('PDF_PROCESSING_ERROR') || 
-      errorMsg.includes('Partial resume processed') ||
-      errorMsg.includes('extraction') ||
-      errorMsg.includes('midway')) {
+  // Handle DOCX with no resume content
+  if (errorMsg.includes('DOCX_NO_RESUME_CONTENT:')) {
+    return { 
+      code: 'DOCX_NO_RESUME_CONTENT', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('DOCX_NO_RESUME_CONTENT: ', '')
+    };
+  }
+  
+  // Handle PDF processing errors
+  if (errorMsg.includes('PDF_PROCESSING_ERROR:')) {
     return { 
       code: 'PDF_PROCESSING_ERROR', 
       message: errorMsg, 
-      userMessage: 'Your resume could not be fully processed. Please re-upload in .docx or .txt format for best results.' 
+      userMessage: errorMsg.replace('PDF_PROCESSING_ERROR: ', '')
+    };
+  }
+  
+  // Handle DOCX processing errors
+  if (errorMsg.includes('DOCX_PROCESSING_ERROR:')) {
+    return { 
+      code: 'DOCX_PROCESSING_ERROR', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('DOCX_PROCESSING_ERROR: ', '')
+    };
+  }
+  
+  // Handle file too large errors
+  if (errorMsg.includes('FILE_TOO_LARGE:') || errorMsg.includes('too large') || errorMsg.includes('max 15MB')) {
+    return { 
+      code: 'FILE_TOO_LARGE', 
+      message: errorMsg, 
+      userMessage: 'File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format.'
+    };
+  }
+  
+  // Handle invalid/unreadable files
+  if (errorMsg.includes('RESUME_INVALID_OR_UNREADABLE') || errorMsg.includes('FILE_EMPTY')) {
+    return { 
+      code: 'RESUME_INVALID_OR_UNREADABLE', 
+      message: errorMsg, 
+      userMessage: '⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).'
+    };
+  }
+  
+  // Handle short content
+  if (errorMsg.includes('CONTENT_TOO_SHORT:')) {
+    return { 
+      code: 'CONTENT_TOO_SHORT', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('CONTENT_TOO_SHORT: ', '')
     };
   }
   
@@ -889,51 +994,52 @@ function classifyError(error: any): { code: string, message: string, userMessage
     return { 
       code: 'CONTENT_TOO_LARGE', 
       message: errorMsg, 
-      userMessage: 'Your resume is too long to process. Please condense to 10-15 pages focusing on your most recent experience, or split into multiple targeted resumes.' 
+      userMessage: 'Your resume is too long to process. Please condense to 10-15 pages focusing on your most recent experience.'
     };
   }
   
   // Handle encoding issues
-  if (errorMsg.includes('UNSUPPORTED_ENCODING') || errorMsg.includes('Unicode') || errorMsg.includes('encoding')) {
+  if (errorMsg.includes('UNSUPPORTED_ENCODING') || errorMsg.includes('encoding')) {
     return { 
       code: 'UNSUPPORTED_ENCODING', 
       message: errorMsg, 
-      userMessage: 'Unable to read your resume file. The file may use an unsupported encoding. Please try uploading in DOCX or TXT format.' 
+      userMessage: 'Unable to read your resume file due to encoding issues. Please try uploading in DOCX or TXT format.'
     };
   }
   
   // Handle format issues
-  if (errorMsg.includes('INVALID_FORMAT') || errorMsg.includes('format not supported') || errorMsg.includes('Unsupported file format')) {
+  if (errorMsg.includes('Unsupported file format')) {
     return { 
       code: 'INVALID_FORMAT', 
       message: errorMsg, 
-      userMessage: 'Unsupported file format. Please upload a .csv or .xlsx file with job data.' 
-    };
-  }
-  
-  // Handle short content
-  if (errorMsg.includes('CONTENT_TOO_SHORT') || errorMsg.includes('too short') || errorMsg.includes('insufficient') || errorMsg.includes('at least 50 characters')) {
-    return { 
-      code: 'CONTENT_TOO_SHORT', 
-      message: errorMsg, 
-      userMessage: 'Resume content is too short (minimum 50 characters). Please upload a complete resume with your experience, skills, and education.' 
+      userMessage: 'Unsupported file format. Please upload a PDF, DOCX, or TXT file.'
     };
   }
   
   // Handle missing job description
-  if (errorMsg.includes('Job description missing') || errorMsg.includes('job description is required')) {
+  if (errorMsg.includes('job description is required')) {
     return {
       code: 'JOB_DESCRIPTION_MISSING',
       message: errorMsg,
-      userMessage: 'Job description is required. Please provide the complete job posting details including responsibilities and requirements.'
+      userMessage: 'Job description is required. Please provide the complete job posting details.'
+    };
+  }
+  
+  // Handle corrupt or encrypted files
+  if (errorMsg.includes('corrupt') || errorMsg.includes('encrypted')) {
+    return {
+      code: 'FILE_CORRUPT',
+      message: errorMsg,
+      userMessage: 'File appears corrupted or encrypted. Please ensure the file is not password-protected and try uploading again.'
     };
   }
   
   // Generic fallback
+  console.log('⚠️ Unclassified error, using generic message');
   return { 
     code: 'UNKNOWN_ERROR', 
     message: errorMsg, 
-    userMessage: '⚠️ Your resume could not be fully processed. Please re-upload in .docx or .txt format for best results.' 
+    userMessage: '⚠️ Your resume could not be fully processed. Please re-upload in .docx or .txt format for best results.'
   };
 }
 
@@ -1105,7 +1211,23 @@ serve(async (req) => {
           } else if (fileName.endsWith('.docx')) {
             resumeContent = await extractDocxText(arrayBuffer);
           } else if (fileName.endsWith('.txt')) {
-            resumeContent = new TextDecoder().decode(arrayBuffer);
+            console.log(`📄 [${requestId}] Processing TXT file...`);
+            // Try UTF-8 first, then fallback to Latin-1
+            try {
+              resumeContent = new TextDecoder('utf-8', { fatal: true }).decode(arrayBuffer);
+            } catch (utf8Error) {
+              console.log(`📄 [${requestId}] UTF-8 failed, trying Latin-1...`);
+              resumeContent = new TextDecoder('iso-8859-1').decode(arrayBuffer);
+            }
+            // Normalize line breaks and whitespace
+            resumeContent = resumeContent
+              .replace(/\r\n/g, '\n')
+              .replace(/\r/g, '\n')
+              .replace(/[ \t]+/g, ' ')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
+          } else if (fileName.endsWith('.doc')) {
+            throw new Error('INVALID_FORMAT: Legacy .DOC format is not supported. Please save as .DOCX or .TXT and re-upload.');
           } else {
             // Try different extraction methods as fallback
             try {
@@ -1134,30 +1256,67 @@ serve(async (req) => {
           }
           
         } catch (extractError: any) {
-          console.error(`❌ [${requestId}] Content extraction failed:`, extractError);
+          console.error(`❌ [${requestId}] Content extraction failed:`, extractError.message);
           
-          // Handle specific PDF extraction errors with OCR fallback
-          if (extractError.message?.includes('PDF_NO_TEXT_CONTENT') || 
-              extractError.message?.includes('no text content')) {
-            throw new Error('RESUME_INVALID_OR_UNREADABLE');
+          // Handle specific extraction errors with detailed logging
+          if (extractError.message?.includes('IMAGE_PDF:')) {
+            throw extractError; // Pass through with original message
           }
           
-          // Step 5: Handle partial extraction - ensure completion
-          if (extractError.message?.includes('PDF_PROCESSING_ERROR') || 
-              extractError.message?.includes('extraction')) {
-            throw new Error('⚠️ Partial resume processed. Please try uploading in DOCX format for full support.');
+          if (extractError.message?.includes('PDF_NO_RESUME_CONTENT:')) {
+            throw extractError;
           }
           
-          throw new Error('Could not extract text from file. Please ensure it\'s a valid PDF, DOCX, or TXT file.');
+          if (extractError.message?.includes('DOCX_NO_RESUME_CONTENT:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('PDF_PROCESSING_ERROR:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('DOCX_PROCESSING_ERROR:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('CONTENT_TOO_SHORT:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('INVALID_FORMAT:')) {
+            throw extractError;
+          }
+          
+          // Generic extraction failure
+          console.error(`❌ [${requestId}] Generic extraction error for ${fileName}`);
+          throw new Error(`Could not extract text from ${fileName}. The file may be corrupted, encrypted, or in an unsupported format. Please try converting to DOCX or TXT.`);
         }
         
         // Step 5: Validate extracted content - ensure processing completes  
+        console.log(`📊 [${requestId}] Validating extracted content: ${resumeContent.length} characters`);
+        
         if (!resumeContent || resumeContent.trim().length < 30) {
-          // If content is too short, it might be unreadable
+          console.error(`❌ [${requestId}] Content too short: ${resumeContent.trim().length} characters`);
+          
+          // If content is extremely short, it's likely unreadable
           if (resumeContent.trim().length < 10) {
-            throw new Error('RESUME_INVALID_OR_UNREADABLE');
+            throw new Error('RESUME_INVALID_OR_UNREADABLE: Could not extract readable text. The file may be corrupted or empty.');
           }
           
+          // Content is very short but not empty
+          console.warn(`⚠️ [${requestId}] Content is very short (${resumeContent.trim().length} chars), proceeding with caution...`);
+        }
+        
+        // Additional validation: check for resume-like content
+        const hasResumeContent = /(?:experience|education|skills|work|employment|position|role|university|degree|contact|email|phone|profile|summary|objective|name)/i.test(resumeContent);
+        
+        if (!hasResumeContent && resumeContent.length < 300) {
+          console.warn(`⚠️ [${requestId}] Content lacks resume keywords`);
+          throw new Error('CONTENT_TOO_SHORT: Resume content appears incomplete or missing key sections (experience, education, skills). Please upload a complete resume.');
+        }
+        
+        console.log(`✅ [${requestId}] Content validation passed`);
+        console.log(`📝 [${requestId}] Resume preview: ${resumeContent.substring(0, 200)}...`);
           console.log(`⚠️ [${requestId}] Brief content detected, enhancing...`);
           // Step 5: Ensure processing completes - enrich rather than reject
           resumeContent = resumeContent || 'Professional candidate seeking opportunities.';

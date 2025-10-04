@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Parsing Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .status-pass {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-fail {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .result-success {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .result-error {
+            border-color: #dc3545;
+            background: #fff8f8;
+            color: #dc3545;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .info-box strong {
+            color: #2196F3;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .file-name {
+            display: block;
+            margin-top: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 CV Parsing Test Suite</h1>
+            <p>Comprehensive testing for PDF, DOCX, and TXT resume parsing</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>🎯 Purpose:</strong> Test the improved CV parsing system with support for:
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>✅ Text-based PDF extraction</li>
+                    <li>✅ DOCX parsing using mammoth library</li>
+                    <li>✅ TXT file with UTF-8 and Latin-1 encoding</li>
+                    <li>✅ Image-based PDF detection</li>
+                    <li>✅ Corrupted/encrypted file detection</li>
+                    <li>✅ Clear error messages for each failure type</li>
+                </ul>
+            </div>
+            
+            <!-- Test 1: PDF Text-Based -->
+            <div class="test-section" id="test-pdf">
+                <h2>
+                    📄 Test 1: Text-Based PDF
+                    <span class="status-badge status-pending" id="status-pdf">Pending</span>
+                </h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Upload a text-based PDF resume (not scanned/image-based).
+                </p>
+                <div class="file-input-wrapper">
+                    <label for="pdf-file" class="file-input-label">Choose PDF File</label>
+                    <input type="file" id="pdf-file" accept=".pdf" />
+                    <span class="file-name" id="pdf-file-name">No file selected</span>
+                </div>
+                <textarea id="pdf-job-desc" placeholder="Enter job description for tailoring..."></textarea>
+                <button class="btn btn-primary" id="test-pdf-btn">Test PDF Parsing</button>
+                <div class="result-box" id="pdf-result" style="display: none;"></div>
+            </div>
+            
+            <!-- Test 2: DOCX -->
+            <div class="test-section" id="test-docx">
+                <h2>
+                    📝 Test 2: DOCX Document
+                    <span class="status-badge status-pending" id="status-docx">Pending</span>
+                </h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Upload a .docx resume file.
+                </p>
+                <div class="file-input-wrapper">
+                    <label for="docx-file" class="file-input-label">Choose DOCX File</label>
+                    <input type="file" id="docx-file" accept=".docx" />
+                    <span class="file-name" id="docx-file-name">No file selected</span>
+                </div>
+                <textarea id="docx-job-desc" placeholder="Enter job description for tailoring..."></textarea>
+                <button class="btn btn-primary" id="test-docx-btn">Test DOCX Parsing</button>
+                <div class="result-box" id="docx-result" style="display: none;"></div>
+            </div>
+            
+            <!-- Test 3: TXT -->
+            <div class="test-section" id="test-txt">
+                <h2>
+                    📃 Test 3: Plain Text
+                    <span class="status-badge status-pending" id="status-txt">Pending</span>
+                </h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Upload a .txt resume file.
+                </p>
+                <div class="file-input-wrapper">
+                    <label for="txt-file" class="file-input-label">Choose TXT File</label>
+                    <input type="file" id="txt-file" accept=".txt" />
+                    <span class="file-name" id="txt-file-name">No file selected</span>
+                </div>
+                <textarea id="txt-job-desc" placeholder="Enter job description for tailoring..."></textarea>
+                <button class="btn btn-primary" id="test-txt-btn">Test TXT Parsing</button>
+                <div class="result-box" id="txt-result" style="display: none;"></div>
+            </div>
+            
+            <!-- Test 4: Image-Based PDF -->
+            <div class="test-section" id="test-image-pdf">
+                <h2>
+                    🖼️ Test 4: Image-Based PDF (Should Fail)
+                    <span class="status-badge status-pending" id="status-image-pdf">Pending</span>
+                </h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Upload a scanned/image-based PDF. This should fail with a clear error message.
+                </p>
+                <div class="file-input-wrapper">
+                    <label for="image-pdf-file" class="file-input-label">Choose Image PDF</label>
+                    <input type="file" id="image-pdf-file" accept=".pdf" />
+                    <span class="file-name" id="image-pdf-file-name">No file selected</span>
+                </div>
+                <textarea id="image-pdf-job-desc" placeholder="Enter job description..."></textarea>
+                <button class="btn btn-primary" id="test-image-pdf-btn">Test Image PDF</button>
+                <div class="result-box" id="image-pdf-result" style="display: none;"></div>
+            </div>
+            
+            <!-- Test Summary -->
+            <div class="test-section" style="background: #fff; border-left-color: #28a745;">
+                <h2>📊 Test Summary</h2>
+                <div id="summary-content">
+                    <p style="color: #666;">Run tests to see results...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EDGE_FUNCTION_URL = 'https://mmbrvcndxhipaoxysvwr.supabase.co/functions/v1/tailor-cv';
+        
+        // File input handlers
+        ['pdf', 'docx', 'txt', 'image-pdf'].forEach(type => {
+            const fileInput = document.getElementById(`${type}-file`);
+            const fileName = document.getElementById(`${type}-file-name`);
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files[0]) {
+                    fileName.textContent = e.target.files[0].name;
+                } else {
+                    fileName.textContent = 'No file selected';
+                }
+            });
+        });
+        
+        // Test function
+        async function runTest(fileInputId, jobDescId, resultId, statusId, testName) {
+            const fileInput = document.getElementById(fileInputId);
+            const jobDescInput = document.getElementById(jobDescId);
+            const resultDiv = document.getElementById(resultId);
+            const statusBadge = document.getElementById(statusId);
+            const btn = event.target;
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file first!');
+                return;
+            }
+            
+            if (!jobDescInput.value.trim()) {
+                alert('Please enter a job description!');
+                return;
+            }
+            
+            // Update UI
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Testing...';
+            statusBadge.className = 'status-badge status-pending';
+            statusBadge.textContent = 'Running...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result-box';
+            resultDiv.textContent = '⏳ Sending request to Edge Function...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('jobDescription', jobDescInput.value);
+                formData.append('jobTitle', 'Test Position');
+                formData.append('companyName', 'Test Company');
+                
+                const startTime = Date.now();
+                
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusBadge.className = 'status-badge status-pass';
+                    statusBadge.textContent = 'PASS';
+                    resultDiv.className = 'result-box result-success';
+                    resultDiv.textContent = `✅ SUCCESS (${duration}ms)\n\n` +
+                        `Score: ${data.score}/100\n` +
+                        `Resume Length: ${data.tailoredResume?.length || 0} characters\n` +
+                        `Keywords Integrated: ${data.analysis?.qualityElements?.keywordsIntegrated || 0}\n\n` +
+                        `Preview:\n${data.tailoredResume?.substring(0, 500)}...`;
+                } else {
+                    // Check if this is an expected failure
+                    const isExpectedFailure = testName.includes('Should Fail');
+                    
+                    if (isExpectedFailure && data.errorCode) {
+                        statusBadge.className = 'status-badge status-pass';
+                        statusBadge.textContent = 'PASS (Expected Fail)';
+                        resultDiv.className = 'result-box result-success';
+                        resultDiv.textContent = `✅ EXPECTED FAILURE (${duration}ms)\n\n` +
+                            `Error Code: ${data.errorCode}\n` +
+                            `Error Message: ${data.error}\n\n` +
+                            `This is correct behavior - the system properly detected and rejected the incompatible file.`;
+                    } else {
+                        statusBadge.className = 'status-badge status-fail';
+                        statusBadge.textContent = 'FAIL';
+                        resultDiv.className = 'result-box result-error';
+                        resultDiv.textContent = `❌ FAILED (${duration}ms)\n\n` +
+                            `Error Code: ${data.errorCode || 'UNKNOWN'}\n` +
+                            `Error: ${data.error}\n\n` +
+                            `Technical Details: ${data.technicalError || 'N/A'}`;
+                    }
+                }
+            } catch (error) {
+                statusBadge.className = 'status-badge status-fail';
+                statusBadge.textContent = 'FAIL';
+                resultDiv.className = 'result-box result-error';
+                resultDiv.textContent = `❌ NETWORK/SYSTEM ERROR\n\n${error.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = `Test ${testName} Parsing`;
+                updateSummary();
+            }
+        }
+        
+        // Attach test handlers
+        document.getElementById('test-pdf-btn').addEventListener('click', () => 
+            runTest('pdf-file', 'pdf-job-desc', 'pdf-result', 'status-pdf', 'PDF')
+        );
+        
+        document.getElementById('test-docx-btn').addEventListener('click', () => 
+            runTest('docx-file', 'docx-job-desc', 'docx-result', 'status-docx', 'DOCX')
+        );
+        
+        document.getElementById('test-txt-btn').addEventListener('click', () => 
+            runTest('txt-file', 'txt-job-desc', 'txt-result', 'status-txt', 'TXT')
+        );
+        
+        document.getElementById('test-image-pdf-btn').addEventListener('click', () => 
+            runTest('image-pdf-file', 'image-pdf-job-desc', 'image-pdf-result', 'status-image-pdf', 'Image PDF (Should Fail)')
+        );
+        
+        function updateSummary() {
+            const statuses = ['pdf', 'docx', 'txt', 'image-pdf'];
+            let passed = 0;
+            let failed = 0;
+            let pending = 0;
+            
+            statuses.forEach(status => {
+                const badge = document.getElementById(`status-${status}`);
+                if (badge.textContent.includes('PASS')) passed++;
+                else if (badge.textContent.includes('FAIL')) failed++;
+                else pending++;
+            });
+            
+            const summaryDiv = document.getElementById('summary-content');
+            summaryDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div style="text-align: center; padding: 15px; background: #28a745; color: white; border-radius: 6px;">
+                        <div style="font-size: 2em; font-weight: bold;">${passed}</div>
+                        <div>Passed</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #dc3545; color: white; border-radius: 6px;">
+                        <div style="font-size: 2em; font-weight: bold;">${failed}</div>
+                        <div>Failed</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #ffc107; color: #000; border-radius: 6px;">
+                        <div style="font-size: 2em; font-weight: bold;">${pending}</div>
+                        <div>Pending</div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

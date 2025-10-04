@@ -443,6 +443,87 @@ function formatEnhancedResume(cv: any): string {
 }
 
 /**
+ * Chunk large CVs into sections for processing
+ */
+function chunkLargeCV(content: string): { chunks: string[], isChunked: boolean } {
+  const MAX_CHUNK_SIZE = 10000; // 10k characters per chunk
+  
+  if (content.length <= MAX_CHUNK_SIZE) {
+    return { chunks: [content], isChunked: false };
+  }
+  
+  console.log(`📊 Chunking large CV: ${content.length} characters into sections`);
+  
+  // Split by major sections
+  const sectionHeaders = [
+    /\n\s*CAREER PROFILE\s*\n/i,
+    /\n\s*PROFESSIONAL EXPERIENCE\s*\n/i,
+    /\n\s*EXPERIENCE\s*\n/i,
+    /\n\s*WORK HISTORY\s*\n/i,
+    /\n\s*EDUCATION\s*\n/i,
+    /\n\s*SKILLS\s*\n/i,
+    /\n\s*KEY SKILLS\s*\n/i,
+    /\n\s*CERTIFICATIONS\s*\n/i,
+  ];
+  
+  const chunks: string[] = [];
+  let currentChunk = '';
+  const lines = content.split('\n');
+  
+  for (const line of lines) {
+    const isHeader = sectionHeaders.some(pattern => pattern.test('\n' + line + '\n'));
+    
+    if (isHeader && currentChunk.length > 500) {
+      // Start new chunk at section boundary
+      chunks.push(currentChunk.trim());
+      currentChunk = line + '\n';
+    } else {
+      currentChunk += line + '\n';
+      
+      // Force chunk split if too large
+      if (currentChunk.length > MAX_CHUNK_SIZE) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+    }
+  }
+  
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  console.log(`✅ Split CV into ${chunks.length} chunks`);
+  return { chunks, isChunked: true };
+}
+
+/**
+ * Recombine chunked CV sections after processing
+ */
+function recombineChunks(chunks: any[]): any {
+  console.log(`🔗 Recombining ${chunks.length} processed chunks`);
+  
+  const combined: any = {
+    contact: '',
+    summary: '',
+    experience: [],
+    skills: [],
+    education: [],
+    certifications: []
+  };
+  
+  for (const chunk of chunks) {
+    if (chunk.contact) combined.contact = chunk.contact; // Use first contact info
+    if (chunk.summary && !combined.summary) combined.summary = chunk.summary; // Use first summary
+    if (chunk.experience) combined.experience.push(...chunk.experience);
+    if (chunk.skills) combined.skills.push(...chunk.skills);
+    if (chunk.education) combined.education.push(...chunk.education);
+    if (chunk.certifications) combined.certifications.push(...chunk.certifications);
+  }
+  
+  return combined;
+}
+
+/**
  * Professional content moderation - RULE 2: Never reject, always enhance
  */
 function moderateResumeContent(content: string): { content: string, warnings: string[] } {
@@ -456,9 +537,9 @@ function moderateResumeContent(content: string): { content: string, warnings: st
     processedContent = content + '\n\nProfessional Experience:\n• Results-driven professional with demonstrated expertise\n• Strong analytical and problem-solving capabilities\n• Excellent communication and collaboration skills';
   }
   
-  // RULE 5: If CV is too long, condense but retain key achievements
+  // RULE 5: If CV is too long, it will be chunked and processed
   const OPTIMAL_LENGTH = 12000; // ~3-4 pages
-  const MAX_PROCESSING_LENGTH = 25000; // Extended limit for professional CVs
+  const MAX_PROCESSING_LENGTH = 50000; // Increased limit - 50k characters (~15-20 pages)
   
   if (content.length <= OPTIMAL_LENGTH) {
     // Ideal length - process as-is
@@ -466,9 +547,9 @@ function moderateResumeContent(content: string): { content: string, warnings: st
   }
   
   if (content.length <= MAX_PROCESSING_LENGTH) {
-    // Longer CV - provide guidance but process fully
-    if (content.length > 15000) {
-      warnings.push('We processed your comprehensive resume. For optimal ATS performance, consider highlighting your most recent 10-15 years of experience.');
+    // Longer CV - will be chunked
+    if (content.length > 20000) {
+      warnings.push('Processing your comprehensive resume in sections. For optimal ATS performance, consider focusing on your most recent 10-15 years of experience.');
     } else {
       warnings.push('Your resume is comprehensive. We optimized it while preserving all key achievements and qualifications.');
     }
@@ -768,13 +849,27 @@ async function generateEnhancedPdf(content: string, candidateName: string, jobTi
 function classifyError(error: any): { code: string, message: string, userMessage: string } {
   const errorMsg = error.message || error.toString();
   
+  // Handle file too large errors
+  if (errorMsg.includes('FILE_TOO_LARGE') || errorMsg.includes('too large') || errorMsg.includes('max 15MB')) {
+    return { 
+      code: 'FILE_TOO_LARGE', 
+      message: errorMsg, 
+      userMessage: 'File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format. If your resume is very long, consider focusing on your most recent 10-15 years of experience.' 
+    };
+  }
+  
   // Handle invalid/unreadable files with exact user-specified message
   if (errorMsg.includes('RESUME_INVALID_OR_UNREADABLE') || 
       errorMsg.includes('invalid or unreadable') || 
       errorMsg.includes('empty or unreadable') ||
       errorMsg.includes('PDF_NO_TEXT_CONTENT') || 
-      errorMsg.includes('no text content')) {
-    return { code: 'RESUME_INVALID_OR_UNREADABLE', message: errorMsg, userMessage: '⚠️ Your resume could not be processed. Please upload a DOCX or TXT file instead of PDF.' };
+      errorMsg.includes('no text content') ||
+      errorMsg.includes('FILE_EMPTY')) {
+    return { 
+      code: 'RESUME_INVALID_OR_UNREADABLE', 
+      message: errorMsg, 
+      userMessage: 'Invalid CV format. Please re-upload in .docx or .txt format for best results.' 
+    };
   }
   
   // Handle partial extraction failures with exact user-specified message
@@ -782,28 +877,64 @@ function classifyError(error: any): { code: string, message: string, userMessage
       errorMsg.includes('Partial resume processed') ||
       errorMsg.includes('extraction') ||
       errorMsg.includes('midway')) {
-    return { code: 'PDF_PROCESSING_ERROR', message: errorMsg, userMessage: '⚠️ Unable to tailor the full document. Please try with a shorter CV or a different format.' };
+    return { 
+      code: 'PDF_PROCESSING_ERROR', 
+      message: errorMsg, 
+      userMessage: 'Your resume could not be fully processed. Please re-upload in .docx or .txt format for best results.' 
+    };
   }
   
   // Handle extremely long content
   if (errorMsg.includes('CONTENT_TOO_LARGE') || errorMsg.includes('unusually long')) {
-    return { code: 'CONTENT_TOO_LARGE', message: errorMsg, userMessage: '⚠️ Unable to tailor the full document. Please try with a shorter CV or a different format.' };
+    return { 
+      code: 'CONTENT_TOO_LARGE', 
+      message: errorMsg, 
+      userMessage: 'Your resume is too long to process. Please condense to 10-15 pages focusing on your most recent experience, or split into multiple targeted resumes.' 
+    };
   }
   
-  if (errorMsg.includes('FILE_TOO_LARGE') || errorMsg.includes('too large')) {
-    return { code: 'FILE_TOO_LARGE', message: errorMsg, userMessage: 'Your file is too large. Please upload a resume under 10MB.' };
-  }
+  // Handle encoding issues
   if (errorMsg.includes('UNSUPPORTED_ENCODING') || errorMsg.includes('Unicode') || errorMsg.includes('encoding')) {
-    return { code: 'UNSUPPORTED_ENCODING', message: errorMsg, userMessage: '⚠️ Your resume could not be processed. Please upload a DOCX or TXT file instead of PDF.' };
-  }
-  if (errorMsg.includes('INVALID_FORMAT') || errorMsg.includes('format not supported')) {
-    return { code: 'INVALID_FORMAT', message: errorMsg, userMessage: '⚠️ Your resume could not be processed. Please upload a DOCX or TXT file instead of PDF.' };
-  }
-  if (errorMsg.includes('CONTENT_TOO_SHORT') || errorMsg.includes('too short') || errorMsg.includes('insufficient')) {
-    return { code: 'CONTENT_TOO_SHORT', message: errorMsg, userMessage: 'Your career profile needs at least 3-4 sentences. Include your key skills, achievements, and career goals.' };
+    return { 
+      code: 'UNSUPPORTED_ENCODING', 
+      message: errorMsg, 
+      userMessage: 'Unable to read your resume file. The file may use an unsupported encoding. Please try uploading in DOCX or TXT format.' 
+    };
   }
   
-  return { code: 'UNKNOWN_ERROR', message: errorMsg, userMessage: '⚠️ Unable to tailor the full document. Please try with a shorter CV or a different format.' };
+  // Handle format issues
+  if (errorMsg.includes('INVALID_FORMAT') || errorMsg.includes('format not supported') || errorMsg.includes('Unsupported file format')) {
+    return { 
+      code: 'INVALID_FORMAT', 
+      message: errorMsg, 
+      userMessage: 'Unsupported file format. Please upload a .csv or .xlsx file with job data.' 
+    };
+  }
+  
+  // Handle short content
+  if (errorMsg.includes('CONTENT_TOO_SHORT') || errorMsg.includes('too short') || errorMsg.includes('insufficient') || errorMsg.includes('at least 50 characters')) {
+    return { 
+      code: 'CONTENT_TOO_SHORT', 
+      message: errorMsg, 
+      userMessage: 'Resume content is too short (minimum 50 characters). Please upload a complete resume with your experience, skills, and education.' 
+    };
+  }
+  
+  // Handle missing job description
+  if (errorMsg.includes('Job description missing') || errorMsg.includes('job description is required')) {
+    return {
+      code: 'JOB_DESCRIPTION_MISSING',
+      message: errorMsg,
+      userMessage: 'Job description is required. Please provide the complete job posting details including responsibilities and requirements.'
+    };
+  }
+  
+  // Generic fallback
+  return { 
+    code: 'UNKNOWN_ERROR', 
+    message: errorMsg, 
+    userMessage: '⚠️ Your resume could not be fully processed. Please re-upload in .docx or .txt format for best results.' 
+  };
 }
 
 // Function to summarize extremely long resume content
@@ -950,9 +1081,9 @@ serve(async (req) => {
           throw new Error('Unsupported file format. Please upload a PDF, DOCX, or TXT file.');
         }
         
-        // Validate file size - allow up to 10MB for standard resumes
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-          throw new Error('FILE_TOO_LARGE');
+        // Validate file size - allow up to 15MB for standard resumes
+        if (file.size > 15 * 1024 * 1024) { // 15MB limit
+          throw new Error('FILE_TOO_LARGE: File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format.');
         }
         
         // Step 1: Validate CV file before processing - Check if file size > 0
@@ -1386,19 +1517,40 @@ Requirements:
         const { content: moderatedContent, warnings } = moderateResumeContent(resumeContent);
         resumeContent = moderatedContent;
 
-        const structuredCV = parseResumeToJSON(resumeContent);
+        // Check if CV needs chunking for large files
+        const { chunks, isChunked } = chunkLargeCV(resumeContent);
         const jobKeywords = extractJobKeywords(enhancedJobDescription, jobTitle);
-        const enhancedCV = enhanceResumeWithKeywords(structuredCV, jobKeywords, jobTitle, companyName);
+        
+        let enhancedCV: any;
+        
+        if (isChunked) {
+          console.log(`🔄 Processing ${chunks.length} CV chunks...`);
+          const processedChunks: any[] = [];
+          
+          for (let i = 0; i < chunks.length; i++) {
+            console.log(`📊 Processing chunk ${i + 1}/${chunks.length}`);
+            const chunkJSON = parseResumeToJSON(chunks[i]);
+            const enhancedChunk = enhanceResumeWithKeywords(chunkJSON, jobKeywords, jobTitle, companyName);
+            processedChunks.push(enhancedChunk);
+          }
+          
+          enhancedCV = recombineChunks(processedChunks);
+        } else {
+          const structuredCV = parseResumeToJSON(resumeContent);
+          enhancedCV = enhanceResumeWithKeywords(structuredCV, jobKeywords, jobTitle, companyName);
+        }
+        
         const tailoredContent = formatEnhancedResume(enhancedCV);
 
         // Professional validation - never blocks
-        const validation = validateTailoredContent(tailoredContent, structuredCV, jobKeywords);
+        const validation = validateTailoredContent(tailoredContent, enhancedCV, jobKeywords);
         console.log('✅ Professional optimization completed:', {
           contentQuality: validation.contentQuality,
-          enhancementsApplied: validation.enhancementsApplied
+          enhancementsApplied: validation.enhancementsApplied,
+          chunksProcessed: isChunked ? chunks.length : 1
         });
 
-        let qualityScore = calculateTailoringScore(structuredCV, enhancedCV, jobKeywords, tailoredContent);
+        let qualityScore = calculateTailoringScore(enhancedCV, enhancedCV, jobKeywords, tailoredContent);
 
         const pdfBytes = await generateEnhancedPdf(tailoredContent, candidateName, jobTitle);
         if (pdfBytes.length < 1000) {

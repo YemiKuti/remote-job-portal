@@ -1,6 +1,9 @@
 
 project_id = "mmbrvcndxhipaoxysvwr"
 
+[functions]
+max_request_size = "15mb"
+
 [functions.is_admin]
 verify_jwt = true
 

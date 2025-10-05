@@ -1622,8 +1622,8 @@ Requirements:
           console.error(`❌ [${requestId}] Processing error:`, processingError);
           throw processingError;
         }
-      } else {
-        // Enhanced JSON payload processing with professional optimization
+      }
+      else {
         console.log(`🧾 [${requestId}] Processing JSON payload with professional optimization`);
         const body = await req.json();
 

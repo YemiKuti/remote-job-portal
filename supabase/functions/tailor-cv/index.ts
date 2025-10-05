@@ -1440,11 +1440,6 @@ serve(async (req) => {
         
         console.log(`✅ [${requestId}] Content validation passed`);
         console.log(`📝 [${requestId}] Resume preview: ${resumeContent.substring(0, 200)}...`);
-          console.log(`⚠️ [${requestId}] Brief content detected, enhancing...`);
-          // Step 5: Ensure processing completes - enrich rather than reject
-          resumeContent = resumeContent || 'Professional candidate seeking opportunities.';
-          resumeContent += '\n\nPROFESSIONAL EXPERIENCE:\n• Results-driven professional with proven track record\n• Strong analytical and problem-solving capabilities';
-        }
 
         // Handle extremely long resumes by summarizing first
         const MAX_RESUME_LENGTH = 10000; // 10k characters

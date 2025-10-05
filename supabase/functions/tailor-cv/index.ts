@@ -1622,7 +1622,6 @@ Requirements:
           console.error(`❌ [${requestId}] Processing error:`, processingError);
           throw processingError;
         }
-      
       } else {
         // Enhanced JSON payload processing with professional optimization
         console.log(`🧾 [${requestId}] Processing JSON payload with professional optimization`);

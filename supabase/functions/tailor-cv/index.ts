@@ -3,7 +3,6 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 // Import proper parsing libraries
 import mammoth from 'npm:mammoth@1.10.0'
-import Tesseract from 'https://esm.sh/tesseract.js@5.0.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,52 +37,29 @@ function detectPdfType(arrayBuffer: ArrayBuffer): 'text' | 'image' | 'unknown' {
 }
 
 /**
- * Extract text from image-based PDF using OCR
+ * Detect file type from MIME type or extension
  */
-async function extractTextWithOCR(arrayBuffer: ArrayBuffer): Promise<string> {
-  console.log('🔍 Starting OCR extraction for image-based PDF...');
+function detectFileType(filename: string, contentType: string): string {
+  const ext = filename.toLowerCase().split('.').pop() || '';
+  const mime = contentType.toLowerCase();
   
-  try {
-    // Convert PDF to image data
-    // For image-based PDFs, we'll try to extract the image data directly
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    // Create a blob from the array buffer
-    const blob = new Blob([uint8Array], { type: 'application/pdf' });
-    
-    // Try OCR on the blob
-    console.log('📸 Running Tesseract OCR...');
-    const result = await Tesseract.recognize(
-      blob,
-      'eng',
-      {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-          }
-        }
-      }
-    );
-    
-    const extractedText = result.data.text;
-    console.log(`✅ OCR completed: ${extractedText.length} characters extracted`);
-    
-    if (!extractedText || extractedText.trim().length < 100) {
-      throw new Error('OCR_INSUFFICIENT_TEXT: Could not extract enough text from the image-based PDF. Please upload a text-based PDF, DOCX, or TXT file.');
-    }
-    
-    // Clean and standardize the OCR text
-    return standardizeExtractedText(extractedText);
-    
-  } catch (error: any) {
-    console.error('❌ OCR extraction failed:', error.message);
-    
-    if (error.message?.includes('OCR_INSUFFICIENT_TEXT')) {
-      throw error;
-    }
-    
-    throw new Error('OCR_FAILED: Your resume is mostly image-based and couldn\'t be read automatically. Please re-upload in DOCX or TXT format for best results.');
-  }
+  // Check MIME type first
+  if (mime.includes('pdf')) return 'pdf';
+  if (mime.includes('docx') || mime.includes('wordprocessingml')) return 'docx';
+  if (mime.includes('msword')) return 'doc';
+  if (mime.includes('rtf')) return 'rtf';
+  if (mime.includes('text/plain')) return 'txt';
+  if (mime.includes('image/')) return 'image';
+  
+  // Fallback to extension
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'docx') return 'docx';
+  if (ext === 'doc') return 'doc';
+  if (ext === 'rtf') return 'rtf';
+  if (ext === 'txt') return 'txt';
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'image';
+  
+  return 'unknown';
 }
 
 /**
@@ -138,7 +114,7 @@ function standardizeSectionHeaders(text: string): string {
 }
 
 /**
- * Extract text from PDF files with improved parsing and OCR support
+ * Extract text from PDF files with improved parsing
  */
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   console.log('📄 Starting PDF text extraction...');
@@ -148,10 +124,10 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
     const pdfType = detectPdfType(arrayBuffer);
     console.log(`📄 PDF type detected: ${pdfType}`);
     
-    // If image-based, use OCR
+    // If image-based, provide clear message since OCR is not available in edge functions
     if (pdfType === 'image') {
-      console.log('🔍 Image-based PDF detected, attempting OCR...');
-      return await extractTextWithOCR(arrayBuffer);
+      console.log('🔍 Image-based PDF detected');
+      throw new Error('IMAGE_BASED_PDF: Your resume was uploaded successfully, but it contains minimal readable text. Please upload a text-based PDF, DOCX, or TXT version for the best results.');
     }
     
     const uint8Array = new Uint8Array(arrayBuffer);
@@ -235,14 +211,14 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
 
     // Validate extracted content
     if (extracted.length < 50) {
-      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be image-based, corrupted, or encrypted.');
+      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be image-based, corrupted, or encrypted. Please try uploading as DOCX or TXT format.');
     }
     
     // Check for resume-like content
-    const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree/i.test(extracted);
+    const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree|contact|phone|email/i.test(extracted);
     if (!hasResumeKeywords && extracted.length < 200) {
       console.warn('⚠️ PDF lacks resume keywords');
-      throw new Error('PDF_NO_RESUME_CONTENT: PDF does not appear to contain resume information. Please ensure you uploaded the correct file.');
+      throw new Error('PDF_NO_RESUME_CONTENT: The PDF does not appear to contain resume information. Please ensure you uploaded the correct file.');
     }
 
     // Apply standardization and return
@@ -250,7 +226,7 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   } catch (error: any) {
     console.error('❌ PDF extraction error:', error.message);
     
-    if (error.message?.startsWith('IMAGE_PDF:')) {
+    if (error.message?.startsWith('IMAGE_BASED_PDF:')) {
       throw error;
     }
     if (error.message?.startsWith('CONTENT_TOO_SHORT:')) {
@@ -261,6 +237,41 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
     }
     
     throw new Error('PDF_PROCESSING_ERROR: Could not extract text from PDF. The file may be encrypted, corrupted, or image-based. Please convert to DOCX or TXT format.');
+  }
+}
+
+/**
+ * Extract text from RTF files
+ */
+async function extractRtfText(arrayBuffer: ArrayBuffer): Promise<string> {
+  console.log('📄 Starting RTF text extraction...');
+  
+  try {
+    // RTF is a text-based format, so we can decode it directly
+    const decoder = new TextDecoder('utf-8');
+    let text = decoder.decode(arrayBuffer);
+    
+    // Remove RTF control codes and extract plain text
+    // Remove headers and control sequences
+    text = text
+      .replace(/\{\\rtf1[^}]*\}/g, '')
+      .replace(/\{\\[^}]*\}/g, '')
+      .replace(/\\[a-z]+\d*/g, ' ')
+      .replace(/\\/g, '')
+      .replace(/\{|\}/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    console.log(`✅ RTF extraction complete: ${text.length} characters`);
+    
+    if (!text || text.trim().length < 50) {
+      throw new Error('CONTENT_TOO_SHORT: RTF file appears empty or contains insufficient text.');
+    }
+    
+    return standardizeExtractedText(text);
+  } catch (error: any) {
+    console.error('❌ RTF extraction error:', error.message);
+    throw new Error('RTF_PROCESSING_ERROR: Could not extract text from RTF file. Please try DOCX or TXT format.');
   }
 }
 
@@ -1023,29 +1034,20 @@ function classifyError(error: any): { code: string, message: string, userMessage
   console.log('🔍 Classifying error:', errorMsg);
   
   // Handle image-based PDF
-  if (errorMsg.includes('IMAGE_PDF:')) {
+  if (errorMsg.includes('IMAGE_BASED_PDF:')) {
     return { 
-      code: 'IMAGE_PDF', 
+      code: 'IMAGE_BASED_PDF', 
       message: errorMsg, 
-      userMessage: errorMsg.replace('IMAGE_PDF: ', '')
+      userMessage: errorMsg.replace('IMAGE_BASED_PDF: ', '')
     };
   }
   
-  // Handle OCR failures
-  if (errorMsg.includes('OCR_FAILED:')) {
+  // Handle unsupported image files
+  if (errorMsg.includes('UNSUPPORTED_IMAGE:')) {
     return { 
-      code: 'OCR_FAILED', 
+      code: 'UNSUPPORTED_IMAGE', 
       message: errorMsg, 
-      userMessage: errorMsg.replace('OCR_FAILED: ', '')
-    };
-  }
-  
-  // Handle OCR insufficient text
-  if (errorMsg.includes('OCR_INSUFFICIENT_TEXT:')) {
-    return { 
-      code: 'OCR_INSUFFICIENT_TEXT', 
-      message: errorMsg, 
-      userMessage: errorMsg.replace('OCR_INSUFFICIENT_TEXT: ', '')
+      userMessage: errorMsg.replace('UNSUPPORTED_IMAGE: ', '')
     };
   }
   
@@ -1085,12 +1087,30 @@ function classifyError(error: any): { code: string, message: string, userMessage
     };
   }
   
+  // Handle RTF processing errors
+  if (errorMsg.includes('RTF_PROCESSING_ERROR:')) {
+    return { 
+      code: 'RTF_PROCESSING_ERROR', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('RTF_PROCESSING_ERROR: ', '')
+    };
+  }
+  
   // Handle file too large errors
-  if (errorMsg.includes('FILE_TOO_LARGE:') || errorMsg.includes('too large') || errorMsg.includes('max 15MB')) {
+  if (errorMsg.includes('FILE_TOO_LARGE:') || errorMsg.includes('too large')) {
     return { 
       code: 'FILE_TOO_LARGE', 
       message: errorMsg, 
-      userMessage: 'File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format.'
+      userMessage: 'Your file is too large (max 15MB). Please reduce the file size or upload as text.'
+    };
+  }
+  
+  // Handle unsupported format
+  if (errorMsg.includes('UNSUPPORTED_FORMAT:')) {
+    return { 
+      code: 'UNSUPPORTED_FORMAT', 
+      message: errorMsg, 
+      userMessage: 'This file format is not supported. Please upload .pdf, .docx, .txt, or .rtf format.'
     };
   }
   
@@ -1299,43 +1319,55 @@ serve(async (req) => {
           throw new Error('No file uploaded. Please select a resume file.');
         }
         
-        console.log(`📄 [${requestId}] File uploaded: ${file.name} (${file.size} bytes)`);
+        const fileName = file.name || 'resume.txt';
+        const fileSize = file.size || 0;
         
-        // Validate file format
-        const fileName = file.name.toLowerCase();
-        const supportedFormats = ['.pdf', '.docx', '.doc', '.txt'];
-        const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+        console.log(`📄 [${requestId}] File uploaded: ${fileName} (${fileSize} bytes)`);
         
-        if (!isSupported) {
-          throw new Error('Unsupported file format. Please upload a PDF, DOCX, or TXT file.');
+        // Check file size (15MB max)
+        const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+        if (fileSize > MAX_FILE_SIZE) {
+          throw new Error('FILE_TOO_LARGE: Your file is too large (max 15MB). Please reduce the file size or upload as text.');
         }
         
-        // Validate file size - allow up to 15MB for standard resumes
-        if (file.size > 15 * 1024 * 1024) { // 15MB limit
-          throw new Error('FILE_TOO_LARGE: File too large (max 15MB). Please reduce file size or upload in DOCX/TXT format.');
+        // Detect file type
+        const fileType = detectFileType(fileName, file.type || '');
+        console.log(`📄 [${requestId}] File type detected: ${fileType}`);
+        
+        // Handle image files (not supported)
+        if (fileType === 'image') {
+          throw new Error('UNSUPPORTED_IMAGE: Image files (.jpg, .png, etc.) cannot be processed directly. Please convert your resume to PDF, DOCX, or TXT format.');
+        }
+        
+        // Handle unknown formats
+        if (fileType === 'unknown') {
+          throw new Error('UNSUPPORTED_FORMAT: This file format is not supported. Please upload .pdf, .docx, .txt, or .rtf format.');
         }
         
         // Step 1: Validate CV file before processing - Check if file size > 0
-        if (file.size <= 0) {
-          throw new Error('RESUME_INVALID_OR_UNREADABLE');
+        if (fileSize <= 0) {
+          throw new Error('RESUME_INVALID_OR_UNREADABLE: The uploaded file is empty.');
         }
         
-        if (file.size < 100) {
-          throw new Error('RESUME_INVALID_OR_UNREADABLE');
+        if (fileSize < 100) {
+          throw new Error('RESUME_INVALID_OR_UNREADABLE: The uploaded file is too small to be a valid resume.');
         }
         
         // Extract content from uploaded file
         const arrayBuffer = await file.arrayBuffer();
         let resumeContent = '';
         
+        // Extract text content based on file type
         try {
-          if (fileName.endsWith('.pdf')) {
+          if (fileType === 'pdf') {
             resumeContent = await extractPdfText(arrayBuffer);
-          } else if (fileName.endsWith('.docx')) {
+          } else if (fileType === 'docx') {
             resumeContent = await extractDocxText(arrayBuffer);
-          } else if (fileName.endsWith('.txt')) {
+          } else if (fileType === 'rtf') {
+            resumeContent = await extractRtfText(arrayBuffer);
+          } else if (fileType === 'txt') {
             console.log(`📄 [${requestId}] Processing TXT file...`);
-            // Try UTF-8 first, then fallback to Latin-1
+            // Plain text file - try UTF-8 first, then fallback to Latin-1
             try {
               resumeContent = new TextDecoder('utf-8', { fatal: true }).decode(arrayBuffer);
             } catch (utf8Error) {
@@ -1349,19 +1381,10 @@ serve(async (req) => {
               .replace(/[ \t]+/g, ' ')
               .replace(/\n{3,}/g, '\n\n')
               .trim();
-          } else if (fileName.endsWith('.doc')) {
+          } else if (fileType === 'doc') {
             throw new Error('INVALID_FORMAT: Legacy .DOC format is not supported. Please save as .DOCX or .TXT and re-upload.');
           } else {
-            // Try different extraction methods as fallback
-            try {
-              resumeContent = await extractDocxText(arrayBuffer);
-            } catch {
-              try {
-                resumeContent = await extractPdfText(arrayBuffer);
-              } catch {
-                resumeContent = new TextDecoder().decode(arrayBuffer);
-              }
-            }
+            throw new Error('UNSUPPORTED_FORMAT: This file format is not supported. Please upload .pdf, .docx, .txt, or .rtf format.');
           }
           
           console.log(`✅ [${requestId}] Content extracted: ${resumeContent.length} characters`);
@@ -1382,7 +1405,7 @@ serve(async (req) => {
           console.error(`❌ [${requestId}] Content extraction failed:`, extractError.message);
           
           // Handle specific extraction errors with detailed logging
-          if (extractError.message?.includes('IMAGE_PDF:')) {
+          if (extractError.message?.includes('IMAGE_BASED_PDF:')) {
             throw extractError; // Pass through with original message
           }
           
@@ -1402,11 +1425,27 @@ serve(async (req) => {
             throw extractError;
           }
           
+          if (extractError.message?.includes('RTF_PROCESSING_ERROR:')) {
+            throw extractError;
+          }
+          
           if (extractError.message?.includes('CONTENT_TOO_SHORT:')) {
             throw extractError;
           }
           
           if (extractError.message?.includes('INVALID_FORMAT:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('UNSUPPORTED_FORMAT:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('UNSUPPORTED_IMAGE:')) {
+            throw extractError;
+          }
+          
+          if (extractError.message?.includes('FILE_TOO_LARGE:')) {
             throw extractError;
           }
           

@@ -3,6 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 // Import proper parsing libraries
 import mammoth from 'npm:mammoth@1.10.0'
+import Tesseract from 'https://esm.sh/tesseract.js@5.0.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,107 @@ function detectPdfType(arrayBuffer: ArrayBuffer): 'text' | 'image' | 'unknown' {
 }
 
 /**
- * Extract text from PDF files with improved parsing
+ * Extract text from image-based PDF using OCR
+ */
+async function extractTextWithOCR(arrayBuffer: ArrayBuffer): Promise<string> {
+  console.log('🔍 Starting OCR extraction for image-based PDF...');
+  
+  try {
+    // Convert PDF to image data
+    // For image-based PDFs, we'll try to extract the image data directly
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Create a blob from the array buffer
+    const blob = new Blob([uint8Array], { type: 'application/pdf' });
+    
+    // Try OCR on the blob
+    console.log('📸 Running Tesseract OCR...');
+    const result = await Tesseract.recognize(
+      blob,
+      'eng',
+      {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      }
+    );
+    
+    const extractedText = result.data.text;
+    console.log(`✅ OCR completed: ${extractedText.length} characters extracted`);
+    
+    if (!extractedText || extractedText.trim().length < 100) {
+      throw new Error('OCR_INSUFFICIENT_TEXT: Could not extract enough text from the image-based PDF. Please upload a text-based PDF, DOCX, or TXT file.');
+    }
+    
+    // Clean and standardize the OCR text
+    return standardizeExtractedText(extractedText);
+    
+  } catch (error: any) {
+    console.error('❌ OCR extraction failed:', error.message);
+    
+    if (error.message?.includes('OCR_INSUFFICIENT_TEXT')) {
+      throw error;
+    }
+    
+    throw new Error('OCR_FAILED: Your resume is mostly image-based and couldn\'t be read automatically. Please re-upload in DOCX or TXT format for best results.');
+  }
+}
+
+/**
+ * Standardize and clean extracted text
+ */
+function standardizeExtractedText(text: string): string {
+  console.log('🧹 Cleaning and standardizing extracted text...');
+  
+  // Remove excessive whitespace and normalize line breaks
+  let cleaned = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  
+  // Remove common OCR artifacts
+  cleaned = cleaned
+    .replace(/[^\x20-\x7E\n]/g, ' ')  // Remove non-printable characters
+    .replace(/\s+([.,;:!?])/g, '$1')  // Fix spacing around punctuation
+    .replace(/([.,;:!?])([A-Za-z])/g, '$1 $2')  // Add space after punctuation
+    .replace(/\s+/g, ' ');  // Normalize all whitespace
+  
+  // Standardize section headers
+  cleaned = standardizeSectionHeaders(cleaned);
+  
+  return cleaned;
+}
+
+/**
+ * Standardize section headers for consistency
+ */
+function standardizeSectionHeaders(text: string): string {
+  const sectionMappings = {
+    'WORK EXPERIENCE': ['work history', 'employment history', 'professional experience', 'career history', 'experience'],
+    'EDUCATION': ['academic background', 'educational background', 'qualifications', 'academic qualifications'],
+    'SKILLS': ['technical skills', 'core competencies', 'key skills', 'areas of expertise', 'competencies'],
+    'SUMMARY': ['professional summary', 'career summary', 'profile', 'professional profile', 'objective', 'career objective'],
+    'CONTACT': ['contact information', 'personal details', 'contact details']
+  };
+  
+  let standardized = text;
+  
+  for (const [standard, variations] of Object.entries(sectionMappings)) {
+    for (const variation of variations) {
+      const regex = new RegExp(`\\b${variation}\\b`, 'gi');
+      standardized = standardized.replace(regex, standard);
+    }
+  }
+  
+  return standardized;
+}
+
+/**
+ * Extract text from PDF files with improved parsing and OCR support
  */
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   console.log('📄 Starting PDF text extraction...');
@@ -47,8 +148,10 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
     const pdfType = detectPdfType(arrayBuffer);
     console.log(`📄 PDF type detected: ${pdfType}`);
     
+    // If image-based, use OCR
     if (pdfType === 'image') {
-      throw new Error('IMAGE_PDF: Unsupported format: image-based PDF detected. Please upload a text-based resume or convert to DOCX/TXT.');
+      console.log('🔍 Image-based PDF detected, attempting OCR...');
+      return await extractTextWithOCR(arrayBuffer);
     }
     
     const uint8Array = new Uint8Array(arrayBuffer);
@@ -142,7 +245,8 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
       throw new Error('PDF_NO_RESUME_CONTENT: PDF does not appear to contain resume information. Please ensure you uploaded the correct file.');
     }
 
-    return extracted;
+    // Apply standardization and return
+    return standardizeExtractedText(extracted);
   } catch (error: any) {
     console.error('❌ PDF extraction error:', error.message);
     
@@ -209,7 +313,8 @@ async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
       throw new Error('DOCX_NO_RESUME_CONTENT: DOCX does not appear to contain resume information. Please ensure you uploaded the correct file.');
     }
 
-    return text;
+    // Apply standardization and return
+    return standardizeExtractedText(text);
   } catch (error: any) {
     console.error('❌ DOCX extraction error:', error.message);
     
@@ -923,6 +1028,24 @@ function classifyError(error: any): { code: string, message: string, userMessage
       code: 'IMAGE_PDF', 
       message: errorMsg, 
       userMessage: errorMsg.replace('IMAGE_PDF: ', '')
+    };
+  }
+  
+  // Handle OCR failures
+  if (errorMsg.includes('OCR_FAILED:')) {
+    return { 
+      code: 'OCR_FAILED', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('OCR_FAILED: ', '')
+    };
+  }
+  
+  // Handle OCR insufficient text
+  if (errorMsg.includes('OCR_INSUFFICIENT_TEXT:')) {
+    return { 
+      code: 'OCR_INSUFFICIENT_TEXT', 
+      message: errorMsg, 
+      userMessage: errorMsg.replace('OCR_INSUFFICIENT_TEXT: ', '')
     };
   }
   

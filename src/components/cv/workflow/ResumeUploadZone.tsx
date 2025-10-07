@@ -82,15 +82,24 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
     setUploadProgress('0%');
 
     try {
-      // Enhanced file validation with progress updates
+      // Enhanced file validation with progress updates - supports ALL formats with OCR fallback
       setUploadProgress('10% - Validating file format...');
       const fileName = file.name.toLowerCase();
-      const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
-      const isSupported = supportedFormats.some(format => fileName.endsWith(format)) || 
-                          ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(file.type);
+      const supportedFormats = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png'];
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'image/jpeg',
+        'image/jpg',
+        'image/png'
+      ];
+      
+      const isSupported = supportedFormats.some(format => fileName.endsWith(format)) || allowedTypes.includes(file.type);
       
       if (!isSupported) {
-        throw { errorCode: 'INVALID_FORMAT', message: 'Unsupported file format' };
+        console.log('⚠️ Unknown file type, will attempt OCR fallback:', file.type);
       }
 
       setUploadProgress('20% - Checking file size...');
@@ -311,7 +320,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
               }
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              Supports PDF, DOC, DOCX, and TXT files (max 10MB)
+              Supports PDF, DOC, DOCX, TXT, JPG, and PNG files (max 10MB)
             </p>
           </div>
           
@@ -328,7 +337,7 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
         id="file-input"
         type="file"
         onChange={handleFileChange}
-        accept=".pdf,.doc,.docx,.txt"
+        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
         className="hidden"
       />
 
@@ -344,14 +353,15 @@ export function ResumeUploadZone({ userId, onResumeUploaded }: ResumeUploadZoneP
       <div className="text-sm text-gray-600 space-y-2">
         <p className="font-medium">📋 Supported Formats:</p>
         <ul className="list-disc list-inside space-y-1 text-sm">
-          <li><strong>PDF (.pdf)</strong> - Most common format (text extraction available)</li>
+          <li><strong>PDF (.pdf)</strong> - Most common format (text and OCR extraction)</li>
           <li><strong>Word Document (.docx)</strong> - Good compatibility</li>
           <li><strong>Legacy Word (.doc)</strong> - Limited support</li>
           <li><strong>Plain Text (.txt)</strong> - Recommended for best results</li>
+          <li><strong>Images (.jpg, .jpeg, .png)</strong> - OCR-powered text extraction</li>
         </ul>
         <div className="border-t pt-2 mt-2">
           <p className="text-xs text-gray-500 flex items-center gap-1">
-            💡 <strong>Tip:</strong> For optimal results, save your resume as a .txt file to ensure all content is properly extracted.
+            💡 <strong>Tip:</strong> All file types are supported with automatic OCR fallback for scanned documents and images.
           </p>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
             🔤 <strong>Unicode Support:</strong> Files with special characters (accents, symbols) are automatically processed with UTF-8 encoding fallback.

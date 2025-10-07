@@ -98,6 +98,12 @@ const extractFileContent = async (file: File): Promise<string> => {
       return await extractDOCContent(file);
     }
     
+    // Handle images with OCR fallback
+    if (file.type.includes('image/') || fileName.match(/\.(jpg|jpeg|png)$/i)) {
+      console.log('🖼️ Image file detected, using OCR extraction');
+      return await extractImageContent(file);
+    }
+    
     // Try to read as text for unknown formats
     try {
       const text = await file.text();
@@ -106,10 +112,12 @@ const extractFileContent = async (file: File): Promise<string> => {
         return text;
       }
     } catch (e) {
-      console.warn('⚠️ Could not read file as text');
+      console.warn('⚠️ Could not read file as text, attempting OCR fallback');
     }
     
-    throw new Error(`Unsupported file format: ${file.type || 'unknown'}. Please upload PDF, DOC, DOCX, or TXT files.`);
+    // Final fallback: try OCR for any unrecognized format
+    console.log('🔄 Attempting OCR fallback for unknown format');
+    return await extractImageContent(file);
   } catch (error) {
     console.error(`❌ Error extracting content from ${file.name}:`, error);
     throw new Error(`Failed to read resume content. Please ensure the file is valid and not corrupted.`);
@@ -213,6 +221,40 @@ For optimal CV tailoring results, please upload in one of these formats:
 • Plain Text (.txt) - Recommended
 • Word Document (.docx) - Good
 • PDF (.pdf) - Limited support`;
+};
+
+const extractImageContent = async (file: File): Promise<string> => {
+  console.log('🖼️ Processing image file with OCR:', file.name);
+  
+  try {
+    // Call the tailor-cv edge function for OCR processing
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('jobDescription', 'OCR_ONLY'); // Special flag for OCR-only processing
+    
+    const { data, error } = await supabase.functions.invoke('tailor-cv', {
+      body: formData,
+    });
+    
+    if (error) {
+      console.error('❌ OCR processing failed:', error);
+      throw new Error('Unable to extract text from image. Please ensure the image contains clear, readable text.');
+    }
+    
+    if (!data?.extractedText || data.extractedText.trim().length < 30) {
+      throw new Error('Image appears to contain minimal or no readable text. Please upload a text-based resume or a clearer image.');
+    }
+    
+    console.log('✅ OCR extraction successful:', {
+      length: data.extractedText.length,
+      preview: data.extractedText.substring(0, 100) + '...'
+    });
+    
+    return data.extractedText;
+  } catch (error: any) {
+    console.error('❌ Error extracting text from image:', error);
+    throw new Error(error.message || 'Unable to extract text from image. Please try uploading a different format (PDF, DOCX, or TXT).');
+  }
 };
 
 const parseResumeText = (text: string) => {

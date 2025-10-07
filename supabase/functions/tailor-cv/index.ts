@@ -15,7 +15,79 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
+const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY')
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+/**
+ * Extract text from image using Google Cloud Vision OCR
+ */
+async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<string> {
+  if (!googleVisionApiKey) {
+    throw new Error('OCR_NOT_CONFIGURED: Google Vision API key is not configured. Please contact support.');
+  }
+
+  console.log('🔍 Starting OCR text extraction with Google Cloud Vision...');
+  
+  try {
+    // Convert to base64
+    const uint8Array = imageData instanceof ArrayBuffer ? new Uint8Array(imageData) : imageData;
+    const base64Image = btoa(String.fromCharCode(...uint8Array));
+    
+    // Call Google Cloud Vision API
+    const response = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requests: [{
+            image: {
+              content: base64Image
+            },
+            features: [{
+              type: 'DOCUMENT_TEXT_DETECTION',
+              maxResults: 1
+            }]
+          }]
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Google Vision API error:', errorText);
+      throw new Error(`OCR_API_ERROR: Google Vision API returned ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.responses || !result.responses[0]) {
+      throw new Error('OCR_NO_RESPONSE: No response from OCR service');
+    }
+
+    const annotations = result.responses[0].fullTextAnnotation;
+    
+    if (!annotations || !annotations.text) {
+      console.warn('⚠️ OCR found no text in image');
+      throw new Error('OCR_NO_TEXT: No readable text found in the image. Please ensure the image is clear and contains text.');
+    }
+
+    const extractedText = annotations.text;
+    console.log(`✅ OCR extraction complete: ${extractedText.length} characters`);
+    
+    return standardizeExtractedText(extractedText);
+  } catch (error: any) {
+    console.error('❌ OCR extraction failed:', error.message);
+    
+    if (error.message?.startsWith('OCR_')) {
+      throw error;
+    }
+    
+    throw new Error('OCR_FAILED: Could not extract text from image. Please ensure the image is clear and try again, or upload as a text-based PDF or DOCX.');
+  }
+}
 
 /**
  * Detect if PDF is image-based (scanned) or text-based
@@ -209,9 +281,20 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
 
     console.log(`✅ PDF extraction complete: ${extracted.length} characters`);
 
-    // Validate extracted content
+    // Validate extracted content - if too short, try OCR
     if (extracted.length < 50) {
-      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be image-based, corrupted, or encrypted. Please try uploading as DOCX or TXT format.');
+      console.log('⚠️ PDF has minimal text, attempting OCR...');
+      try {
+        const ocrText = await extractTextWithOCR(arrayBuffer);
+        if (ocrText && ocrText.length >= 50) {
+          console.log('✅ OCR successfully extracted text from image-based PDF');
+          return ocrText;
+        }
+      } catch (ocrError: any) {
+        console.error('❌ OCR failed for image-based PDF:', ocrError.message);
+        throw new Error('IMAGE_BASED_PDF: Your resume was uploaded successfully, but it contains minimal readable text. Please upload a text-based PDF, DOCX, or TXT version for the best results.');
+      }
+      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be corrupted or encrypted. Please try uploading as DOCX or TXT format.');
     }
     
     // Check for resume-like content
@@ -1042,12 +1125,45 @@ function classifyError(error: any): { code: string, message: string, userMessage
     };
   }
   
+  // Handle OCR failures
+  if (errorMsg.includes('OCR_NO_TEXT:')) {
+    return { 
+      code: 'OCR_NO_TEXT', 
+      message: errorMsg, 
+      userMessage: 'Your resume was uploaded successfully, but OCR could not extract sufficient text. Please upload a clearer image or text-based version for the best results.'
+    };
+  }
+  
+  if (errorMsg.includes('OCR_FAILED:')) {
+    return { 
+      code: 'OCR_FAILED', 
+      message: errorMsg, 
+      userMessage: 'Could not process your image-based resume. Please try again or upload as a text-based PDF or DOCX.'
+    };
+  }
+  
+  if (errorMsg.includes('OCR_API_ERROR:')) {
+    return { 
+      code: 'OCR_API_ERROR', 
+      message: errorMsg, 
+      userMessage: 'OCR service encountered an error. Please try again or upload as a text-based PDF or DOCX.'
+    };
+  }
+  
+  if (errorMsg.includes('OCR_NOT_CONFIGURED:')) {
+    return { 
+      code: 'OCR_NOT_CONFIGURED', 
+      message: errorMsg, 
+      userMessage: 'OCR service is temporarily unavailable. Please upload your resume as a text-based PDF or DOCX.'
+    };
+  }
+  
   // Handle unsupported image files
   if (errorMsg.includes('UNSUPPORTED_IMAGE:')) {
     return { 
       code: 'UNSUPPORTED_IMAGE', 
       message: errorMsg, 
-      userMessage: errorMsg.replace('UNSUPPORTED_IMAGE: ', '')
+      userMessage: 'Could not process the image file. Please try a clearer image or upload as PDF, DOCX, or TXT format.'
     };
   }
   

@@ -42,8 +42,9 @@ async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<
     formData.append('language', 'eng');
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation', 'true');
-    formData.append('scale', 'true');
-    formData.append('OCREngine', '2'); // Use OCR Engine 2 for better accuracy
+    formData.append('scale', 'true'); // Better image scaling
+    formData.append('OCREngine', '2'); // Engine 2: Better for mixed text/images, design-heavy resumes
+    formData.append('isTable', 'false'); // Not expecting table-only content
     formData.append('file', blob, 'resume.pdf');
     
     console.log('📤 Sending OCR request to OCR.Space API...');
@@ -75,8 +76,12 @@ async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<
       throw new Error('OCR_NO_RESPONSE: No response from OCR service');
     }
 
-    const extractedText = result.ParsedResults[0]?.ParsedText || '';
-    const textLength = extractedText.trim().length;
+    // Extract text from ALL parsed results (multi-page or multi-region detection)
+    const extractedText = result.ParsedResults.map((r: any) => r.ParsedText || '').join('\n').trim();
+    const textLength = extractedText.length;
+    
+    console.log(`📊 OCR processed ${result.ParsedResults.length} region(s)`);
+    console.log(`📊 OCR extracted ${textLength} characters`);
     
     console.log(`📊 OCR extracted ${textLength} characters`);
     

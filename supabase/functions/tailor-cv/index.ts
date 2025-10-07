@@ -19,28 +19,34 @@ const ocrApiKey = Deno.env.get('OCR_API_KEY')
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 /**
- * Extract text from image using OCR.Space API
+ * Extract text from image using OCR.Space API with enhanced error handling
  */
 async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<string> {
+  // CRITICAL: Verify API key is configured before attempting OCR
   if (!ocrApiKey) {
+    console.error('❌ OCR API key not configured');
     throw new Error('OCR_NOT_CONFIGURED: OCR API key is not configured. Please contact support.');
   }
 
-  console.log('🔍 Starting OCR text extraction with OCR.Space...');
+  console.log('🔍 Starting OCR text extraction with OCR.Space API...');
+  console.log(`📊 Image data size: ${imageData.byteLength || imageData.length} bytes`);
   
   try {
     // Convert to Blob for FormData
     const uint8Array = imageData instanceof ArrayBuffer ? new Uint8Array(imageData) : imageData;
     const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
     
-    // Prepare FormData
+    // Prepare FormData with enhanced OCR settings
     const formData = new FormData();
     formData.append('apikey', ocrApiKey);
     formData.append('language', 'eng');
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation', 'true');
     formData.append('scale', 'true');
+    formData.append('OCREngine', '2'); // Use OCR Engine 2 for better accuracy
     formData.append('file', blob, 'resume.pdf');
+    
+    console.log('📤 Sending OCR request to OCR.Space API...');
     
     // Call OCR.Space API
     const response = await fetch('https://api.ocr.space/parse/image', {
@@ -55,28 +61,56 @@ async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<
     }
 
     const result = await response.json();
+    console.log('📥 OCR API response received');
+    
+    // Check for API-level errors
+    if (result.IsErroredOnProcessing) {
+      const apiError = result.ErrorMessage?.[0] || 'Unknown API error';
+      console.error('❌ OCR processing error:', apiError);
+      throw new Error(`OCR_API_ERROR: ${apiError}`);
+    }
     
     if (!result.ParsedResults || result.ParsedResults.length === 0) {
+      console.error('❌ No parsed results from OCR');
       throw new Error('OCR_NO_RESPONSE: No response from OCR service');
     }
 
     const extractedText = result.ParsedResults[0]?.ParsedText || '';
+    const textLength = extractedText.trim().length;
     
-    if (!extractedText || extractedText.trim().length < 50) {
-      console.warn('⚠️ OCR found minimal text in image');
+    console.log(`📊 OCR extracted ${textLength} characters`);
+    
+    // IMPROVED: More lenient threshold for design-heavy resumes
+    // Accept partial text extraction if it contains resume-like content
+    if (textLength === 0) {
+      console.error('❌ OCR extracted no text');
       throw new Error('OCR_NO_TEXT: No readable text found in the image. Please ensure the image is clear and contains text.');
     }
+    
+    // If we have some text but it's minimal, check if it contains resume keywords
+    if (textLength < 30) {
+      const hasResumeKeywords = /experience|education|skills|work|email|phone|name|profile/i.test(extractedText);
+      if (!hasResumeKeywords) {
+        console.warn('⚠️ OCR found minimal text without resume keywords');
+        throw new Error('OCR_PARTIAL_TEXT: Only partial text was extracted. Please try a clearer image or upload as a text-based PDF or DOCX.');
+      }
+      // If it has keywords, proceed even with minimal text
+      console.log('✅ Minimal text but contains resume keywords, proceeding...');
+    }
 
-    console.log(`✅ OCR extraction complete: ${extractedText.length} characters`);
+    console.log(`✅ OCR extraction successful: ${textLength} characters`);
+    console.log(`📝 Preview: ${extractedText.substring(0, 100)}...`);
     
     return standardizeExtractedText(extractedText);
   } catch (error: any) {
     console.error('❌ OCR extraction failed:', error.message);
     
+    // Pass through classified errors
     if (error.message?.startsWith('OCR_')) {
       throw error;
     }
     
+    // Generic OCR failure
     throw new Error('OCR_FAILED: Could not extract text from image. Please ensure the image is clear and try again, or upload as a text-based PDF or DOCX.');
   }
 }
@@ -273,23 +307,47 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
 
     console.log(`✅ PDF extraction complete: ${extracted.length} characters`);
 
-    // Validate extracted content - if too short (< 100 chars), try OCR
-    if (extracted.length < 100) {
-      console.log('⚠️ PDF has minimal text content (< 100 chars), attempting OCR extraction...');
+    // IMPROVED: Enhanced OCR triggering for design-heavy resumes
+    // Try OCR if extracted text is minimal (< 150 chars) or lacks structure
+    const hasGoodStructure = /experience|education|skills|contact/i.test(extracted);
+    const shouldTryOCR = extracted.length < 150 || (!hasGoodStructure && extracted.length < 300);
+    
+    if (shouldTryOCR) {
+      console.log(`⚠️ PDF has minimal/unstructured text (${extracted.length} chars), attempting OCR extraction...`);
       try {
         const ocrText = await extractTextWithOCR(arrayBuffer);
-        if (ocrText && ocrText.length >= 50) {
-          console.log('✅ OCR successfully extracted text from image-based PDF');
+        // Accept OCR results even if shorter, as long as they contain resume content
+        if (ocrText && ocrText.length >= 30) {
+          console.log(`✅ OCR successfully extracted text: ${ocrText.length} characters`);
           return ocrText;
         }
       } catch (ocrError: any) {
         console.error('❌ OCR failed for image-based PDF:', ocrError.message);
+        
+        // If OCR completely fails but we have some extracted text, use it
+        if (extracted.length >= 50) {
+          console.warn('⚠️ OCR failed but using originally extracted text');
+          return extracted;
+        }
+        
+        // Pass through specific OCR errors
+        if (ocrError.message?.startsWith('OCR_PARTIAL_TEXT:') && extracted.length >= 30) {
+          // Merge OCR partial results with extracted text
+          console.log('📝 Merging partial OCR results with extracted text');
+          return extracted;
+        }
+        
         if (ocrError.message?.startsWith('OCR_')) {
           throw ocrError;
         }
+        
         throw new Error('IMAGE_BASED_PDF: Your resume was uploaded successfully, but OCR could not extract sufficient text. Please upload a clearer image or text-based version for the best results.');
       }
-      throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be corrupted or encrypted. Please try uploading as DOCX or TXT format.');
+      
+      // If we reach here, neither OCR nor extraction yielded sufficient results
+      if (extracted.length < 50) {
+        throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be corrupted, encrypted, or heavily design-based. Please try uploading as DOCX or TXT format.');
+      }
     }
     
     // Check for resume-like content
@@ -1120,12 +1178,20 @@ function classifyError(error: any): { code: string, message: string, userMessage
     };
   }
   
-  // Handle OCR failures
+  // Handle OCR-related errors with more specific guidance
+  if (errorMsg.includes('OCR_PARTIAL_TEXT:')) {
+    return { 
+      code: 'OCR_PARTIAL_TEXT', 
+      message: errorMsg, 
+      userMessage: 'We extracted partial content from your resume. For best results, please upload a clearer image or a text-based PDF/DOCX format.'
+    };
+  }
+  
   if (errorMsg.includes('OCR_NO_TEXT:')) {
     return { 
       code: 'OCR_NO_TEXT', 
       message: errorMsg, 
-      userMessage: 'Your resume was uploaded successfully, but OCR could not extract sufficient text. Please upload a clearer image or text-based version for the best results.'
+      userMessage: 'Could not extract text from the image. Please ensure the image is clear, well-lit, and contains readable text. Alternatively, upload as a text-based PDF or DOCX.'
     };
   }
   
@@ -1133,7 +1199,7 @@ function classifyError(error: any): { code: string, message: string, userMessage
     return { 
       code: 'OCR_FAILED', 
       message: errorMsg, 
-      userMessage: 'Could not process your image-based resume. Please try again or upload as a text-based PDF or DOCX.'
+      userMessage: 'Could not process your image-based resume. Please try uploading a clearer image or convert to a text-based PDF or DOCX format.'
     };
   }
   
@@ -1141,7 +1207,7 @@ function classifyError(error: any): { code: string, message: string, userMessage
     return { 
       code: 'OCR_API_ERROR', 
       message: errorMsg, 
-      userMessage: 'OCR service encountered an error. Please try again or upload as a text-based PDF or DOCX.'
+      userMessage: 'OCR service encountered an error while processing your resume. Please try again in a moment or upload as a text-based PDF or DOCX.'
     };
   }
   
@@ -1149,7 +1215,7 @@ function classifyError(error: any): { code: string, message: string, userMessage
     return { 
       code: 'OCR_NOT_CONFIGURED', 
       message: errorMsg, 
-      userMessage: 'OCR service is temporarily unavailable. Please upload your resume as a text-based PDF or DOCX.'
+      userMessage: 'OCR service is temporarily unavailable. Please upload your resume as a text-based PDF, DOCX, or TXT format.'
     };
   }
   

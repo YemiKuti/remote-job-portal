@@ -417,26 +417,29 @@ async function extractRtfText(arrayBuffer: ArrayBuffer): Promise<string> {
 }
 
 /**
- * Extract text from DOCX files using mammoth library
+ * Extract text from DOCX files using mammoth library with OCR fallback
  */
-async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
+async function extractDocxText(arrayBuffer: ArrayBuffer, originalFile?: Uint8Array): Promise<string> {
   console.log('📄 Starting DOCX text extraction with mammoth...');
   
+  let extractedText = '';
+  let mammothFailed = false;
+  
   try {
-    // Use mammoth to properly parse DOCX (ZIP archive with XML)
+    // Primary parser: Use mammoth to properly parse DOCX (ZIP archive with XML)
     const result = await mammoth.extractRawText({ 
       arrayBuffer: arrayBuffer 
     });
     
-    let text = result.value;
-    console.log(`📄 Mammoth extraction: ${text.length} characters`);
+    extractedText = result.value || '';
+    console.log(`📄 Mammoth extraction: ${extractedText.length} characters`);
     
     if (result.messages && result.messages.length > 0) {
       console.log('📄 Mammoth messages:', result.messages.map(m => m.message).join(', '));
     }
 
     // Normalize whitespace and line breaks
-    text = text
+    extractedText = extractedText
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/[ \t]+/g, ' ')
@@ -444,41 +447,60 @@ async function extractDocxText(arrayBuffer: ArrayBuffer): Promise<string> {
       .trim();
 
     // Normalize special characters
-    text = text
+    extractedText = extractedText
       .replace(/[""]/g, '"')
       .replace(/['']/g, "'")
       .replace(/[—–]/g, '-')
       .replace(/[•●○◦▪▫■□]/g, '•')
       .replace(/\u00A0/g, ' ');
 
-    console.log(`✅ DOCX extraction complete: ${text.length} characters after cleanup`);
-
-    // Validate content
-    if (!text || text.trim().length < 50) {
-      throw new Error('CONTENT_TOO_SHORT: DOCX file appears empty or contains insufficient text. Please ensure the file contains your complete resume.');
-    }
+    console.log(`✅ DOCX extraction complete: ${extractedText.length} characters after cleanup`);
     
-    // Check for resume content
-    const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree/i.test(text);
-    if (!hasResumeKeywords && text.length < 200) {
-      console.warn('⚠️ DOCX lacks resume keywords');
-      throw new Error('DOCX_NO_RESUME_CONTENT: DOCX does not appear to contain resume information. Please ensure you uploaded the correct file.');
-    }
-
-    // Apply standardization and return
-    return standardizeExtractedText(text);
   } catch (error: any) {
-    console.error('❌ DOCX extraction error:', error.message);
-    
-    if (error.message?.startsWith('CONTENT_TOO_SHORT:')) {
-      throw error;
-    }
-    if (error.message?.startsWith('DOCX_NO_RESUME_CONTENT:')) {
-      throw error;
-    }
-    
-    throw new Error('DOCX_PROCESSING_ERROR: Could not extract text from DOCX. The file may be corrupted or in an unsupported format. Please try saving as a newer DOCX format or convert to TXT.');
+    console.error('❌ Mammoth extraction failed:', error.message);
+    mammothFailed = true;
+    extractedText = '';
   }
+
+  // If mammoth failed or returned minimal text, try OCR fallback
+  if (mammothFailed || extractedText.length < 50) {
+    console.log('⚠️ Mammoth returned insufficient text. Attempting OCR fallback for DOCX...');
+    
+    try {
+      if (originalFile) {
+        // Convert DOCX to image and run OCR (if file bytes available)
+        const ocrText = await extractTextWithOCR(originalFile);
+        
+        if (ocrText && ocrText.length >= 30) {
+          console.log(`✅ OCR fallback successful: ${ocrText.length} characters`);
+          // Merge with any text from mammoth
+          extractedText = extractedText.length > 0 
+            ? `${extractedText}\n\n${ocrText}` 
+            : ocrText;
+        }
+      } else {
+        console.warn('⚠️ Original file not available for OCR fallback');
+      }
+    } catch (ocrError: any) {
+      console.error('❌ OCR fallback failed:', ocrError.message);
+      // Continue with whatever text we have
+    }
+  }
+
+  // Final validation
+  if (!extractedText || extractedText.trim().length < 30) {
+    throw new Error('DOCX_PROCESSING_ERROR: Could not extract sufficient text from DOCX. The file may be corrupted, design-heavy, or in an unsupported format. Please try converting to TXT or PDF format.');
+  }
+  
+  // Check for resume-like content (more lenient check)
+  const hasResumeKeywords = /experience|education|skills|work|employment|position|university|degree|contact|phone|email|profile|objective/i.test(extractedText);
+  if (!hasResumeKeywords && extractedText.length < 150) {
+    console.warn('⚠️ DOCX lacks clear resume keywords - but proceeding anyway');
+    // Don't throw error, just warn - let the AI handle it
+  }
+
+  // Apply standardization and return
+  return standardizeExtractedText(extractedText);
 }
 
 /**
@@ -1537,6 +1559,7 @@ serve(async (req) => {
         
         // Extract content from uploaded file
         const arrayBuffer = await file.arrayBuffer();
+        const fileBytes = new Uint8Array(arrayBuffer); // Keep bytes for OCR fallback
         let resumeContent = '';
         
         // Extract text content based on file type
@@ -1544,7 +1567,7 @@ serve(async (req) => {
           if (fileType === 'pdf') {
             resumeContent = await extractPdfText(arrayBuffer);
           } else if (fileType === 'docx') {
-            resumeContent = await extractDocxText(arrayBuffer);
+            resumeContent = await extractDocxText(arrayBuffer, fileBytes);
           } else if (fileType === 'rtf') {
             resumeContent = await extractRtfText(arrayBuffer);
           } else if (fileType === 'txt') {

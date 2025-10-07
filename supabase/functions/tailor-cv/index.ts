@@ -15,66 +15,58 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
-const googleVisionApiKey = Deno.env.get('GOOGLE_VISION_API_KEY')
+const ocrApiKey = Deno.env.get('OCR_API_KEY')
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 /**
- * Extract text from image using Google Cloud Vision OCR
+ * Extract text from image using OCR.Space API
  */
 async function extractTextWithOCR(imageData: ArrayBuffer | Uint8Array): Promise<string> {
-  if (!googleVisionApiKey) {
-    throw new Error('OCR_NOT_CONFIGURED: Google Vision API key is not configured. Please contact support.');
+  if (!ocrApiKey) {
+    throw new Error('OCR_NOT_CONFIGURED: OCR API key is not configured. Please contact support.');
   }
 
-  console.log('🔍 Starting OCR text extraction with Google Cloud Vision...');
+  console.log('🔍 Starting OCR text extraction with OCR.Space...');
   
   try {
-    // Convert to base64
+    // Convert to Blob for FormData
     const uint8Array = imageData instanceof ArrayBuffer ? new Uint8Array(imageData) : imageData;
-    const base64Image = btoa(String.fromCharCode(...uint8Array));
+    const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
     
-    // Call Google Cloud Vision API
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${googleVisionApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          requests: [{
-            image: {
-              content: base64Image
-            },
-            features: [{
-              type: 'DOCUMENT_TEXT_DETECTION',
-              maxResults: 1
-            }]
-          }]
-        })
-      }
-    );
+    // Prepare FormData
+    const formData = new FormData();
+    formData.append('apikey', ocrApiKey);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('detectOrientation', 'true');
+    formData.append('scale', 'true');
+    formData.append('file', blob, 'resume.pdf');
+    
+    // Call OCR.Space API
+    const response = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      body: formData
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Google Vision API error:', errorText);
-      throw new Error(`OCR_API_ERROR: Google Vision API returned ${response.status}`);
+      console.error('❌ OCR.Space API error:', errorText);
+      throw new Error(`OCR_API_ERROR: OCR service returned ${response.status}`);
     }
 
     const result = await response.json();
     
-    if (!result.responses || !result.responses[0]) {
+    if (!result.ParsedResults || result.ParsedResults.length === 0) {
       throw new Error('OCR_NO_RESPONSE: No response from OCR service');
     }
 
-    const annotations = result.responses[0].fullTextAnnotation;
+    const extractedText = result.ParsedResults[0]?.ParsedText || '';
     
-    if (!annotations || !annotations.text) {
-      console.warn('⚠️ OCR found no text in image');
+    if (!extractedText || extractedText.trim().length < 50) {
+      console.warn('⚠️ OCR found minimal text in image');
       throw new Error('OCR_NO_TEXT: No readable text found in the image. Please ensure the image is clear and contains text.');
     }
 
-    const extractedText = annotations.text;
     console.log(`✅ OCR extraction complete: ${extractedText.length} characters`);
     
     return standardizeExtractedText(extractedText);
@@ -281,9 +273,9 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
 
     console.log(`✅ PDF extraction complete: ${extracted.length} characters`);
 
-    // Validate extracted content - if too short, try OCR
-    if (extracted.length < 50) {
-      console.log('⚠️ PDF has minimal text, attempting OCR...');
+    // Validate extracted content - if too short (< 100 chars), try OCR
+    if (extracted.length < 100) {
+      console.log('⚠️ PDF has minimal text content (< 100 chars), attempting OCR extraction...');
       try {
         const ocrText = await extractTextWithOCR(arrayBuffer);
         if (ocrText && ocrText.length >= 50) {
@@ -292,7 +284,10 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
         }
       } catch (ocrError: any) {
         console.error('❌ OCR failed for image-based PDF:', ocrError.message);
-        throw new Error('IMAGE_BASED_PDF: Your resume was uploaded successfully, but it contains minimal readable text. Please upload a text-based PDF, DOCX, or TXT version for the best results.');
+        if (ocrError.message?.startsWith('OCR_')) {
+          throw ocrError;
+        }
+        throw new Error('IMAGE_BASED_PDF: Your resume was uploaded successfully, but OCR could not extract sufficient text. Please upload a clearer image or text-based version for the best results.');
       }
       throw new Error('CONTENT_TOO_SHORT: Could not extract sufficient text from PDF. The file may be corrupted or encrypted. Please try uploading as DOCX or TXT format.');
     }

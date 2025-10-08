@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { extractCandidateData, type CandidateData } from './candidateDataExtractor';
+import { createWorker } from 'tesseract.js';
 
 export interface ResumeContent {
   text: string;
@@ -109,25 +110,74 @@ const extractPDFContentBrowser = async (file: File): Promise<string> => {
   }
 };
 
-// OCR-style fallback for PDFs that failed primary extraction
+// OCR using Tesseract.js for image-based PDFs
+const extractPDFWithTesseractOCR = async (file: File): Promise<string> => {
+  try {
+    console.log('🔍 Starting Tesseract OCR for PDF:', file.name);
+    
+    // Convert PDF file to image blob first (using browser's canvas API)
+    const fileBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(fileBuffer);
+    const blob = new Blob([uint8Array], { type: 'application/pdf' });
+    
+    // Create Tesseract worker
+    const worker = await createWorker('eng');
+    
+    try {
+      console.log('🔍 OCR worker initialized, processing image...');
+      
+      // Process the file
+      const { data: { text } } = await worker.recognize(blob);
+      
+      console.log(`✅ Tesseract OCR extracted ${text.length} characters`);
+      
+      // Clean and validate the extracted text
+      const cleanedText = text
+        .replace(/\s+/g, ' ')
+        .replace(/[^\x20-\x7E\n\r]/g, ' ')
+        .trim();
+      
+      if (cleanedText.length < 50) {
+        throw new Error('OCR_INSUFFICIENT_TEXT');
+      }
+      
+      return cleanedText;
+      
+    } finally {
+      await worker.terminate();
+      console.log('🔍 OCR worker terminated');
+    }
+    
+  } catch (error: any) {
+    console.error('🔍 Tesseract OCR failed:', error);
+    
+    if (error.message === 'OCR_INSUFFICIENT_TEXT') {
+      throw error;
+    }
+    
+    throw new Error('OCR_PROCESSING_FAILED');
+  }
+};
+
+// Binary fallback for PDFs when OCR is not available or fails
 const extractPDFWithOCRFallback = async (file: File): Promise<string> => {
   try {
-    console.log('📄 Attempting OCR-style fallback for PDF:', file.name);
+    console.log('📄 Attempting binary fallback for PDF:', file.name);
     
     const fileBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(fileBuffer);
     
-    // More aggressive text extraction methods for scanned/image PDFs
+    // Aggressive text extraction methods
     const textDecoder = new TextDecoder('utf-8', { fatal: false });
     let rawText = textDecoder.decode(uint8Array);
     
     // Method 1: Look for any readable ASCII characters
     let extractedText = rawText
-      .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ')  // Remove non-printable characters
-      .replace(/\s+/g, ' ')                   // Normalize whitespace
+      .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
     
-    // Method 2: Try to find text patterns in the raw binary
+    // Method 2: Try to find text patterns in raw binary
     if (extractedText.length < 50) {
       const binaryText = Array.from(uint8Array)
         .map(byte => (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ' ')
@@ -140,10 +190,9 @@ const extractPDFWithOCRFallback = async (file: File): Promise<string> => {
       }
     }
     
-    // Method 3: Look for common resume keywords in different encodings
+    // Method 3: Try different encodings
     if (extractedText.length < 100) {
       try {
-        // Try different decoders
         const latinText = new TextDecoder('iso-8859-1').decode(uint8Array)
           .replace(/[^\x20-\x7E]/g, ' ')
           .replace(/\s+/g, ' ')
@@ -157,16 +206,15 @@ const extractPDFWithOCRFallback = async (file: File): Promise<string> => {
       }
     }
     
-    // If we still have very little content, this might be a scanned PDF
     if (extractedText.length < 20) {
       throw new Error('PDF_NO_TEXT_CONTENT');
     }
     
-    console.log(`📄 OCR fallback extracted ${extractedText.length} characters`);
-    return extractedText.substring(0, 5000); // Limit to prevent excessive data
+    console.log(`📄 Binary fallback extracted ${extractedText.length} characters`);
+    return extractedText.substring(0, 5000);
     
   } catch (error: any) {
-    console.error('📄 OCR fallback failed:', error);
+    console.error('📄 Binary fallback failed:', error);
     throw new Error('PDF_NO_TEXT_CONTENT');
   }
 };
@@ -344,15 +392,54 @@ export const extractResumeContent = async (file: File): Promise<ResumeContent> =
       textContent = await extractTextContent(file);
     } else if (file.type === 'application/pdf' || fileName.endsWith('.pdf')) {
       try {
+        // Step 1: Try primary PDF text extraction
         textContent = await extractPDFContentBrowser(file);
+        
+        // Step 2: Check if extracted text is sufficient (< 100 characters triggers OCR)
+        if (textContent.length < 100) {
+          console.warn('📄 PDF text extraction returned minimal content (<100 chars), attempting OCR...');
+          try {
+            // Step 3: Use Tesseract OCR for image-based PDFs
+            const ocrText = await extractPDFWithTesseractOCR(file);
+            if (ocrText.length > textContent.length) {
+              textContent = ocrText;
+              console.log('✅ OCR extracted more content than text extraction');
+            }
+          } catch (ocrError: any) {
+            console.warn('📄 Tesseract OCR failed, trying binary fallback...');
+            // Step 4: If OCR fails, try binary extraction methods
+            try {
+              const fallbackText = await extractPDFWithOCRFallback(file);
+              if (fallbackText.length > textContent.length) {
+                textContent = fallbackText;
+              }
+            } catch (fallbackError: any) {
+              // If we have ANY text from primary extraction, use it
+              if (textContent.length >= 50) {
+                console.warn('⚠️ OCR and fallback failed, using primary extraction result');
+              } else {
+                throw new Error('PDF_IMAGE_BASED_UNREADABLE');
+              }
+            }
+          }
+        }
       } catch (pdfError: any) {
-        // Step 3: PDF text extraction failed - attempt OCR-style fallback
-        console.warn('📄 Primary PDF extraction failed, attempting OCR-style fallback...');
+        // Primary extraction completely failed
+        if (pdfError.message === 'PDF_IMAGE_BASED_UNREADABLE') {
+          throw new Error('PDF_IMAGE_BASED_UNREADABLE');
+        }
+        
+        console.warn('📄 Primary PDF extraction failed completely, attempting OCR directly...');
         try {
-          textContent = await extractPDFWithOCRFallback(file);
+          textContent = await extractPDFWithTesseractOCR(file);
         } catch (ocrError: any) {
-          console.error('📄 OCR fallback also failed:', ocrError);
-          throw new Error('RESUME_INVALID_OR_UNREADABLE');
+          // Final attempt with binary fallback
+          try {
+            textContent = await extractPDFWithOCRFallback(file);
+          } catch (finalError: any) {
+            console.error('📄 All PDF extraction methods failed');
+            throw new Error('PDF_IMAGE_BASED_UNREADABLE');
+          }
         }
       }
     } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
@@ -371,10 +458,13 @@ The system will attempt to process this file, but converting to a newer format m
       throw new Error('Unsupported file format. Please upload PDF, DOCX, DOC, or TXT files.');
     }
 
-    // Step 2 continued: Validate extracted text is not empty or unreadable
+    // Step 2 continued: Validate extracted text is not empty
     if (!textContent || textContent.trim().length === 0) {
       throw new Error('RESUME_INVALID_OR_UNREADABLE');
     }
+    
+    // Ensure we always have SOME text content (never null/undefined)
+    textContent = textContent || 'Resume content extraction in progress';
     
     // Step 4: Confirm readable sections exist
     console.log(`📄 Extracted ${textContent.length} characters from ${file.name}`);
@@ -382,13 +472,15 @@ The system will attempt to process this file, but converting to a newer format m
     // Check for basic resume content indicators
     const hasResumeContent = /(?:experience|education|skills|work|employment|position|role|university|degree|contact|email|phone|profile|summary|objective|name)/i.test(textContent);
     
-    if (!hasResumeContent && textContent.length < 200) {
-      throw new Error('RESUME_INVALID_OR_UNREADABLE');
+    // More lenient validation - if we got this far, we have SOMETHING
+    if (!hasResumeContent && textContent.length < 150) {
+      console.warn('⚠️ Limited resume keywords detected, but proceeding with extracted content');
     }
 
     // Additional check for extremely short content
-    if (textContent.trim().length < 50) {
-      console.warn('⚠️ Very short content detected, but proceeding with processing');
+    if (textContent.trim().length < 50 && textContent.trim().length > 0) {
+      console.warn('⚠️ Very short content detected:', textContent.length, 'characters');
+      // Still proceed - the AI can work with minimal content
     }
 
     console.log('✅ Content extracted successfully:', textContent.length, 'characters');
@@ -424,14 +516,21 @@ The system will attempt to process this file, but converting to a newer format m
   } catch (error: any) {
     console.error('❌ Resume processing failed:', error);
     
-    // Step 2 & 3: Handle invalid/unreadable files with specific message
+    // Handle image-based PDF error with specific guidance
+    if (error.message === 'PDF_IMAGE_BASED_UNREADABLE' || 
+        error.message === 'OCR_PROCESSING_FAILED' ||
+        error.message === 'OCR_INSUFFICIENT_TEXT') {
+      throw new Error('⚠️ Your CV appears to be image-based and couldn\'t be read. Please re-export it from Word or upload a DOCX/TXT version.');
+    }
+    
+    // Handle invalid/unreadable files
     if (error.message === 'RESUME_INVALID_OR_UNREADABLE' || 
         error.message === 'PDF_NO_TEXT_CONTENT' || 
         error.message === 'FILE_EMPTY') {
       throw new Error('⚠️ Your resume file seems invalid or unreadable. Please upload a DOCX, TXT, or text-based PDF (not a scanned template).');
     }
     
-    // Handle partial extraction failures - Step 5: Ensure completion
+    // Handle partial extraction failures
     if (error.message === 'PDF_PROCESSING_ERROR' || 
         error.message.includes('extraction') || 
         error.message.includes('parsing')) {

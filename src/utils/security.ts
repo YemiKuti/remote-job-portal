@@ -60,7 +60,9 @@ export const getSecurityHeaders = () => ({
   'Referrer-Policy': 'strict-origin-when-cross-origin'
 });
 
-// Admin verification helper
-export const isValidAdminSession = (user: any): boolean => {
-  return user && user.user_metadata?.role === 'admin';
-};
+// ⚠️ DEPRECATED: DO NOT USE THIS FUNCTION
+// This function is insecure because user_metadata can be manipulated by users
+// Always use server-side admin verification via is_admin() RPC or useAdminStatus() hook
+// export const isValidAdminSession = (user: any): boolean => {
+//   return user && user.user_metadata?.role === 'admin';
+// };

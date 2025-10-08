@@ -2,7 +2,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -106,12 +105,20 @@ const cleanupAuthStateOnLogout = () => {
   }
 };
 
+// Safe navigation function that doesn't require Router context
+const navigateTo = (path: string, replace: boolean = false) => {
+  if (replace) {
+    window.location.replace(path);
+  } else {
+    window.location.href = path;
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     console.log('🔐 AuthProvider: Starting auth initialization');
@@ -141,7 +148,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setTimeout(() => {
                 ensureUserProfileDeferred(session.user);
               }, 100);
-              navigate('/reset-password', { replace: true });
+              navigateTo('/reset-password', true);
               return;
             }
             
@@ -154,13 +161,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (currentPath === '/auth' || currentPath === '/signin' || currentPath === '/admin-signin') {
               setTimeout(() => {
                 if (userRole === 'admin') {
-                  navigate('/admin');
+                  navigateTo('/admin');
                 } else if (userRole === 'employer') {
-                  navigate('/employer');
+                  navigateTo('/employer');
                 } else if (userRole === 'candidate') {
-                  navigate('/candidate');
+                  navigateTo('/candidate');
                 } else {
-                  navigate('/');
+                  navigateTo('/');
                 }
               }, 100);
             }
@@ -220,7 +227,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authSubscription.unsubscribe();
       }
     };
-  }, [navigate]);
+  }, []);
 
   const loginWithEmail = async (email: string, redirect_to?: string) => {
     setIsLoading(true);
@@ -267,7 +274,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🔐 AuthProvider: Sign out complete, navigating to home page');
       
       // Navigate to home page
-      navigate('/');
+      navigateTo('/');
       
     } catch (error: any) {
       console.error('🔐 AuthProvider: Exception during sign out:', error);
@@ -279,7 +286,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAuthError(null);
       
       toast.error('Sign out failed, but local session cleared');
-      navigate('/');
+      navigateTo('/');
     } finally {
       setIsLoading(false);
     }

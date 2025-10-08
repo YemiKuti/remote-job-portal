@@ -54,7 +54,7 @@ const App = () => {
       <CurrencyProvider>
         <Router>
           <AuthProvider>
-          <Routes>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -112,7 +112,7 @@ const App = () => {
             <Route path="/features-demo" element={<FeaturesDemo />} />
 
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
           </AuthProvider>
         </Router>
       </CurrencyProvider>

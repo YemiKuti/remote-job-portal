@@ -6,6 +6,7 @@ import { Download, FileText, RotateCcw, Eye, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
+import DOMPurify from 'dompurify';
 
 interface DownloadStepProps {
   workflowData: {
@@ -758,9 +759,16 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
                 <div 
                   className="bg-white border rounded-lg p-6 max-h-96 overflow-y-auto shadow-inner"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateHTMLContent(tailoredResume.tailored_content)
-                      .replace(/<style>[\s\S]*?<\/style>/, '') // Remove styles for preview
-                      .replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*?<\/head>|<body[^>]*>|<\/body>/g, '') // Remove HTML structure tags
+                    __html: DOMPurify.sanitize(
+                      generateHTMLContent(tailoredResume.tailored_content)
+                        .replace(/<style>[\s\S]*?<\/style>/, '') // Remove styles for preview
+                        .replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*?<\/head>|<body[^>]*>|<\/body>/g, ''), // Remove HTML structure tags
+                      {
+                        ALLOWED_TAGS: ['div', 'h1', 'h2', 'p', 'br', 'strong', 'em', 'ul', 'ol', 'li'],
+                        ALLOWED_ATTR: ['class'],
+                        KEEP_CONTENT: true,
+                      }
+                    )
                   }}
                 />
               </CardContent>

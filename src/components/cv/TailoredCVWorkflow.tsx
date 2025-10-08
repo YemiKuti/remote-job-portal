@@ -4,32 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   FileText, 
   Briefcase, 
-  Sparkles, 
-  Download, 
-  CheckCircle, 
   AlertTriangle,
   Loader2,
   Brain,
-  Target,
-  Trophy,
   Upload
 } from "lucide-react";
 import { JobSelectionStep } from "./workflow/JobSelectionStep";
 import { EnhancedJobSelection } from "./EnhancedJobSelection";
 import { ResumeUploadStep } from "./workflow/ResumeUploadStep";
-import { AIAnalysisStep } from "./workflow/AIAnalysisStep";
 import { DownloadStep } from "./workflow/DownloadStep";
 import { DirectCVTailoringDialog } from "./DirectCVTailoringDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { callEdgeFunctionWithRetry } from "@/utils/edgeFunctionUtils";
-import { extractResumeContent } from "@/utils/enhancedResumeProcessor";
-import { extractSection, generateProfessionalSummary, generateKeyCompetencies, calculateMatchScore } from "@/utils/resumeHelpers";
 import { toast } from "sonner";
+import { CVJobTracker } from "./CVJobTracker";
 
 interface TailoredCVWorkflowProps {
   userId: string;
@@ -53,7 +43,7 @@ interface TailoringResult {
   };
 }
 
-type WorkflowStep = 'resume-upload' | 'job-selection' | 'ai-analysis' | 'review' | 'download';
+type WorkflowStep = 'resume-upload' | 'job-selection' | 'ai-analysis' | 'download';
 
 export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('resume-upload');
@@ -64,6 +54,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
   const [jobDescription, setJobDescription] = useState<string>('');
   const [tailoringResult, setTailoringResult] = useState<TailoringResult | null>(null);
   const [tailoredResumeId, setTailoredResumeId] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +63,6 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     'resume-upload': 20,
     'job-selection': 40,
     'ai-analysis': 70,
-    'review': 90,
     'download': 100
   };
 
@@ -88,267 +78,148 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     setJobTitle(data.jobTitle);
     setCompanyName(data.companyName);
     setJobDescription(data.jobDescription);
-    setCurrentStep('ai-analysis');
-    setProgress(stepProgress['ai-analysis']);
-    console.log('✅ Job selected:', data.jobTitle);
+    handleAIAnalysis(data);
   };
 
-  const handleAIAnalysis = async () => {
-    if (!selectedJob || !selectedResume) {
+  const handleAIAnalysis = async (data?: any) => {
+    const resume = selectedResume || data?.selectedResume;
+    const job = selectedJob || data?.selectedJob;
+    
+    if (!job || !resume) {
       setError('Missing job or resume information');
       return;
     }
 
-    // Enhanced input validation with more lenient content extraction
-    let resumeContent = selectedResume.content?.text ||
-      selectedResume.resume_text ||
-      selectedResume.parsed_content ||
-      selectedResume.extracted_content ||
-      selectedResume.tailored_text ||
-      '';
-    
-    console.log('🔍 Resume content validation:', {
-      hasContent: !!resumeContent,
-      contentLength: resumeContent?.length || 0,
-      resumeKeys: Object.keys(selectedResume),
-      selectedResumeType: typeof selectedResume,
-      selectedResumeId: selectedResume.id,
-      selectedResumeName: selectedResume.name || selectedResume.file_name
-    });
-    
-    if (!resumeContent || resumeContent.trim().length === 0) {
-      // Try more aggressive fallbacks with more generous content acceptance
-      const fallbackContent = selectedResume.text || 
-                              selectedResume.content || 
-                              selectedResume.raw_content || 
-                              selectedResume.candidateData?.text ||
-                              selectedResume.file_name ||
-                              selectedResume.name ||
-                              (typeof selectedResume.candidate_data === 'object' && selectedResume.candidate_data?.text);
-      
-      if (fallbackContent && typeof fallbackContent === 'string' && fallbackContent.trim().length > 0) {
-        console.log('📄 Using fallback resume content');
-        resumeContent = fallbackContent;
-      } else {
-        console.log('📝 Using placeholder content for uploaded file');
-        resumeContent = 'Valid resume file uploaded - content will be processed by AI';
-      }
-    }
-
-    // More lenient validation - only check for very basic content
-    if (resumeContent.trim().length < 10) {
-      console.error('❌ Resume content too short:', resumeContent.length);
-      setError('Resume file appears to be invalid. Please upload a different resume.');
-      toast.error('Resume content is too brief. Please upload a resume with more detailed information.');
+    // Validate file size (10 MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    if (resume.file_size && resume.file_size > maxSize) {
+      setError('Your CV is too large. Please upload a file smaller than 10 MB.');
+      toast.error('File too large. Maximum size is 10 MB.');
       return;
     }
 
-    // Check file format if available
-    if (selectedResume.original_filename) {
-      const fileName = selectedResume.original_filename.toLowerCase();
-      const supportedFormats = ['.pdf', '.doc', '.docx', '.txt'];
-      const isSupported = supportedFormats.some(format => fileName.endsWith(format));
-      
-      if (!isSupported) {
-        setError('Unsupported file format. Please upload PDF, DOC, DOCX, or TXT files only.');
-        toast.error('Please upload a valid CV in PDF, DOC, DOCX, or TXT format.');
-        return;
-      }
-    }
-
-    if (!jobDescription || jobDescription.trim().length === 0) {
-      setError('Please provide a job description to tailor your CV.');
-      toast.error('Job description is required for CV tailoring.');
-      return;
-    }
-
-    if (resumeContent.length < 20) {
-      setError('Resume file is invalid or empty. Please upload a valid resume.');
-      toast.error('Resume file appears to be empty. Please upload a valid resume with content.');
-      return;
-    }
-
-    if (jobDescription.length < 50) {
-      setError('Job description appears too brief. Please provide more details about the job requirements.');
-      toast.error('Job description is too brief. Please add more details about the job.');
-      return;
-    }
-
-    if (resumeContent.length > 50000) {
-      setError('Resume content is too large. Please provide a shorter resume.');
-      toast.error('Resume content is too large. Please provide a resume under 50,000 characters.');
+    const desc = jobDescription || data?.jobDescription;
+    if (!desc || desc.trim().length < 50) {
+      setError('Job description is too brief. Please provide more details.');
+      toast.error('Please provide a detailed job description.');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      console.log('🤖 Starting AI analysis...', {
-        resumeLength: resumeContent.length,
-        jobDescLength: jobDescription.length,
-        jobTitle,
-        companyName
-      });
+      setProgress(20);
+      
+      toast.info('📤 Uploading your CV for processing...');
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 2, 85));
-      }, 200);
+      // Generate unique job ID
+      const jobIdStr = `cv-job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Get user email
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || null;
 
-      console.log('🚀 Invoking tailor-cv function with payload:', {
-        resumeContentLength: resumeContent.length,
-        jobDescriptionLength: jobDescription.length,
-        jobTitle: jobTitle || 'Job Title',
-        companyName: companyName || 'Company',
-        hasCandidateData: !!selectedResume.candidate_data,
-        requirementsCount: selectedJob.requirements?.length || 0
-      });
+      // Upload file to storage if not already uploaded
+      let filePath = resume.file_path;
+      if (!filePath && resume.file) {
+        const fileName = `${userId}/${Date.now()}-${resume.name || 'resume.pdf'}`;
+        const { error: uploadError } = await supabase.storage
+          .from('resumes')
+          .upload(fileName, resume.file);
 
-      const data = await callEdgeFunctionWithRetry(
-        'tailor-cv',
-        {
-          resumeContent: resumeContent,
-          jobDescription: jobDescription,
-          jobTitle: jobTitle || 'Job Title',
-          companyName: companyName || 'Company',
-          candidateData: selectedResume.candidate_data || null,
-          jobRequirements: selectedJob.requirements || [],
-          userId: userId
-        },
-        { maxRetries: 2, baseDelay: 2000 },
-        (message, retryCount) => {
-          if (retryCount !== undefined) {
-            setProgress(40 + (retryCount * 15));
-          }
-          // Progress message handled by toast in utility function
+        if (uploadError) {
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
         }
-      );
-
-      clearInterval(progressInterval);
-
-      console.log('📝 AI response received:', { 
-        data: data ? 'Response received' : 'No data',
-        responseKeys: data ? Object.keys(data) : []
-      });
-
-      // Validate response structure
-      if (!data) {
-        console.error('❌ No data received from AI service');
-        throw new Error('No response received from AI service. Please try again.');
+        filePath = fileName;
       }
 
-      // Check if the response indicates an error (when edge function returns 200 with error)
-      if (data.success === false) {
-        console.error('❌ AI analysis returned error:', data.error);
-        const errorMessage = data.error || 'AI analysis failed';
-        throw new Error(errorMessage);
-      }
+      setProgress(40);
 
-      // Handle both response formats: file upload returns 'tailoredResume', JSON returns 'tailoredContent'
-      const tailoredResumeContent = data.tailoredResume || data.tailoredContent;
-      
-      if (!tailoredResumeContent || typeof tailoredResumeContent !== 'string' || tailoredResumeContent.trim().length === 0) {
-        console.error('❌ Invalid tailored resume in response:', { 
-          hasTailoredResume: !!data.tailoredResume,
-          hasTailoredContent: !!data.tailoredContent,
-          type: typeof tailoredResumeContent,
-          length: tailoredResumeContent?.length || 0,
-          fullResponse: data
-        });
-        
-        throw new Error('AI service failed to generate a tailored resume. Please try again with a different resume or job description.');
-      }
-
-      // Quality validation aligned with production requirements
-      const hasPlaceholderText = /Contact Information Available Upon Request/i.test(tailoredResumeContent);
-      const isTooShort = tailoredResumeContent.trim().length < 300;
-      
-      const qualityScore = data.score ?? data.tailoring_score ?? data.matchScore ?? data.match_score ?? data.analysis?.matchScore ?? 0;
-      
-      if (hasPlaceholderText || isTooShort || qualityScore < 70) {
-        console.warn('⚠️ AI-generated resume failed quality checks:', {
-          hasPlaceholderText,
-          isTooShort,
-          qualityScore,
-          contentLength: tailoredResumeContent.length
-        });
-        
-        throw new Error('The AI-generated resume did not meet quality standards. Please ensure your uploaded CV is readable and try again.');
-      }
-
-      // Use the AI-generated content if it passes quality checks
-      data.tailoredResume = tailoredResumeContent;
-      console.log('✅ AI-generated resume passed quality validation');
-      
-      // Enhanced success message based on quality score
-      if (qualityScore >= 90) {
-        toast.success(`Excellent! Resume tailored with ${qualityScore}% quality score. Your original content has been preserved and enhanced.`);
-      } else if (qualityScore >= 80) {
-        toast.success(`Resume successfully tailored with ${qualityScore}% quality score. Original details preserved with job-relevant enhancements.`);
-      } else {
-        toast.success(`Resume tailored with ${qualityScore}% quality score. Review the enhanced content for further improvements.`);
-      }
-
-      setTailoringResult(data);
-      
-      // Save the tailored resume to database
-      const { data: savedResume, error: saveError } = await supabase
-        .from('tailored_resumes')
+      // Create job record
+      const { data: jobData, error: jobError } = await supabase
+        .from('cv_jobs')
         .insert({
           user_id: userId,
-          original_resume_id: selectedResume.id,
-          job_id: selectedJob.id,
-          tailored_content: data.tailoredResume,
-          ai_suggestions: data.suggestions,
-          tailoring_score: qualityScore,
-          job_title: jobTitle,
-          company_name: companyName,
-          job_description: jobDescription
+          job_id: jobIdStr,
+          file_name: resume.name || resume.file_name || 'resume.pdf',
+          file_path: filePath,
+          file_size: resume.file_size || resume.size || 0,
+          user_email: userEmail,
+          job_title: jobTitle || data?.jobTitle,
+          company_name: companyName || data?.companyName,
+          job_description: desc,
+          status: 'queued',
+          progress: 0
         })
         .select()
         .single();
 
-      if (saveError) {
-        console.error('❌ Error saving tailored resume:', saveError);
-        // Continue anyway, we have the data
-      } else {
-        setTailoredResumeId(savedResume.id);
+      if (jobError) {
+        throw new Error(`Failed to create processing job: ${jobError.message}`);
       }
 
-      setCurrentStep('download');
-      setProgress(stepProgress['download']);
-      
-      console.log('✅ AI analysis completed. Score:', data.score);
-      toast.success('✅ Resume uploaded successfully. Tailoring process started.');
+      setCurrentJobId(jobIdStr);
+      setProgress(60);
 
-    } catch (error) {
-      console.error('❌ Error during AI analysis:', error);
-      let errorMessage = 'AI analysis failed';
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      // Provide user-friendly error messages
-      if (errorMessage.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again with a shorter resume or job description.';
-      } else if (errorMessage.includes('too large')) {
-        errorMessage = 'Content is too large. Please shorten your resume or job description.';
-      } else if (errorMessage.includes('too short')) {
-        errorMessage = 'Content is too short. Please provide more detailed information.';
-      } else if (errorMessage.includes('AI service not configured')) {
-        errorMessage = 'AI service is not configured. Please contact support.';
-      } else if (errorMessage.includes('busy')) {
-        errorMessage = 'AI service is currently busy. Please try again in a few moments.';
-      }
-      
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
+      // Trigger background processing
+      await supabase.functions.invoke('process-cv-job', {
+        body: { action: 'process_specific', job_id: jobIdStr }
+      });
+
+      toast.success('✅ Your CV has been queued for processing!');
+      toast.info('Processing will continue in the background. You can leave this page.');
+
+      // Move to tracking step
+      setCurrentStep('ai-analysis');
+      setProgress(70);
+
+    } catch (error: any) {
+      console.error('❌ Error creating CV job:', error);
+      setError(error.message || 'Failed to start CV processing');
+      toast.error(error.message || 'Failed to upload your CV');
       setLoading(false);
     }
+  };
+
+  const handleJobComplete = (tailoredContent: string) => {
+    console.log('✅ Job completed, moving to download step');
+    setTailoringResult({
+      tailoredResume: tailoredContent,
+      score: 85,
+      analysis: {
+        skillsMatched: 0,
+        requiredSkills: 0,
+        candidateSkills: [],
+        experienceLevel: 'mid',
+        hasCareerProfile: true,
+        hasContactInfo: true
+      },
+      suggestions: {
+        keywordsMatched: 0,
+        totalKeywords: 0,
+        recommendations: []
+      }
+    });
+    setCurrentStep('download');
+    setProgress(100);
+    setLoading(false);
+    toast.success('✅ Your tailored CV is ready for download!');
+  };
+
+  const handleJobError = (errorMessage: string) => {
+    console.error('❌ Job processing failed:', errorMessage);
+    setError(errorMessage);
+    setLoading(false);
+    
+    // Provide user-friendly error messages
+    let friendlyMessage = errorMessage;
+    if (errorMessage.includes('Could not extract readable text')) {
+      friendlyMessage = "We couldn't read your file. Please upload a text-based CV (DOCX, TXT, or exported PDF).";
+    } else if (errorMessage.includes('timeout')) {
+      friendlyMessage = 'Processing took too long. Please try again with a smaller CV.';
+    }
+    
+    toast.error(friendlyMessage);
   };
 
   const resetWorkflow = () => {
@@ -360,8 +231,10 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     setJobDescription('');
     setTailoringResult(null);
     setTailoredResumeId(null);
+    setCurrentJobId(null);
     setProgress(stepProgress['resume-upload']);
     setError(null);
+    setLoading(false);
   };
 
   return (
@@ -376,7 +249,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
                 AI-Powered CV Tailoring
               </CardTitle>
               <CardDescription>
-                Create a targeted resume with a compelling 3-sentence career profile
+                Create a targeted resume optimized for your dream job
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
@@ -431,13 +304,62 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
           />
         )}
 
-        {currentStep === 'ai-analysis' && (
-          <AIAnalysisStep 
-            selectedJob={selectedJob}
-            uploadedResume={selectedResume}
-            onStartAnalysis={handleAIAnalysis}
-            loading={loading}
-          />
+        {currentStep === 'ai-analysis' && currentJobId && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Processing Your CV</CardTitle>
+              <CardDescription>
+                We're tailoring your resume in the background. This may take a few minutes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CVJobTracker
+                jobId={currentJobId}
+                onComplete={handleJobComplete}
+                onError={handleJobError}
+              />
+              <div className="mt-4 text-sm text-muted-foreground text-center">
+                You can leave this page — we'll continue processing in the background
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 'ai-analysis' && !currentJobId && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Ready to Start</CardTitle>
+              <CardDescription>Click below to begin tailoring your CV</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedJob && (
+                <div className="bg-secondary p-4 rounded space-y-2">
+                  <p className="text-sm font-medium">Selected Job:</p>
+                  <p className="text-sm">{jobTitle} at {companyName}</p>
+                </div>
+              )}
+              {selectedResume && (
+                <div className="bg-secondary p-4 rounded space-y-2">
+                  <p className="text-sm font-medium">Selected Resume:</p>
+                  <p className="text-sm">{selectedResume.name || selectedResume.file_name}</p>
+                </div>
+              )}
+              <Button 
+                onClick={() => handleAIAnalysis()}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  'Start CV Tailoring'
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {currentStep === 'download' && tailoringResult && tailoredResumeId && (

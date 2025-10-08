@@ -386,6 +386,81 @@ export type Database = {
           },
         ]
       }
+      cv_jobs: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          download_url: string | null
+          error_message: string | null
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          job_description: string | null
+          job_id: string
+          job_title: string | null
+          max_retries: number | null
+          processing_completed_at: string | null
+          processing_started_at: string | null
+          progress: number | null
+          retry_count: number | null
+          status: string
+          tailored_content: string | null
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          job_description?: string | null
+          job_id: string
+          job_title?: string | null
+          max_retries?: number | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          progress?: number | null
+          retry_count?: number | null
+          status?: string
+          tailored_content?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          job_description?: string | null
+          job_id?: string
+          job_title?: string | null
+          max_retries?: number | null
+          processing_completed_at?: string | null
+          processing_started_at?: string | null
+          progress?: number | null
+          retry_count?: number | null
+          status?: string
+          tailored_content?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cv_tailoring_retry_queue: {
         Row: {
           candidate_data: Json | null
@@ -1370,6 +1445,10 @@ export type Database = {
         Args: { company_id: string }
         Returns: boolean
       }
+      admin_delete_cv_job: {
+        Args: { p_job_id: string }
+        Returns: boolean
+      }
       admin_delete_user: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1423,6 +1502,10 @@ export type Database = {
           rejection_reason: string
           review_notes?: string
         }
+        Returns: boolean
+      }
+      admin_retry_cv_job: {
+        Args: { p_job_id: string }
         Returns: boolean
       }
       admin_update_company: {
@@ -1565,6 +1648,17 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_cv_job_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_processing_time: unknown
+          completed_jobs: number
+          failed_jobs: number
+          processing_jobs: number
+          queued_jobs: number
+          total_jobs: number
+        }[]
       }
       get_public_company_info: {
         Args: { company_id: string }

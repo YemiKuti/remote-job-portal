@@ -41,6 +41,7 @@ import SettingsAdmin from '@/pages/admin/Settings';
 import BlogManagement from '@/pages/admin/BlogManagement';
 import CreateJob from '@/pages/admin/CreateJob';
 import AdminEditJob from '@/pages/admin/EditJob';
+import CVJobsDashboard from '@/pages/admin/CVJobsDashboard';
 import { AdminRoute } from '@/components/AdminRoute';
 import SettingsRedirect from '@/components/SettingsRedirect';
 import CheckoutSuccess from '@/pages/CheckoutSuccess';
@@ -106,6 +107,7 @@ const App = () => {
             <Route path="/admin/settings" element={<AdminRoute><SettingsAdmin /></AdminRoute>} />
             <Route path="/admin/blog" element={<AdminRoute><BlogManagement /></AdminRoute>} />
             <Route path="/admin/job-scraper" element={<AdminRoute><JobScraper /></AdminRoute>} />
+            <Route path="/admin/cv-jobs" element={<AdminRoute><CVJobsDashboard /></AdminRoute>} />
             
             {/* Demo Routes - Remove in production */}
             <Route path="/currency-test" element={<CurrencyTestPage />} />

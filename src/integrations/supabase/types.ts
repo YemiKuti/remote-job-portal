@@ -1566,6 +1566,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_public_company_info: {
+        Args: { company_id: string }
+        Returns: {
+          company_size: string
+          description: string
+          founded_year: number
+          id: string
+          industry: string
+          linkedin_url: string
+          location: string
+          logo_url: string
+          name: string
+          status: string
+          twitter_url: string
+          website: string
+        }[]
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {

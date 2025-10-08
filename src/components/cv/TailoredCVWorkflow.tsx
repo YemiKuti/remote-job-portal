@@ -319,7 +319,7 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       setProgress(stepProgress['download']);
       
       console.log('✅ AI analysis completed. Score:', data.score);
-      toast.success(`CV tailored successfully! Match score: ${data.score || 85}%`);
+      toast.success('✅ Resume uploaded successfully. Tailoring process started.');
 
     } catch (error) {
       console.error('❌ Error during AI analysis:', error);

@@ -1,5 +1,23 @@
 # Welcome to your Lovable project
 
+## 🎯 AI CV Tailoring Feature
+
+This project includes an AI-powered CV tailoring tool that can work with any API endpoint.
+
+### Quick Start (Testing Mode)
+The tool is pre-configured to use `https://httpbin.org/post` for testing - no setup required!
+
+### Production Setup
+To use your own API endpoint:
+
+1. Create a `.env` file in the project root
+2. Add: `VITE_CV_TAILORING_ENDPOINT=https://your-api.com/api/tailor-cv`
+3. Restart the dev server
+
+📖 See [CV_TAILORING_CONFIGURATION.md](CV_TAILORING_CONFIGURATION.md) for detailed setup instructions, API specifications, and troubleshooting.
+
+---
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/e3a67cee-3944-4ff2-8d13-3744e59f8868

@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { CV_TAILORING_ENDPOINT, API_TIMEOUT } from "@/config/api";
 
 export interface RetryOptions {
   maxRetries?: number;
@@ -18,6 +18,28 @@ export interface EdgeFunctionError {
 export function classifyEdgeFunctionError(error: any): EdgeFunctionError {
   const errorMessage = error?.message || String(error);
   
+  // Connection/Network errors are retryable
+  if (errorMessage.includes('Failed to fetch') || 
+      errorMessage.includes('NetworkError') ||
+      errorMessage.includes('network') || 
+      errorMessage.includes('Connection')) {
+    return {
+      message: errorMessage,
+      isRetryable: true,
+      userMessage: '⚠️ Unable to connect to the server. Please try again later.'
+    };
+  }
+  
+  // Timeout errors are retryable
+  if (errorMessage.includes('timeout') || errorMessage.includes('timed out') ||
+      errorMessage.includes('AbortError')) {
+    return {
+      message: errorMessage,
+      isRetryable: true,
+      userMessage: '⚠️ Request timed out. Please try again.'
+    };
+  }
+  
   // File too large errors are not retryable
   if (errorMessage.includes('FILE_TOO_LARGE') || errorMessage.includes('too large')) {
     return {
@@ -27,18 +49,10 @@ export function classifyEdgeFunctionError(error: any): EdgeFunctionError {
     };
   }
   
-  // Network/timeout errors are retryable
-  if (errorMessage.includes('timeout') || errorMessage.includes('network') || 
-      errorMessage.includes('Failed to send') || errorMessage.includes('Connection')) {
-    return {
-      message: errorMessage,
-      isRetryable: true,
-      userMessage: 'Network issue detected. Retrying...'
-    };
-  }
-  
-  // Server errors are retryable
-  if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error') ||
+  // Server errors (5xx) are retryable
+  if (errorMessage.includes('500') || errorMessage.includes('502') || 
+      errorMessage.includes('503') || errorMessage.includes('504') ||
+      errorMessage.includes('Internal Server Error') ||
       errorMessage.includes('worker boot error')) {
     return {
       message: errorMessage,
@@ -49,7 +63,8 @@ export function classifyEdgeFunctionError(error: any): EdgeFunctionError {
   
   // File format errors are not retryable
   if (errorMessage.includes('Unsupported file format') || 
-      errorMessage.includes('Could not extract text')) {
+      errorMessage.includes('Could not extract text') ||
+      errorMessage.includes('invalid')) {
     return {
       message: errorMessage,
       isRetryable: false,
@@ -57,16 +72,17 @@ export function classifyEdgeFunctionError(error: any): EdgeFunctionError {
     };
   }
   
-  // Generic errors are retryable once
+  // Generic errors - show connection error message
   return {
     message: errorMessage,
     isRetryable: true,
-    userMessage: 'Processing failed. Retrying...'
+    userMessage: '⚠️ Unable to connect to the server. Please try again later.'
   };
 }
 
 /**
- * Calls an edge function with exponential backoff retry logic
+ * Calls the CV tailoring API with exponential backoff retry logic
+ * Now using a configurable endpoint instead of Supabase Edge Functions
  */
 export async function callEdgeFunctionWithRetry(
   functionName: string,
@@ -75,7 +91,7 @@ export async function callEdgeFunctionWithRetry(
   onProgress?: (message: string, retryCount?: number) => void
 ): Promise<any> {
   const {
-    maxRetries = 3,
+    maxRetries = 2,
     baseDelay = 1000,
     maxDelay = 10000
   } = options;
@@ -84,27 +100,95 @@ export async function callEdgeFunctionWithRetry(
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} for ${functionName}`);
+      console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} for ${functionName} to ${CV_TAILORING_ENDPOINT}`);
       
       if (attempt > 0) {
         onProgress?.(`Retrying... (attempt ${attempt + 1})`, attempt);
       }
       
-      // Handle FormData and regular JSON payloads  
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: payload
-      });
+      // Create FormData or use JSON payload
+      let body: FormData | string;
+      let headers: Record<string, string> = {};
       
-      if (error) {
-        throw error;
+      if (payload instanceof FormData) {
+        // Use FormData as-is for file uploads
+        body = payload;
+        console.log('📤 Sending FormData with file');
+      } else {
+        // Convert to JSON for regular payloads
+        body = JSON.stringify(payload);
+        headers['Content-Type'] = 'application/json';
+        console.log('📤 Sending JSON payload');
       }
       
-      // Check if the response indicates an error
-      if (data && data.success === false) {
-        throw new Error(data.error || 'Function returned error');
-      }
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
       
-      return data;
+      try {
+        const response = await fetch(CV_TAILORING_ENDPOINT, {
+          method: 'POST',
+          body,
+          headers,
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        console.log('✅ Response received:', { 
+          status: response.status,
+          hasData: !!data 
+        });
+        
+        // For httpbin.org/post testing endpoint, it returns the sent data wrapped
+        // In production, your API should return the actual response
+        if (CV_TAILORING_ENDPOINT.includes('httpbin.org')) {
+          console.log('ℹ️ Using test endpoint (httpbin.org)');
+          onProgress?.('✅ Request sent successfully. Resume received for processing.', undefined);
+          return {
+            success: true,
+            message: '✅ Request sent successfully. Resume received for processing.',
+            tailoredResume: 'Mock tailored resume content would go here in production',
+            score: 85,
+            analysis: {
+              skillsMatched: 8,
+              requiredSkills: 10,
+              candidateSkills: ['React', 'TypeScript', 'Node.js'],
+              experienceLevel: 'Mid-level',
+              hasCareerProfile: true,
+              hasContactInfo: true
+            },
+            suggestions: {
+              keywordsMatched: 12,
+              totalKeywords: 15,
+              recommendations: [
+                'Add more quantifiable achievements',
+                'Emphasize leadership experience',
+                'Include relevant certifications'
+              ]
+            }
+          };
+        }
+        
+        // Check if the response indicates an error
+        if (data && data.success === false) {
+          throw new Error(data.error || 'API returned error');
+        }
+        
+        return data;
+        
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+          throw new Error('⚠️ Request timed out. Please try again.');
+        }
+        throw fetchError;
+      }
       
     } catch (error) {
       lastError = error;
@@ -128,7 +212,7 @@ export async function callEdgeFunctionWithRetry(
   }
   
   // This should never be reached, but just in case
-  throw lastError;
+  throw new Error('⚠️ Unable to connect to the server. Please try again later.');
 }
 
 /**

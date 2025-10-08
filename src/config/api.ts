@@ -3,16 +3,9 @@
 
 /**
  * CV Tailoring API Endpoint
- * 
- * For testing: Use https://httpbin.org/post (accepts POST and returns sent data)
- * For production: Replace with your actual API endpoint
- * 
- * You can also set this via environment variable:
- * VITE_CV_TAILORING_ENDPOINT=https://your-api.com/tailor
+ * Uses Supabase Edge Function for CV tailoring
  */
-export const CV_TAILORING_ENDPOINT = 
-  import.meta.env.VITE_CV_TAILORING_ENDPOINT || 
-  'https://httpbin.org/post';
+export const CV_TAILORING_ENDPOINT = 'https://mmbrvcndxhipaoxysvwr.supabase.co/functions/v1/tailor-cv';
 
 /**
  * API Request Timeout (in milliseconds)

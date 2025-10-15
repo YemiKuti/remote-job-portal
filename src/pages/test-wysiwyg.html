@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG Editor Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        .sample-content {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+            margin: 15px 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WYSIWYG Editor Copy/Paste Test</h1>
+        
+        <div class="test-section">
+            <h2>Test Instructions</h2>
+            <div class="instructions">
+                <strong>How to test:</strong>
+                <ol>
+                    <li>Copy content from the sample sections below</li>
+                    <li>Paste it into the WYSIWYG editor in your application</li>
+                    <li>Verify that formatting is preserved (bold, italic, lists, etc.)</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Sample 1: Job Description with Formatting</h2>
+            <div class="sample-content">
+                <h3>Senior Frontend Developer</h3>
+                <p><strong>About the Role:</strong></p>
+                <p>We're looking for a talented Senior Frontend Developer to join our growing team. You'll work on cutting-edge web applications using modern technologies.</p>
+                
+                <p><strong>Key Responsibilities:</strong></p>
+                <ul>
+                    <li>Develop responsive web applications using <strong>React</strong> and <em>TypeScript</em></li>
+                    <li>Collaborate with designers and backend developers</li>
+                    <li>Write clean, maintainable code</li>
+                    <li>Participate in code reviews and technical discussions</li>
+                </ul>
+                
+                <p><strong>Requirements:</strong></p>
+                <ul>
+                    <li>5+ years of experience with JavaScript/TypeScript</li>
+                    <li>Strong knowledge of React ecosystem</li>
+                    <li>Experience with state management (Redux, Zustand)</li>
+                    <li>Familiarity with modern build tools (Vite, Webpack)</li>
+                </ul>
+                
+                <p><strong>Benefits:</strong></p>
+                <ul>
+                    <li>Competitive salary: $90,000 - $120,000</li>
+                    <li>Remote work flexibility</li>
+                    <li>Health insurance and 401(k)</li>
+                    <li>Professional development budget</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Sample 2: Technical Requirements</h2>
+            <div class="sample-content">
+                <h4>Technical Skills Required</h4>
+                <p><strong>Frontend Technologies:</strong></p>
+                <ul>
+                    <li><strong>React.js</strong> - Minimum 3 years experience</li>
+                    <li><strong>TypeScript</strong> - Strong typing knowledge</li>
+                    <li><strong>CSS/SCSS</strong> - Modern styling techniques</li>
+                    <li><strong>JavaScript ES6+</strong> - Advanced features</li>
+                </ul>
+                
+                <p><strong>Tools & Frameworks:</strong></p>
+                <ul>
+                    <li>Git version control</li>
+                    <li>Jest for testing</li>
+                    <li>Webpack or Vite</li>
+                    <li>Figma for design collaboration</li>
+                </ul>
+                
+                <blockquote>
+                    <p><em>Note: Experience with Node.js and full-stack development is a plus, but not required.</em></p>
+                </blockquote>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Sample 3: Company Culture & Benefits</h2>
+            <div class="sample-content">
+                <h3>Why Work With Us?</h3>
+                <p>We offer a <strong>dynamic, collaborative environment</strong> where your ideas matter and your growth is our priority.</p>
+                
+                <h4>Our Culture:</h4>
+                <ul>
+                    <li>🏠 <strong>Remote-first</strong> - Work from anywhere</li>
+                    <li>🤝 <strong>Collaborative</strong> - Cross-functional teams</li>
+                    <li>📚 <strong>Learning-focused</strong> - Continuous improvement</li>
+                    <li>⚡ <strong>Innovative</strong> - Cutting-edge technologies</li>
+                </ul>
+                
+                <h4>Perks & Benefits:</h4>
+                <ul>
+                    <li>💰 Competitive salary + equity</li>
+                    <li>🏥 Comprehensive health coverage</li>
+                    <li>🏖️ Unlimited PTO</li>
+                    <li>💻 Latest hardware and software</li>
+                    <li>🎓 $2,000 annual learning budget</li>
+                </ul>
+                
+                <div class="highlight">
+                    <p><strong>Flexible Schedule:</strong> We believe in work-life balance. Core hours are 10 AM - 3 PM EST, with flexibility for the rest of your day.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Sample 4: Complex Formatting</h2>
+            <div class="sample-content">
+                <h2>Project Timeline</h2>
+                <p>Here's what we expect in the first <strong>90 days</strong>:</p>
+                
+                <h3>Month 1: Onboarding</h3>
+                <ul>
+                    <li>Complete technical setup</li>
+                    <li>Review codebase and architecture</li>
+                    <li>Meet with team members</li>
+                </ul>
+                
+                <h3>Month 2: First Projects</h3>
+                <ul>
+                    <li>Take ownership of smaller features</li>
+                    <li>Participate in code reviews</li>
+                    <li>Contribute to sprint planning</li>
+                </ul>
+                
+                <h3>Month 3: Full Integration</h3>
+                <ul>
+                    <li>Lead feature development</li>
+                    <li>Mentor junior developers</li>
+                    <li>Drive technical decisions</li>
+                </ul>
+                
+                <blockquote>
+                    <p>"We're looking for someone who can <em>hit the ground running</em> while also bringing fresh perspectives to our team."</p>
+                    <p><small>- Sarah Johnson, Engineering Manager</small></p>
+                </blockquote>
+                
+                <p><strong>Application Process:</strong></p>
+                <ol>
+                    <li>Submit your resume and cover letter</li>
+                    <li>Complete our technical assessment</li>
+                    <li>Participate in a 45-minute video interview</li>
+                    <li>Meet the team in a final round</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Results</h2>
+            <div class="instructions">
+                <p><strong>What to verify after pasting:</strong></p>
+                <ul>
+                    <li>✅ Bold text remains bold</li>
+                    <li>✅ Italic text remains italic</li>
+                    <li>✅ Bullet points are preserved</li>
+                    <li>✅ Numbered lists maintain order</li>
+                    <li>✅ Headers maintain their size</li>
+                    <li>✅ Links are clickable</li>
+                    <li>✅ Blockquotes are styled correctly</li>
+                    <li>✅ Emojis are displayed</li>
+                    <li>✅ Line breaks are preserved</li>
+                    <li>✅ Special characters display correctly</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

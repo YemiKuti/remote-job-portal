@@ -16,7 +16,7 @@ import { transformDatabaseJobToFrontendJob } from "@/utils/jobTransformers";
 import { handleJobApplication, getApplicationButtonText } from "@/utils/applicationHandler";
 import { checkExistingApplication } from "@/utils/api/candidateApi";
 import { useAuth } from "@/components/AuthProvider";
-import { RichTextRenderer } from "@/components/RichTextRenderer";
+import { WysiwygRenderer } from "@/components/ui/WysiwygRenderer";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -299,7 +299,7 @@ const JobDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="prose max-w-none">
-                <RichTextRenderer 
+                <WysiwygRenderer 
                   content={job.description} 
                   className="text-gray-700 leading-relaxed"
                 />
@@ -322,7 +322,7 @@ const JobDetail = () => {
                         <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                           <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                           <div className="flex-1">
-                            <RichTextRenderer 
+                            <WysiwygRenderer 
                               content={req} 
                               className="text-gray-700"
                             />
@@ -331,7 +331,7 @@ const JobDetail = () => {
                       ))}
                     </div>
                   ) : (
-                    <RichTextRenderer 
+                    <WysiwygRenderer 
                       content={job.requirements} 
                       className="text-gray-700 leading-relaxed"
                     />

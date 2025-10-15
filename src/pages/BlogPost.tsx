@@ -15,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RichTextRenderer } from "@/components/RichTextRenderer";
+import { WysiwygRenderer } from "@/components/ui/WysiwygRenderer";
 
 const BlogPost = () => {
   const { id } = useParams<{ id: string }>();
@@ -239,7 +239,7 @@ const BlogPost = () => {
 
             {/* Article Content */}
             <div className="mb-12">
-              <RichTextRenderer 
+              <WysiwygRenderer 
                 content={post.content} 
                 className="max-w-none"
               />

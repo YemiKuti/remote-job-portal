@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2 } from "lucide-react";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobActions } from "./JobActions";
-import { RichTextRenderer } from "@/components/RichTextRenderer";
+import { WysiwygRenderer } from "@/components/ui/WysiwygRenderer";
 
 interface JobData {
   id: string;
@@ -66,7 +66,7 @@ export const JobsTable = ({ jobs, loading, onJobAction }: JobsTableProps) => {
                 <div className="font-semibold text-foreground mb-2">{job.title}</div>
                 {job.description && (
                   <div className="text-sm text-muted-foreground leading-relaxed">
-                    <RichTextRenderer 
+                    <WysiwygRenderer 
                       content={job.description.length > 300 
                         ? job.description.substring(0, 300) + '...'
                         : job.description

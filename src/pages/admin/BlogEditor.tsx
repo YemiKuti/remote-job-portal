@@ -15,7 +15,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Save, ArrowLeft, Loader2, X } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
-import RichTextEditor from '@/components/blog/RichTextEditor';
+import WysiwygEditor from '@/components/ui/WysiwygEditor';
 
 interface BlogPost {
   id: string;
@@ -369,11 +369,11 @@ const BlogEditor = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="content">Content</Label>
-                  <RichTextEditor
+                  <WysiwygEditor
                     value={content}
                     onChange={setContent}
                     placeholder="Write your blog post content here..."
-                    className="w-full"
+                    height="400px"
                   />
                 </div>
               </CardContent>

@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, AlertCircle, Mail, ExternalLink, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { EditJobButton } from './EditJobButton';
-import { RichTextRenderer } from '@/components/RichTextRenderer';
+import { WysiwygRenderer } from '@/components/ui/WysiwygRenderer';
 
 interface JobApprovalPanelProps {
   onJobsUpdated: () => void;
@@ -233,7 +233,7 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
                 <div>
                   <h4 className="text-sm font-medium mb-2">Job Description</h4>
                   <div className="max-h-40 overflow-y-auto">
-                    <RichTextRenderer 
+                    <WysiwygRenderer 
                       content={job.description} 
                       className="text-sm text-muted-foreground"
                     />

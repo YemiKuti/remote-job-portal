@@ -7,7 +7,7 @@ import { formatSalaryWithConversion, getTimeAgo } from "@/data/jobs";
 import { Job } from "@/types";
 import { SponsoredBadge } from "@/components/ui/sponsored-badge";
 import { useNavigate } from "react-router-dom";
-import { RichTextRenderer } from "@/components/RichTextRenderer";
+import { WysiwygRenderer } from "@/components/ui/WysiwygRenderer";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface JobCardProps {
@@ -61,7 +61,7 @@ const JobCard = ({ job, onClick }: JobCardProps) => {
         </div>
         
         <div className="mb-4">
-          <RichTextRenderer 
+          <WysiwygRenderer 
             content={job.description} 
             className="line-clamp-3 text-sm"
           />

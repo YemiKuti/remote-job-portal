@@ -54,6 +54,8 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
   const [jobDescription, setJobDescription] = useState<string>('');
   const [tailoringResult, setTailoringResult] = useState<TailoringResult | null>(null);
   const [tailoredResumeId, setTailoredResumeId] = useState<string | null>(null);
+  const [tailoredDownloadUrl, setTailoredDownloadUrl] = useState<string | null>(null);
+  const [tailoredMarkdownUrl, setTailoredMarkdownUrl] = useState<string | null>(null);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -78,6 +80,10 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
     setJobTitle(data.jobTitle);
     setCompanyName(data.companyName);
     setJobDescription(data.jobDescription);
+    // Move to AI analysis step and show loading immediately
+    setCurrentStep('ai-analysis');
+    setLoading(true);
+    setProgress(stepProgress['ai-analysis']);
     handleAIAnalysis(data);
   };
 
@@ -109,74 +115,66 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
       setLoading(true);
       setError(null);
       setProgress(20);
-      
-      toast.info('📤 Uploading your CV for processing...');
 
-      // Generate unique job ID
-      const jobIdStr = `cv-job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Get user email
-      const { data: { user } } = await supabase.auth.getUser();
-      const userEmail = user?.email || null;
+      toast.info('📤 Processing your CV with AI...');
 
-      // Upload file to storage if not already uploaded
-      let filePath = resume.file_path;
-      if (!filePath && resume.file) {
-        const fileName = `${userId}/${Date.now()}-${resume.name || 'resume.pdf'}`;
-        const { error: uploadError } = await supabase.storage
-          .from('resumes')
-          .upload(fileName, resume.file);
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`);
+      // Call edge function with ids only; backend will fetch and extract
+      const { data: tailoringResp, error: invokeError } = await supabase.functions.invoke('tailor-cv-v2', {
+        body: {
+          resumeId: resume.id,
+          jobId: job.id,
+          userId,
+          // Optional overrides if user provided custom title/company/desc
+          jobTitle: jobTitle || data?.jobTitle || undefined,
+          companyName: companyName || data?.companyName || undefined,
+          jobDescription: desc || undefined
         }
-        filePath = fileName;
-      }
-
-      setProgress(40);
-
-      // Create job record
-      const { data: jobData, error: jobError } = await supabase
-        .from('cv_jobs')
-        .insert({
-          user_id: userId,
-          job_id: jobIdStr,
-          file_name: resume.name || resume.file_name || 'resume.pdf',
-          file_path: filePath,
-          file_size: resume.file_size || resume.size || 0,
-          user_email: userEmail,
-          job_title: jobTitle || data?.jobTitle,
-          company_name: companyName || data?.companyName,
-          job_description: desc,
-          status: 'queued',
-          progress: 0
-        })
-        .select()
-        .single();
-
-      if (jobError) {
-        throw new Error(`Failed to create processing job: ${jobError.message}`);
-      }
-
-      setCurrentJobId(jobIdStr);
-      setProgress(60);
-
-      // Trigger background processing
-      await supabase.functions.invoke('process-cv-job', {
-        body: { action: 'process_specific', job_id: jobIdStr }
       });
 
-      toast.success('✅ Your CV has been queued for processing!');
-      toast.info('Processing will continue in the background. You can leave this page.');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Tailoring failed');
+      }
 
-      // Move to tracking step
-      setCurrentStep('ai-analysis');
-      setProgress(70);
+      if (!tailoringResp?.success) {
+        throw new Error(tailoringResp?.error || 'Unable to generate tailored CV. Please try again.');
+      }
+
+      // Prefer tailoredContent/tailoredResume and id/url from response
+      const tailoredText = tailoringResp.tailoredContent || tailoringResp.tailoredResume || '';
+      const resumeId = tailoringResp.tailoredResumeId || null;
+      const fileUrl = tailoringResp.downloadUrl || null;
+      const mdUrl = tailoringResp.markdownUrl || null;
+
+      setTailoredResumeId(resumeId);
+      setTailoredDownloadUrl(fileUrl);
+      setTailoredMarkdownUrl(mdUrl);
+      setTailoringResult({
+        tailoredResume: tailoredText,
+        score: tailoringResp.score || 85,
+        analysis: {
+          skillsMatched: 0,
+          requiredSkills: 0,
+          candidateSkills: [],
+          experienceLevel: 'mid',
+          hasCareerProfile: true,
+          hasContactInfo: true
+        },
+        suggestions: {
+          keywordsMatched: 0,
+          totalKeywords: 0,
+          recommendations: []
+        }
+      });
+
+      setProgress(100);
+      setCurrentStep('download');
+      setLoading(false);
+      toast.success('✅ Your tailored CV PDF is ready!');
 
     } catch (error: any) {
-      console.error('❌ Error creating CV job:', error);
-      setError(error.message || 'Failed to start CV processing');
-      toast.error(error.message || 'Failed to upload your CV');
+      console.error('❌ Error tailoring CV:', error);
+      setError(error.message || 'Failed to tailor your CV');
+      toast.error(error.message || 'Failed to tailor your CV');
       setLoading(false);
     }
   };
@@ -328,47 +326,35 @@ export const TailoredCVWorkflow = ({ userId }: TailoredCVWorkflowProps) => {
         {currentStep === 'ai-analysis' && !currentJobId && (
           <Card>
             <CardHeader>
-              <CardTitle>Ready to Start</CardTitle>
-              <CardDescription>Click below to begin tailoring your CV</CardDescription>
+              <CardTitle>Processing Your CV</CardTitle>
+              <CardDescription>The AI is tailoring your resume. This may take up to a minute.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {selectedJob && (
-                <div className="bg-secondary p-4 rounded space-y-2">
-                  <p className="text-sm font-medium">Selected Job:</p>
+              <div className="bg-secondary p-4 rounded space-y-2">
+                {selectedJob && (
                   <p className="text-sm">{jobTitle} at {companyName}</p>
-                </div>
-              )}
-              {selectedResume && (
-                <div className="bg-secondary p-4 rounded space-y-2">
-                  <p className="text-sm font-medium">Selected Resume:</p>
-                  <p className="text-sm">{selectedResume.name || selectedResume.file_name}</p>
-                </div>
-              )}
-              <Button 
-                onClick={() => handleAIAnalysis()}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  'Start CV Tailoring'
                 )}
-              </Button>
+                {selectedResume && (
+                  <p className="text-sm">{selectedResume.name || selectedResume.file_name}</p>
+                )}
+              </div>
+              <div className="w-full flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                <span className="text-sm text-muted-foreground">Tailoring in progress...</span>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {currentStep === 'download' && tailoringResult && tailoredResumeId && (
+        {currentStep === 'download' && tailoredResumeId && (
           <DownloadStep 
             workflowData={{
               tailoredResumeId: tailoredResumeId,
               jobTitle: jobTitle,
               companyName: companyName,
-              selectedResume: selectedResume
+              selectedResume: selectedResume,
+              downloadUrl: tailoredDownloadUrl || undefined,
+              markdownUrl: tailoredMarkdownUrl || undefined
             }}
             onRestart={resetWorkflow}
           />

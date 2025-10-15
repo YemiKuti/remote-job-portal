@@ -14,6 +14,8 @@ interface DownloadStepProps {
     jobTitle: string;
     companyName: string;
     selectedResume: any;
+    downloadUrl?: string;
+    markdownUrl?: string;
   };
   onRestart: () => void;
 }
@@ -534,39 +536,52 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
 
     setDownloading(true);
     try {
-      const content = tailoredResume.tailored_content;
-      const fileName = generateFileName(format);
-      let blob: Blob;
+      // Prefer direct backend-generated file for PDF
+      if (format === 'pdf' && workflowData.downloadUrl) {
+        const a = document.createElement('a');
+        a.href = workflowData.downloadUrl;
+        a.download = generateFileName('pdf');
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        const content = tailoredResume.tailored_content;
+        const fileName = generateFileName(format);
+        let blob: Blob;
 
-      switch (format) {
-        case 'pdf':
-          const pdf = generatePDF(content);
-          blob = new Blob([pdf.output('blob')], { type: 'application/pdf' });
-          break;
-        case 'html':
-          const htmlContent = generateHTMLContent(content);
-          blob = new Blob([htmlContent], { type: 'text/html' });
-          break;
-        case 'docx':
-          // Create a more structured document for Word
-          const docContent = generateFormattedText(content);
-          blob = new Blob([docContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-          break;
-        default: // txt
-          const txtContent = generateFormattedText(content);
-          blob = new Blob([txtContent], { type: 'text/plain' });
+        switch (format) {
+          case 'pdf':
+            const pdf = generatePDF(content);
+            blob = new Blob([pdf.output('blob')], { type: 'application/pdf' });
+            break;
+          case 'html':
+            const htmlContent = generateHTMLContent(content);
+            blob = new Blob([htmlContent], { type: 'text/html' });
+            break;
+          case 'docx':
+            // Create a more structured document for Word
+            const docContent = generateFormattedText(content);
+            blob = new Blob([docContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+            break;
+          default: // txt
+            const txtContent = generateFormattedText(content);
+            blob = new Blob([txtContent], { type: 'text/plain' });
+        }
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
-
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
 
       // Update download count
       await supabase
@@ -607,185 +622,80 @@ export function DownloadStep({ workflowData, onRestart }: DownloadStepProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5 text-green-500" />
-            Step 4: Download Your Tailored Resume
+            Download Your Tailored Resume
           </CardTitle>
           <CardDescription>
-            Your professionally formatted, ATS-optimized resume is ready for download.
+            Ready to use for your application.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Resume Info */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-green-900">
-                  {workflowData.jobTitle || 'Position'} Resume
-                </h3>
-                {workflowData.companyName && (
-                  <p className="text-sm text-green-700">For {workflowData.companyName}</p>
-                )}
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge variant="outline">
-                    Tailoring Score: {tailoredResume.tailoring_score || 85}%
-                  </Badge>
-                  <Badge variant="outline">
-                    ATS Optimized
-                  </Badge>
-                  <Badge variant="outline">
-                    Professionally Formatted
-                  </Badge>
-                </div>
-              </div>
-              <FileText className="h-8 w-8 text-green-500" />
+        <CardContent className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-green-900">
+                {workflowData.jobTitle || 'Position'} Resume
+              </h3>
+              {workflowData.companyName && (
+                <p className="text-sm text-green-700">For {workflowData.companyName}</p>
+              )}
             </div>
+            <Badge variant="outline">Score: {tailoredResume.tailoring_score || 85}%</Badge>
           </div>
 
-          {/* Download Options */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Button 
-              onClick={() => handleDownload('pdf')} 
-              disabled={downloading} 
-              className="h-20 flex flex-col gap-2"
-            >
-              <Download className="h-6 w-6" />
-              <div className="text-center">
-                <div className="font-medium">PDF</div>
-                <div className="text-xs opacity-75">Direct download</div>
-              </div>
-            </Button>
-            
-            <Button 
-              onClick={() => handleDownload('html')} 
-              disabled={downloading} 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-            >
-              <Download className="h-6 w-6" />
-              <div className="text-center">
-                <div className="font-medium">HTML</div>
-                <div className="text-xs opacity-75">Web format</div>
-              </div>
-            </Button>
-            
-            <Button 
-              onClick={() => handleDownload('docx')} 
-              disabled={downloading} 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-            >
-              <Download className="h-6 w-6" />
-              <div className="text-center">
-                <div className="font-medium">DOCX</div>
-                <div className="text-xs opacity-75">Word format</div>
-              </div>
-            </Button>
-            
-            <Button 
-              onClick={() => handleDownload('txt')} 
-              disabled={downloading} 
-              variant="outline" 
-              className="h-20 flex flex-col gap-2"
-            >
-              <Download className="h-6 w-6" />
-              <div className="text-center">
-                <div className="font-medium">TXT</div>
-                <div className="text-xs opacity-75">Plain text</div>
-              </div>
-            </Button>
-          </div>
+          <Button onClick={() => handleDownload('pdf')} disabled={downloading} className="w-full h-12">
+            <Download className="h-5 w-5 mr-2" /> Download PDF
+          </Button>
 
-          {/* Format Descriptions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-900 mb-1">PDF Download (Recommended)</h4>
-                  <p className="text-sm text-blue-800">
-                    Downloads a professionally formatted PDF file directly to your device. 
-                    Perfect for job applications and maintains consistent formatting across all platforms.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-amber-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-amber-900 mb-1">Enhanced Formatting</h4>
-                  <ul className="text-sm text-amber-800 list-disc ml-4">
-                    <li>Professional typography with proper hierarchy</li>
-                    <li>Clean contact information header</li>
-                    <li>Structured sections with visual separators</li>
-                    <li>Optimized spacing and bullet points</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Actions */}
-          <div className="flex flex-wrap gap-2">
+          {workflowData.markdownUrl && (
             <Button
               variant="outline"
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={() => {
+                const a = document.createElement('a');
+                a.href = workflowData.markdownUrl as string;
+                a.download = generateFileName('md');
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+              className="w-full h-12"
             >
-              <Eye className="h-4 w-4 mr-2" />
-              {showPreview ? 'Hide' : 'Preview'} Resume
+              <Download className="h-5 w-5 mr-2" /> Download Markdown
             </Button>
-            
-            <Button variant="outline" onClick={onRestart}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Create Another
-            </Button>
-          </div>
-
-          {/* Enhanced Preview */}
-          {showPreview && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Resume Preview</CardTitle>
-                <CardDescription>
-                  Preview of your professionally formatted resume
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div 
-                  className="bg-white border rounded-lg p-6 max-h-96 overflow-y-auto shadow-inner"
-                  dangerouslySetInnerHTML={{ 
-                    __html: DOMPurify.sanitize(
-                      generateHTMLContent(tailoredResume.tailored_content)
-                        .replace(/<style>[\s\S]*?<\/style>/, '') // Remove styles for preview
-                        .replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*?<\/head>|<body[^>]*>|<\/body>/g, ''), // Remove HTML structure tags
-                      {
-                        ALLOWED_TAGS: ['div', 'h1', 'h2', 'p', 'br', 'strong', 'em', 'ul', 'ol', 'li'],
-                        ALLOWED_ATTR: ['class'],
-                        KEEP_CONTENT: true,
-                      }
-                    )
-                  }}
-                />
-              </CardContent>
-            </Card>
           )}
 
-          {/* Tips */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Enhanced PDF Features:</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Direct PDF download without print dialogs</li>
-              <li>• Professional formatting with proper page breaks</li>
-              <li>• Optimized typography and spacing for readability</li>
-              <li>• ATS-friendly structure with enhanced visual appeal</li>
-              <li>• Consistent formatting across all devices and platforms</li>
-            </ul>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowPreview(!showPreview)} className="flex-1">
+              <Eye className="h-4 w-4 mr-2" /> {showPreview ? 'Hide Preview' : 'Preview'}
+            </Button>
+            <Button variant="outline" onClick={onRestart} className="flex-1">
+              <RotateCcw className="h-4 w-4 mr-2" /> Create Another
+            </Button>
           </div>
+
+          {showPreview && (
+            <div 
+              className="bg-white border rounded-lg p-6 max-h-96 overflow-y-auto"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(
+                  generateHTMLContent(tailoredResume.tailored_content)
+                    .replace(/<style>[\s\S]*?<\/style>/, '')
+                    .replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*?<\/head>|<body[^>]*>|<\/body>/g, ''),
+                  {
+                    ALLOWED_TAGS: ['div', 'h1', 'h2', 'p', 'br', 'strong', 'em', 'ul', 'ol', 'li'],
+                    ALLOWED_ATTR: ['class'],
+                    KEEP_CONTENT: true,
+                  }
+                )
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

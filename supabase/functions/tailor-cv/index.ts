@@ -660,6 +660,7 @@ STRICT REQUIREMENTS:
 - Output MUST follow the TEMPLATE style: headings, bold usage, bullet style, and section order as demonstrated below.
 - Output MUST be pure Markdown, no code fences, no extra commentary.
 - Keep the candidate's name and contact info from the source; do NOT use placeholder names.
+- CRITICAL: Use ONLY ASCII-compatible characters. Replace any Unicode bullet points (•, ●, etc.) with standard ASCII dashes (-) or asterisks (*). Avoid any special Unicode characters that may cause encoding issues.
 
 TEMPLATE (STYLE GUIDE ONLY - copy the structure and formatting, NOT the sample content):\n\n${TEMPLATE_MD}
 

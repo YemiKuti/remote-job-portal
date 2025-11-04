@@ -16,7 +16,7 @@ export const transformDatabaseJobToFrontendJob = (dbJob: any): Job => {
     },
     description: dbJob.description,
     requirements: dbJob.requirements || [],
-    postedDate: dbJob.created_at,
+    postedDate: dbJob.posted_at || dbJob.created_at,
     employmentType: dbJob.employment_type as 'Full-time' | 'Part-time' | 'Contract' | 'Freelance',
     experienceLevel: dbJob.experience_level as 'Entry-level' | 'Mid-level' | 'Senior' | 'Lead',
     visaSponsorship: dbJob.visa_sponsorship || false,

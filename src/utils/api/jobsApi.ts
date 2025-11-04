@@ -9,6 +9,7 @@ export const fetchActiveJobs = async () => {
       .from('jobs')
       .select('*')
       .eq('status', 'active') // Only show approved/active jobs
+      .order('posted_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
     if (error) throw error;

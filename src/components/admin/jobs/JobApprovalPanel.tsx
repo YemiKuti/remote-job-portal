@@ -99,6 +99,8 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
 
   const handleReject = async (jobId: string) => {
     const reason = rejectionReasons[jobId];
+    console.log('Reject button clicked for job:', jobId, 'with reason:', reason);
+    
     if (!reason?.trim()) {
       toast({
         title: 'Error',
@@ -110,12 +112,18 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
 
     setRejecting(jobId);
     try {
-      const { error } = await supabase.rpc('admin_reject_job', {
+      console.log('Calling admin_reject_job RPC...');
+      const { data, error } = await supabase.rpc('admin_reject_job', {
         job_id: jobId,
         rejection_reason: reason
       });
 
-      if (error) throw error;
+      console.log('RPC response:', { data, error });
+
+      if (error) {
+        console.error('RPC error details:', error);
+        throw error;
+      }
 
       toast({
         title: 'Job Rejected',
@@ -132,10 +140,12 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
         return updated;
       });
     } catch (error: any) {
-      console.error('Error rejecting job:', error);
+      console.error('Error rejecting job - full details:', error);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
       toast({
         title: 'Error',
-        description: 'Failed to reject job',
+        description: error.message || 'Failed to reject job',
         variant: 'destructive'
       });
     } finally {

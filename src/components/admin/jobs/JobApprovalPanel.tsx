@@ -37,7 +37,7 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
   const [loading, setLoading] = useState(false);
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
   
   const { toast } = useToast();
 
@@ -98,7 +98,8 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
   };
 
   const handleReject = async (jobId: string) => {
-    if (!rejectionReason.trim()) {
+    const reason = rejectionReasons[jobId];
+    if (!reason?.trim()) {
       toast({
         title: 'Error',
         description: 'Please provide a rejection reason',
@@ -111,7 +112,7 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
     try {
       const { error } = await supabase.rpc('admin_reject_job', {
         job_id: jobId,
-        rejection_reason: rejectionReason
+        rejection_reason: reason
       });
 
       if (error) throw error;
@@ -123,7 +124,13 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
 
       await fetchPendingJobs();
       onJobsUpdated();
-      setRejectionReason('');
+      
+      // Clear the rejection reason for this job
+      setRejectionReasons(prev => {
+        const updated = { ...prev };
+        delete updated[jobId];
+        return updated;
+      });
     } catch (error: any) {
       console.error('Error rejecting job:', error);
       toast({
@@ -294,14 +301,14 @@ export const JobApprovalPanel: React.FC<JobApprovalPanelProps> = ({ onJobsUpdate
                 <div className="flex gap-2 flex-1">
                   <Textarea
                     placeholder="Rejection reason (required)"
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
+                    value={rejectionReasons[job.id] || ''}
+                    onChange={(e) => setRejectionReasons(prev => ({ ...prev, [job.id]: e.target.value }))}
                     className="flex-1 h-10"
                   />
                   <Button
                     variant="destructive"
                     onClick={() => handleReject(job.id)}
-                    disabled={rejecting === job.id || !rejectionReason.trim()}
+                    disabled={rejecting === job.id || !rejectionReasons[job.id]?.trim()}
                     className="flex items-center gap-2"
                   >
                     {rejecting === job.id ? (
